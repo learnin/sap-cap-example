@@ -1,0 +1,12 @@
+version: '3.7'
+
+services:
+  app:
+    build: docker/
+    image: sap-cap-example
+    container_name: sap-cap-example
+    ports:
+      - 8080:8080
+    volumes:
+      - .:/usr/local/app
+    tty: true
