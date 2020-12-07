@@ -1,13 +1,13 @@
 {
-    "build": {
-        "target": "."
-    },
-    "requires": {
-        "db": {
-            "kind": "sql"
-        }
-    },
-    "odata": {
-        "version": "v4"
+  "build": {
+    "target": "."
+  },
+  "requires": {
+    "db": {
+      "kind": "sql"
     }
+  },
+  "odata": {
+    "version": "v2"
+  }
 }

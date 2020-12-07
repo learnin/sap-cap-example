@@ -14,9 +14,21 @@
 
 	<!-- ACTUAL DEPENDENCIES -->
 	<dependencies>
+		<!-- OData V4用 -->
+		<!--
 		<dependency>
 			<groupId>com.sap.cds</groupId>
 			<artifactId>cds-starter-spring-boot-odata</artifactId>
+		</dependency>
+		-->
+		<!-- OData V2用 -->
+		<dependency>
+        	<groupId>com.sap.cds</groupId>
+        	<artifactId>cds-starter-spring-boot</artifactId>
+    	</dependency>
+		<dependency>
+			<groupId>com.sap.cds</groupId>
+			<artifactId>cds-adapter-odata-v2</artifactId>
 		</dependency>
 
 		<dependency>
@@ -32,6 +44,10 @@
 		<dependency>
 			<groupId>com.sap.cds</groupId>
 			<artifactId>cds-starter-cloudfoundry</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.sap.cds</groupId>
+			<artifactId>cds-feature-hana</artifactId>
 		</dependency>
 	</dependencies>
 

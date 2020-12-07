@@ -1,0 +1,24 @@
+{
+    "VCAP_SERVICES": {
+      "hana": [
+        {
+          "name": "sap-cap-example-cds-db",
+          "tags": [
+            "hana"
+          ],
+          "credentials": {
+            "driver": "com.sap.db.jdbc.Driver",
+            "host": "HANA CloudのFQDN",
+            "port": "443",
+            "hdi_user": "HANAのHDIユーザ名",
+            "hdi_password": "HANAのHDIユーザのパスワード",
+            "user": "HANAのユーザ名",
+            "password": "HANAのユーザのパスワード",
+            "schema": "HANAのスキーマ名",
+            "url": "jdbc:sap://HANAのFQDN:443?encrypt=true&validateCertificate=true&currentschema=スキーマ名"
+          }
+        }
+      ]
+    }
+  }
+  

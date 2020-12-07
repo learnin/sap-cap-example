@@ -25,3 +25,6 @@ hs_err*
 
 .vscode
 .idea
+.DS_Store
+
+_out/
