@@ -13,7 +13,7 @@
 
 ## DB接続設定
 
-プロジェクト直下の `default-env-template.json` をコピーして `default-env.json` ファイルを作成し、接続情報を修正します。  
+`プロジェクト/sap-cap-example/` の `default-env-template.json` をコピーして `default-env.json` ファイルを作成し、接続情報を修正します。  
 CDS定義をHANAへ反映させるにはプロジェクト直下で以下のコマンドを実行します。
 
 ```shell
@@ -24,7 +24,7 @@ cds deploy --to hana --vcap-file ./default-env.json
 
 ### バックエンド起動
 
-プロジェクト直下で以下のコマンドを実行します。
+`プロジェクト/sap-cap-example/` で以下のコマンドを実行します。
 
 ```shell
 mvn spring-boot:run -Dspring-boot.run.profiles=cloud
@@ -32,7 +32,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=cloud
 
 ### フロントエンド起動
 
-プロジェクト直下で以下のコマンドを実行します。
+`プロジェクト/sap-cap-example/` で以下のコマンドを実行します。
 
 ```shell
 cd app/example01
