@@ -36,6 +36,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=cloud
 
 ```shell
 cd app/example01
+npm install
 npm start
 ```
 
