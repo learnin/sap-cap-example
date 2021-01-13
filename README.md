@@ -22,20 +22,28 @@ cds deploy --to hana --vcap-file ./default-env.json
 
 ## 起動方法
 
-### バックエンド起動
-
-`プロジェクト/sap-cap-example/` で以下のコマンドを実行します。
+### Docker コンテナ起動・接続
 
 ```shell
+docker-compose up -d
+docker exec -it sap-cap-example /bin/bash
+```
+
+### バックエンド起動
+
+Docker コンテナに接続後、以下のコマンドを実行します。
+
+```shell
+cd sap-cap-example
 mvn spring-boot:run -Dspring-boot.run.profiles=cloud
 ```
 
 ### フロントエンド起動
 
-`プロジェクト/sap-cap-example/` で以下のコマンドを実行します。
+Docker コンテナに接続後、以下のコマンドを実行します。
 
 ```shell
-cd app/example01
+cd sap-cap-example/app/example01
 npm install
 npm start
 ```
