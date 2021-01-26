@@ -102,7 +102,7 @@ public class NorthWindServiceHandler implements EventHandler {
 
         // 突き合わせのための検索時のパフォーマンスを考慮し、一旦HashMapに格納する
         Map<Integer, Books> booksMap = booksResult.streamOf(Books.class)
-                .collect(Collectors.toConcurrentMap(Books::getId, Function.identity()));
+                .collect(Collectors.toMap(Books::getId, Function.identity()));
 
         // それぞれから取得したデータをレスポンスのエンティティに詰め直す
         List<cds.gen.northwindservice.CustomProducts> customProductsList = productsList.stream().map(products -> {
