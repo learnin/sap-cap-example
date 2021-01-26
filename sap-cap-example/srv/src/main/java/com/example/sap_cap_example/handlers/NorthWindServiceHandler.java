@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /***
@@ -99,18 +100,20 @@ public class NorthWindServiceHandler implements EventHandler {
                 .orderBy(Books.ID);
         Result booksResult = persistenceService.run(query);
 
+        // 突き合わせのための検索時のパフォーマンスを考慮し、一旦HashMapに格納する
+        Map<Integer, Books> booksMap = booksResult.streamOf(Books.class)
+                .collect(Collectors.toConcurrentMap(Books::getId, Function.identity()));
+
         // それぞれから取得したデータをレスポンスのエンティティに詰め直す
         List<cds.gen.northwindservice.CustomProducts> customProductsList = productsList.stream().map(products -> {
             cds.gen.northwindservice.CustomProducts customProducts = Struct.create(cds.gen.northwindservice.CustomProducts.class);
             customProducts.setId(products.getId());
             customProducts.setName(products.getName());
 
-            booksResult.streamOf(Books.class)
-                    .filter(books -> books.getId() == products.getId())
-                    .findFirst()
-                    .ifPresent(books -> {
-                        customProducts.setTitle(books.getTitle());
-                    });
+            Books books = booksMap.get(products.getId());
+            if (books != null) {
+                customProducts.setTitle(books.getTitle());
+            }
             return customProducts;
         }).collect(Collectors.toList());
 
