@@ -34,13 +34,16 @@
             </headerToolbar>
             <columns>
                 <Column id="idColumn">
-                <Text text="{i18n>idLabelText}"/>
+                    <Text text="{i18n>idLabelText}"/>
                 </Column>
                 <Column id="titleColumn">
-                <Text text="{i18n>titleLabelText}"/>
+                    <Text text="{i18n>titleLabelText}"/>
                 </Column>
                 <Column id="stockColumn">
-                <Text text="{i18n>stockLabelText}"/>
+                    <Text text="{i18n>stockLabelText}"/>
+                </Column>
+                <Column id="navColumn">
+                    
                 </Column>
             </columns>
             <items>
@@ -61,6 +64,9 @@
                         liveChange=".onInputChange"
                         change=".onStockChange($event, ${ID})"
                         type="sap.m.InputType.Number"/>
+                </cells>
+                <cells>
+                    <Link text=">" press=".onNavToBookPage" />
                 </cells>
                 </ColumnListItem>
             </items>

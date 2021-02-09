@@ -154,12 +154,16 @@
 				"pattern": "books",
 				"name": "bookList",
 				"target": "books"
+			}, {
+				"pattern": "book",
+				"name": "book",
+				"target": "book"
 			}],
 			"targets": {
 				"home": {
 					"viewId": "home",
 					"viewName": "Home",
-					"viewLevel" : 1
+					"viewLevel": 1
 				},
 				"notFound": {
 					"viewId": "notFound",
@@ -170,7 +174,13 @@
 					"viewId": "bookList",
 					"viewPath": "com.example.example01.view.book",
 					"viewName": "BookList",
-					"viewLevel" : 2
+					"viewLevel": 2
+				},
+                "book": {
+					"viewId": "book",
+					"viewPath": "com.example.example01.view.book",
+					"viewName": "Book",
+                    "viewLevel": 3
 				}
 			}
         }
