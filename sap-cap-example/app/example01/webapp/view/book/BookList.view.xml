@@ -5,6 +5,7 @@
     <Page
         id="bookListPage"
         title="{i18n>BookList}"
+        busy="{state>/isBusy}"
         showNavButton="true"
 		navButtonPress=".onNavBack"
 		class="sapUiResponsiveContentPadding">
@@ -27,7 +28,7 @@
                         id="searchField"
                         width="20%"
                         placeholder="{i18n>searchFieldPlaceholder}"
-                        enabled="{= !${appView>/hasUIChanges}}"
+                        enabled="{= !${state>/hasUIChanges}}"
                         search=".onSearch"/>
                 </content>
                 </OverflowToolbar>
@@ -73,7 +74,7 @@
             </Table>
         </content>
         <footer>
-            <Toolbar visible="{appView>/hasUIChanges}">
+            <Toolbar visible="{state>/hasUIChanges}">
             <ToolbarSpacer/>
             <Button
                 id="saveButton"

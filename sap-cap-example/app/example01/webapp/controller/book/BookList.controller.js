@@ -11,6 +11,12 @@ sap.ui.define([
 
   return BaseController.extend("com.example.example01.controller.book.BookList", {
     onInit: function() {
+      // コントローラとビューの両方で利用したい状態を保持するモデルをビューにセット
+      this.setModel(new JSONModel({
+        isBusy: false,
+        hasUIChanges: false
+      }), "state");
+
       // ODataモデル（sap.ui.model.odata.v2.ODataModelが使われている）はモデルのjsファイルを書いて定義してそれをnewしてインスタンスを作成するのではなく、
       // manifest.jsonに定義しておくとクラス実装なしでインスタンスを取得可能。
 
@@ -20,12 +26,6 @@ sap.ui.define([
       // ビューのsap.m.Tableはデフォルトではmanifest.jsonのデフォルトモデル（""で定義されているモデル）にバインディングされる。
       // それ以外のモデルにバインディングしたい場合はセットする
       this.setModel(oCatalog);
-
-      // コントローラとビューの両方で利用したい状態を保持するモデルをビューにセット
-      this.setModel(new JSONModel({
-        isBusy: false,
-        hasUIChanges: false
-      }), "appView");
 
       const oMessageModel = sap.ui.getCore().getMessageManager().getMessageModel();
       const oMessageModelBinding = oMessageModel.bindList("/", undefined, [], new Filter("technical", FilterOperator.EQ, true));
@@ -105,14 +105,14 @@ sap.ui.define([
       } else if (bHasUIChanges === undefined) {
         bHasUIChanges = this.getModel().hasPendingChanges();
       }
-      this.getModel("appView").setProperty("/hasUIChanges", bHasUIChanges);
+      this.getModel("state").setProperty("/hasUIChanges", bHasUIChanges);
     },
     /**
      * Set isBusy flag in View Model
      * @param {boolean} bIsBusy - set or clear isBusy
      */
     _setBusy: function(bIsBusy) {
-       this.getModel("appView").setProperty("/isBusy", bIsBusy);
+       this.getModel("state").setProperty("/isBusy", bIsBusy);
     },
     /**
      * Convenience method for retrieving a translatable text.
