@@ -34,10 +34,32 @@ sap.ui.define([
     /**
      * Convenience method for getting the resource bundle.
      * @public
-     * @returns {sap.ui.model.resource.ResourceModel} the resourceModel of the component
+     * @returns {sap.base.i18n.ResourceBundle|Promise<sap.base.i18n.ResourceBundle>} the resourceBundle of the component
      */
     getResourceBundle: function() {
         return this.getOwnerComponent().getModel("i18n").getResourceBundle();
+    },
+
+    /**
+     * i18n リソースバンドルからテキストを取得する。
+     * @example
+     * // リソースバンドルの設定が同期の場合
+     * MessageToast.show(this.getResourceText("textKey", "placeholder1", "placeholder2"));
+     * // リソースバンドルの設定が非同期の場合
+     * this.getResourceText((text) => MessageToast.show(text), "textKey", "placeholder1", "placeholder2");
+     * @public
+     * @param {string|function} vKeyOrFn - リソースバンドルの設定が同期の場合：キー文字列、非同期の場合：コールバック関数
+     * @param {string} [sFirstArgOrKey] - リソースバンドルの設定が同期の場合：1つ目のプレースホルダ文字列、非同期の場合：キー文字列
+     * @param {...string} [aArgs] - リソースバンドルの設定が同期の場合：2つ目以降のプレースホルダ文字列、非同期の場合：1つ目以降のプレースホルダ文字列
+     * @returns {string|void} リソースバンドルの設定が同期の場合：取得した文字列、非同期の場合：なし
+     */
+    getResourceText: function(vKeyOrFn, sFirstArgOrKey, ...aArgs) {
+        const oResourceBundle = this.getResourceBundle();
+        if (Object.prototype.toString.call(oResourceBundle).slice(8, -1).toLowerCase() === "promise") {
+            oResourceBundle.then((oResource) => vKeyOrFn(oResource.getText(sFirstArgOrKey, aArgs)));
+        } else {
+            return oResourceBundle.getText(vKeyOrFn, [sFirstArgOrKey].concat(aArgs));
+        }
     },
 
     /**

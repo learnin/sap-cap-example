@@ -155,7 +155,7 @@
 				"name": "bookList",
 				"target": "books"
 			}, {
-				"pattern": "book",
+				"pattern": "books/{id}",
 				"name": "book",
 				"target": "book"
 			}],
@@ -172,14 +172,12 @@
 				},
 				"books": {
 					"viewId": "bookList",
-					"viewPath": "com.example.example01.view.book",
-					"viewName": "BookList",
+					"viewName": "book.BookList",
 					"viewLevel": 2
 				},
                 "book": {
 					"viewId": "book",
-					"viewPath": "com.example.example01.view.book",
-					"viewName": "Book",
+					"viewName": "book.Book",
                     "viewLevel": 3
 				}
 			}

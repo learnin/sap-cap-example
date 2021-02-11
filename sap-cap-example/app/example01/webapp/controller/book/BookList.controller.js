@@ -35,7 +35,10 @@ sap.ui.define([
       this._bTechnicalErrors = false;
     },
     onNavToBookPage: function(oEvent) {
-      this.navTo("book");
+      // onStockChange のように引数に id を追加するのではなく、以下のように oEvent からバインドコンテキスト経由でバインドされているモデルのプロパティを取得することも可能。
+      // ただ、引数に追加した方が利用するプロパティが明確でわかりやすく、コード量も減るのでベターと思われる。
+      const oContext = oEvent.getSource().getBindingContext();
+      this.navTo("book", {id: oContext.getProperty("ID")});
     },
     onSearch: function() {
       const oView = this.getView();
@@ -52,7 +55,7 @@ sap.ui.define([
       this.getModel().submitChanges({
         success: (oData) => {
           this._setBusy(false);
-          console.log(oData.__batchResponses);
+          // console.log(oData.__batchResponses);
           const bHasError = oData.__batchResponses?.some(function (batchResponse) {
             return batchResponse.__changeResponses?.some(function (changeResponse) {
               return (changeResponse.statusCode === undefined && changeResponse.response?.statusCode?.substring(0, 1) !== "2")
@@ -60,9 +63,9 @@ sap.ui.define([
             });
           });
           if (bHasError) {
-            MessageBox.error(this._getText("changesSentErrorMessage"));
+            MessageBox.error(this.getResourceText("changesSentErrorMessage"));
           } else {
-            MessageToast.show(this._getText("changesSentMessage"));
+            MessageToast.show(this.getResourceText("changesSentMessage"));
           }
           this._setUIChanges(false);
         },
@@ -113,15 +116,6 @@ sap.ui.define([
      */
     _setBusy: function(bIsBusy) {
        this.getModel("state").setProperty("/isBusy", bIsBusy);
-    },
-    /**
-     * Convenience method for retrieving a translatable text.
-     * @param {string} sTextId - the ID of the text to be retrieved.
-     * @param {Array} [aArgs] - optional array of texts for placeholders.
-     * @returns {string} the text belonging to the given ID.
-     */
-    _getText: function(sTextId, aArgs) {
-      return this.getResourceBundle().getText(sTextId, aArgs);
-    },
+    }
   });
 });

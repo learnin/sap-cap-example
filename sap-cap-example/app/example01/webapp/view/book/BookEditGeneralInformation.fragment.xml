@@ -1,0 +1,22 @@
+<core:FragmentDefinition
+	xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:forms="sap.ui.layout.form">
+    <forms:SimpleForm
+        class="sapUxAPObjectPageSubSectionAlignContent"
+        layout="ColumnLayout"
+        columnsM="2"
+        columnsL="3"
+        columnsXL="4"
+        editable="true">
+
+        <Label text="{i18n>idLabelText}" />
+        <Text text="{ID}" />
+
+        <Label text="{i18n>titleLabelText}" />
+        <Input value="{title}" />
+
+        <Label text="{i18n>stockLabelText}" />
+        <Input value="{stock}" type="sap.m.InputType.Number" change=".onStockChange($event, ${ID})" />
+    </forms:SimpleForm>
+</core:FragmentDefinition>

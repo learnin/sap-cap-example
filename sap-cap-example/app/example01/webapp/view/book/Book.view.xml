@@ -1,4 +1,6 @@
-<mvc:View xmlns:mvc="sap.ui.core.mvc"
+<mvc:View
+	controllerName="com.example.example01.controller.book.Book"
+	xmlns:mvc="sap.ui.core.mvc"
 	xmlns="sap.uxap"
 	xmlns:m="sap.m"
 	xmlns:core="sap.ui.core"
@@ -7,26 +9,27 @@
 
 	<m:Page
 		title="{i18n>Book}"
-		showNavButton="true">
+		showNavButton="true"
+		navButtonPress=".onNavBack">
 		<ObjectPageLayout id="ObjectPageLayout" upperCaseAnchorBar="false">
 			<headerTitle>
 				<ObjectPageDynamicHeaderTitle>
 					<expandedHeading>
-						<m:Title text="id" />
+						<m:Title text="{ID}" />
 					</expandedHeading>
 
 					<snappedHeading>
 						<m:VBox>
-							<m:Title text="id" />
+							<m:Title text="{ID}" />
 						</m:VBox>
 					</snappedHeading>
 
 					<snappedTitleOnMobile>
-						<m:Title text="id" />
+						<m:Title text="{ID}" />
 					</snappedTitleOnMobile>
 
 					<actions>
-						<m:Button text="Edit" type="Emphasized" />
+						<m:Button text="Edit" type="Emphasized" press=".onEdit" />
 					</actions>
 				</ObjectPageDynamicHeaderTitle>
 			</headerTitle>
@@ -36,7 +39,7 @@
 					<m:VBox class="sapUiLargeMarginEnd sapUiSmallMarginBottom">
 						<m:HBox class="sapUiTinyMarginBottom" renderType="Bare">
 							<m:Label text="{i18n>titleLabelText}" class="sapUiTinyMarginEnd" />
-							<m:Text text="title" />
+							<m:Text text="{title}" />
 						</m:HBox>
 					</m:VBox>
 				</m:FlexBox>
@@ -45,45 +48,22 @@
 			<sections>
 				<ObjectPageSection titleUppercase="false" title="{i18n>generalInformation}">
 					<subSections>
-						<ObjectPageSubSection title="{i18n>generalInformation}" showTitle="false">
-							<blocks>
-								<!-- 編集時との切り替えはフラグメントに外だしして差し替えることで対応するっぽい。https://sapui5.hana.ondemand.com/#/entity/sap.ui.layout.form.SimpleForm/sample/sap.ui.layout.sample.SimpleForm354 -->
-								<forms:SimpleForm class="sapUxAPObjectPageSubSectionAlignContent"
-									layout="ColumnLayout"
-									columnsM="2"
-									columnsL="3"
-									columnsXL="4">
-
-									<m:Label text="{i18n>idLabelText}" />
-									<m:Text text="id" />
-
-									<m:Label text="{i18n>titleLabelText}" />
-									<m:Text text="title" />
-
-									<m:Label text="{i18n>stockLabelText}" />
-									<m:Text text="stock" />
-
-									<m:Label text="Expected Delivery Date" />
-									<m:Text text="June 23, 2018" />
-
-									<m:Label text="Factory" />
-									<m:Text text="Orlando, FL" />
-
-									<m:Label text="Supplier" />
-									<m:Text text="Robotech" />
-
-									<m:Label text="Model" />
-									<m:Text text="Robot Arm Series 9" />
-								</forms:SimpleForm>
-							</blocks>
-						</ObjectPageSubSection>
+						<ObjectPageSubSection title="{i18n>generalInformation}" showTitle="false" id="generalInformationSubSection" />
 					</subSections>
 				</ObjectPageSection>
 				<ObjectPageSection titleUppercase="false" title="{i18n>items}">
 					<subSections>
 						<ObjectPageSubSection title="{i18n>items}">
 							<blocks>
-								<m:Table class="sapUxAPObjectPageSubSectionAlignContent" width="auto">
+								<m:Table
+									class="sapUxAPObjectPageSubSectionAlignContent"
+									width="auto"
+									items="{
+										path: 'modelName>/Parh',
+										parameters: {
+											$count: true
+										}
+									}">
 									<m:headerToolbar>
 										<m:OverflowToolbar>
 											<m:Title text="items (5)" level="H2" />
@@ -114,7 +94,7 @@
 
 									<m:items>
 										<m:ColumnListItem>
-											<m:Text text="10223882001820" />
+											<m:Text text="{modelName>DocumentNumber}" />
 											<m:Text text="Jologa" />
 											<m:Text text="Denise Smith" />
 											<m:Text text="11/15/19" />
@@ -156,5 +136,20 @@
 				</ObjectPageSection>
 			</sections>
 		</ObjectPageLayout>
+		<m:footer>
+            <m:Toolbar visible="{state>/isEditing}">
+            <m:ToolbarSpacer/>
+            <m:Button
+                id="saveButton"
+                type="Emphasized"
+                text="{i18n>saveButtonText}"
+                enabled="{= ${message>/}.length === 0}"
+                press=".onSave"/>
+            <m:Button
+                id="resetChangesButton"
+                text="{i18n>resetChangesButtonText}"
+                press=".onResetChanges"/>
+            </m:Toolbar>
+        </m:footer>
 	</m:Page>
 </mvc:View>
