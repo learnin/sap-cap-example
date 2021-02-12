@@ -5,24 +5,26 @@ sap.ui.define([
 
 	return BaseController.extend("com.example.example01.controller.Home", {
 
-		onDisplayNotFound : function () {
+		onDisplayNotFound: function () {
 			// display the "notFound" target without changing the hash
 			this.getRouter().getTargets().display("notFound", {
-				fromTarget : "home"
+				fromTarget: "home"
 			});
 		},
-		onNavToBookList : function () {
+		onNavToBookList: function () {
 			this.getRouter().navTo("bookList");
 		},
-		onGetBooksFromOData: function() {
+		onGetBooksFromOData: function () {
 			// データモデルをビューのコンポーネントのバインディングで自動利用する以外に、プログラマティックにOData API呼び出しを行うことも可能
 			const catalog = this.getOwnerComponent().getModel("catalog");
 			console.log(catalog.getServiceMetadata());
-			catalog.read("/Books", {success: (oData, response) => {
-				sap.m.MessageToast.show(JSON.stringify(oData));
-			}, error: (error) => {
-			  console.log(error);
-			}});
+			catalog.read("/Books", {
+				success: (oData, response) => {
+					sap.m.MessageToast.show(JSON.stringify(oData));
+				}, error: (error) => {
+					console.log(error);
+				}
+			});
 		}
 	});
 });

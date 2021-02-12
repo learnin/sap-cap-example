@@ -1,21 +1,21 @@
 <core:FragmentDefinition
 	xmlns="sap.m"
-    xmlns:core="sap.ui.core"
-    xmlns:forms="sap.ui.layout.form">
-    <forms:SimpleForm
-        class="sapUxAPObjectPageSubSectionAlignContent"
-        layout="ColumnLayout"
-        columnsM="2"
-        columnsL="3"
-        columnsXL="4">
+	xmlns:core="sap.ui.core"
+	xmlns:forms="sap.ui.layout.form">
+	<forms:SimpleForm
+		class="sapUxAPObjectPageSubSectionAlignContent"
+		layout="ColumnLayout"
+		columnsM="2"
+		columnsL="3"
+		columnsXL="4">
 
-        <Label text="{i18n>idLabelText}" />
-        <Text text="{ID}" />
+		<Label text="{i18n>idLabelText}" />
+		<Text text="{ID}" />
 
-        <Label text="{i18n>titleLabelText}" />
-        <Text text="{title}" />
+		<Label text="{i18n>titleLabelText}" />
+		<Text text="{title}" />
 
-        <Label text="{i18n>stockLabelText}" />
-        <Text text="{stock}" />
-    </forms:SimpleForm>
+		<Label text="{i18n>stockLabelText}" />
+		<Text text="{stock}" />
+	</forms:SimpleForm>
 </core:FragmentDefinition>
