@@ -39,14 +39,17 @@ sap.ui.define([
 			this.getModel().setProperty(`/Books(${id})/stock`, parseInt(oEvent.getParameters().value, 10));
 		},
 		onEdit: function (oEvent) {
+			if (this._isEditing()) {
+				return;
+			}
 			this._showGeneralInformationFragment("BookEditGeneralInformation");
-			this.getModel("state").setProperty("/isEditing", true);
+			this._setEditing(true);
 		},
 		onResetChanges: function () {
 			this.getModel().resetChanges();
 			this._bTechnicalErrors = false; // If there were technical errors, cancelling changes resets them.
-			this.getModel("state").setProperty("/isEditing", false);
 			this._showGeneralInformationFragment("BookDisplayGeneralInformation");
+			this._setEditing(false);
 		},
 		onSave: function () {
 			this.getModel().submitChanges({
@@ -72,8 +75,8 @@ sap.ui.define([
 						MessageBox.error(this.getResourceText("changesSentErrorMessage"));
 					} else {
 						MessageToast.show(this.getResourceText("changesSentMessage"));
-						this.getModel("state").setProperty("/isEditing", false);
 						this._showGeneralInformationFragment("BookDisplayGeneralInformation");
+						this._setEditing(false);
 					}
 				},
 				error: (oError) => {
@@ -126,6 +129,12 @@ sap.ui.define([
 				this._oFragmentsCache[sFragmentName] = pFragment;
 			}
 			return pFragment;
+		},
+		_isEditing: function() {
+			return this.getModel("state").getProperty("/isEditing");
+		},
+		_setEditing: function(bIsEditing) {
+			this.getModel("state").setProperty("/isEditing", bIsEditing);
 		}
 	});
 });
