@@ -16,6 +16,10 @@
 		<Text text="{title}" />
 
 		<Label text="{i18n>stockLabelText}" />
-		<Text text="{stock}" />
+		<Text text="{
+			path: 'stock',
+			type: 'sap.ui.model.type.Integer',
+			formatOptions: {minFractionDigits: 2, groupingEnabled: true}
+		}" />
 	</forms:SimpleForm>
 </core:FragmentDefinition>
