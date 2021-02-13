@@ -29,7 +29,7 @@
 					</snappedTitleOnMobile>
 
 					<actions>
-						<m:Button text="Edit" type="Emphasized" press=".onEdit" />
+						<m:Button text="Edit" type="Emphasized" press=".onEdit" enabled="{= !${state>/isEditing}}" />
 					</actions>
 				</ObjectPageDynamicHeaderTitle>
 			</headerTitle>
