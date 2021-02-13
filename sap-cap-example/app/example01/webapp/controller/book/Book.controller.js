@@ -22,7 +22,6 @@ sap.ui.define([
 			this.getRouter().getRoute("book").attachMatched(this._onRouteMatched, this);
 
 			this._oFragmentsCache = {};
-			this._showGeneralInformationFragment("BookDisplayGeneralInformation");
 
 			// const oMessageModel = sap.ui.getCore().getMessageManager().getMessageModel();
 			// const oMessageModelBinding = oMessageModel.bindList("/", undefined, [], new Filter("technical", FilterOperator.EQ, true));
@@ -109,8 +108,8 @@ sap.ui.define([
 		_showGeneralInformationFragment: function (sFragmentName) {
 			const oSection = this.byId("generalInformationSubSection");
 
-			oSection.removeAllBlocks();
 			this._getFragment(sFragmentName).then(function (oControl) {
+				oSection.removeAllBlocks();
 				oSection.addBlock(oControl);
 			});
 		},

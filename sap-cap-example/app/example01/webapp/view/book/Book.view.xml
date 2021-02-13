@@ -48,7 +48,12 @@
 			<sections>
 				<ObjectPageSection titleUppercase="false" title="{i18n>generalInformation}">
 					<subSections>
-						<ObjectPageSubSection title="{i18n>generalInformation}" showTitle="false" id="generalInformationSubSection" />
+						<ObjectPageSubSection title="{i18n>generalInformation}" showTitle="false" id="generalInformationSubSection">
+							<blocks>
+								<!-- Fragment を onInit で差し込むことも可能だが、Fragment 分の領域を確保しておかないと初期表示時に下にスクロールしてしまうためビューで差し込む -->
+								<core:Fragment fragmentName="com.example.example01.view.book.BookDisplayGeneralInformation" type="XML" />
+							</blocks>
+						</ObjectPageSubSection>
 					</subSections>
 				</ObjectPageSection>
 				<ObjectPageSection titleUppercase="false" title="{i18n>items}">
