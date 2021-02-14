@@ -24,20 +24,38 @@ sap.ui.define([
 			this._oFragmentsCache = {};
 
 			// const oMessageModel = sap.ui.getCore().getMessageManager().getMessageModel();
+			// // When the OData service reports errors while writing data, the OData Model adds them to the MessageModel as technical messages. 
+			// // cf. https://sapui5.hana.ondemand.com/#/topic/b4f12660538147f8839b05cb03f1d478
 			// const oMessageModelBinding = oMessageModel.bindList("/", undefined, [], new Filter("technical", FilterOperator.EQ, true));
 			// this.setModel(oMessageModel, "message");
-
 			// oMessageModelBinding.attachChange(this.onMessageBindingChange, this);
 			// this._bTechnicalErrors = false;
 		},
-		onStockChange: function (oEvent, id) {
-			// 文字列型から数値型へ変換（数値型フィールドに文字列型の値のままOData APIに渡すとバックエンドのCDS側でエラーになる）
-			// 対応方法は、このようにchangeイベントハンドラで変換するか、保存ボタン押下時の処理でモデルからgetPendingChangesで変更内容を取得して
-			// パースして変換してsetPropertyするか
+		// onMessageBindingChange : function (oEvent) {
+		// 	var aContexts = oEvent.getSource().getContexts(),
+		// 		aMessages,
+		// 		bMessageOpen = false;
 
-			// TODO: バリデーション
-			this.getModel().setProperty(`/Books(${id})/stock`, parseInt(oEvent.getParameters().value, 10));
-		},
+		// 	if (bMessageOpen || !aContexts.length) {
+		// 		return;
+		// 	}
+
+		// 	// Extract and remove the technical messages
+		// 	aMessages = aContexts.map(function (oContext) {
+		// 		return oContext.getObject();
+		// 	});
+		// 	sap.ui.getCore().getMessageManager().removeMessages(aMessages);
+
+		// 	this._bTechnicalErrors = true;
+		// 	MessageBox.error(aMessages[0].message, {
+		// 		id : "serviceErrorMessageBox",
+		// 		onClose : function () {
+		// 			bMessageOpen = false;
+		// 		}
+		// 	});
+
+		// 	bMessageOpen = true;
+		// },
 		onEdit: function (oEvent) {
 			if (this._isEditing()) {
 				return;
@@ -67,6 +85,7 @@ sap.ui.define([
 									|| (changeResponse.response && changeResponse.response.statusCode && changeResponse.response.statusCode.substring(0, 1) === "2")) {
 									return false;
 								}
+								console.log(JSON.parse(changeResponse.response.body).error.message.value);
 								return true;
 							});
 						});

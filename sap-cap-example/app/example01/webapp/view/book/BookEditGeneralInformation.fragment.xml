@@ -17,6 +17,6 @@
 		<Input value="{title}" />
 
 		<Label text="{i18n>stockLabelText}" />
-		<Input value="{path: 'stock', type: 'sap.ui.model.type.Integer'}" change=".onStockChange($event, ${ID})" />
+		<Input value="{path: 'stock', type: 'sap.ui.model.type.Integer'}" />
 	</forms:SimpleForm>
 </core:FragmentDefinition>
