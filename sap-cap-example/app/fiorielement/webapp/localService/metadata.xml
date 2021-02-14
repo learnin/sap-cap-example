@@ -1,0 +1,52 @@
+<?xml version="1.0" ?>
+<edmx:Edmx xmlns:edmx="http://schemas.microsoft.com/ado/2007/06/edmx" Version="1.0" xmlns:sap="http://www.sap.com/Protocols/SAPData">
+    <edmx:Reference xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Uri="https://sap.github.io/odata-vocabularies/vocabularies/UI.xml">
+        <edmx:Include Alias="UI" Namespace="com.sap.vocabularies.UI.v1">
+        </edmx:Include>
+    </edmx:Reference>
+    <edmx:DataServices m:DataServiceVersion="1.0" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata">
+        <Schema Namespace="CatalogService" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
+            <EntityType Name="Books">
+                <Key>
+                    <PropertyRef Name="ID">
+                    </PropertyRef>
+                </Key>
+                <Property Name="ID" Type="Edm.Int32" Nullable="false">
+                </Property>
+                <Property Name="title" Type="Edm.String">
+                </Property>
+                <Property Name="stock" Type="Edm.Int32">
+                </Property>
+            </EntityType>
+            <EntityContainer Name="EntityContainer" m:IsDefaultEntityContainer="true">
+                <EntitySet Name="Books" EntityType="CatalogService.Books">
+                </EntitySet>
+            </EntityContainer>
+            <Annotations xmlns="http://docs.oasis-open.org/odata/ns/edm" Target="CatalogService.Books">
+                <Annotation xmlns="http://docs.oasis-open.org/odata/ns/edm" Term="UI.LineItem">
+                    <Collection xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                        <Record xmlns="http://docs.oasis-open.org/odata/ns/edm" Type="UI.DataField">
+                            <PropertyValue xmlns="http://docs.oasis-open.org/odata/ns/edm" Property="Value" Path="ID">
+                            </PropertyValue>
+                        </Record>
+                        <Record xmlns="http://docs.oasis-open.org/odata/ns/edm" Type="UI.DataField">
+                            <PropertyValue xmlns="http://docs.oasis-open.org/odata/ns/edm" Property="Value" Path="title">
+                            </PropertyValue>
+                        </Record>
+                        <Record xmlns="http://docs.oasis-open.org/odata/ns/edm" Type="UI.DataField">
+                            <PropertyValue xmlns="http://docs.oasis-open.org/odata/ns/edm" Property="Value" Path="stock">
+                            </PropertyValue>
+                        </Record>
+                    </Collection>
+                </Annotation>
+                <Annotation xmlns="http://docs.oasis-open.org/odata/ns/edm" Term="UI.SelectionFields">
+                    <Collection xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                        <PropertyPath xmlns="http://docs.oasis-open.org/odata/ns/edm">ID</PropertyPath>
+                        <PropertyPath xmlns="http://docs.oasis-open.org/odata/ns/edm">title</PropertyPath>
+                        <PropertyPath xmlns="http://docs.oasis-open.org/odata/ns/edm">stock</PropertyPath>
+                    </Collection>
+                </Annotation>
+            </Annotations>
+        </Schema>
+    </edmx:DataServices>
+</edmx:Edmx>
