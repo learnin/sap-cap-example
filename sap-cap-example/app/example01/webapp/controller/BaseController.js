@@ -1,9 +1,10 @@
 sap.ui.define([
+	"sap/m/MessageBox",
 	"sap/ui/core/mvc/Controller",
 	"sap/ui/core/routing/History",
 	"sap/ui/core/UIComponent",
 	"com/example/example01/model/formatter"
-], function (Controller, History, UIComponent, formatter) {
+], function (MessageBox, Controller, History, UIComponent, formatter) {
 	"use strict";
 
 	return Controller.extend("com.example.example01.controller.BaseController", {
@@ -91,8 +92,73 @@ sap.ui.define([
 			} else {
 				this.getRouter().navTo("appHome", {}, true /*no history*/);
 			}
-		}
+		},
 
+		submitChanges: function(oODataV2Model, mParameters) {
+			mParameters = mParameters || {};
+			const mDefaultParameters = {
+				success: this._createODataBatchResponseHandler(
+					mParameters.handleSuccessResponse,
+					mParameters.handleErrorResponse),
+				error: oError => {
+					MessageBox.error(oError.message);
+				}
+			};
+			const mMergedParameters = {...mDefaultParameters, ...mParameters};
+			return oODataV2Model.submitChanges(mMergedParameters);
+		},
+
+		_createODataBatchResponseHandler: function(handleSuccessResponse, handleErrorResponse) {
+			return oData => {
+				let bHasError = false;
+				if (!oData.__batchResponses) {
+					bHasError = true;
+				} else {
+					bHasError = oData.__batchResponses.some(function (batchResponse) {
+						if (!batchResponse.__changeResponses) {
+							return true;
+						}
+						return batchResponse.__changeResponses.some(function (changeResponse) {
+							if ((changeResponse.statusCode && changeResponse.statusCode.substring(0, 1) === "2")
+								|| (changeResponse.response && changeResponse.response.statusCode && changeResponse.response.statusCode.substring(0, 1) === "2")) {
+								return false;
+							}
+							return true;
+						});
+					});
+				}
+				if (bHasError) {
+					// https://sapui5.hana.ondemand.com/#/topic/b4f12660538147f8839b05cb03f1d478 のサンプルコードおよび
+					// When the OData service reports errors while writing data, the OData Model adds them to the MessageModel as technical messages.
+					// という記述から、ODataMessageParser は ODataレスポンスがエラーの場合は MessageModel の "/" パスに technical メッセージとしてエラーメッセージをセットする仕様の模様。
+					// （なお、エラーメッセージは JSON.parse(oData.__batchResponses[].__changeResponses[].response.body).error.message.value でも取得可能）
+					// ドキュメント https://sapui5.hana.ondemand.com/#/topic/81c735e69d354de98b0bd139e4bd4e10 をみても、MessageManager からエラーメッセージを取得するのが
+					// 標準のやり方のようなので、MessageManager から取得する。
+					const aMessages = sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/");
+					let oDataErrorMessage = this.getResourceText("changesSentErrorMessage");
+					if (aMessages) {
+						if (Array.isArray(aMessages)) {
+							oDataErrorMessage = aMessages.filter(
+								message => sap.ui.base.Object.isA(message, "sap.ui.core.message.Message") && message.getTechnical()
+							).map(message => message.getMessage())
+							.join("\n");
+						} else if (sap.ui.base.Object.isA(aMessages, "sap.ui.core.message.Message") && aMessages.getTechnical() && aMessages.getMessage()) {
+							// ここに入ることがあるのかは不明だが、API仕様上は配列とは限らないので念のため
+							oDataErrorMessage = aMessages.getMessage();
+						}
+					}
+					if (handleErrorResponse) {
+						handleErrorResponse(oData, oDataErrorMessage);
+						// TODO
+						// handleErrorResponse(oData, aMessages);
+					} else {
+						MessageBox.error(oDataErrorMessage);
+					}
+				} else if (handleSuccessResponse) {
+					handleSuccessResponse(oData);
+				}
+			};
+		}
 	});
 
 });
