@@ -108,6 +108,35 @@ sap.ui.define([
 			return oODataV2Model.submitChanges(mMergedParameters);
 		},
 
+		submitChanges2: function(oODataV2Model, mParameters) {
+			return new Promise((resolve, reject) => {
+				oODataV2Model.submitChanges({
+					success: oData => {
+						const aMessages = sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/");
+						const aODataErrorMessage = [];
+						if (aMessages) {
+							if (Array.isArray(aMessages)) {
+								Array.prototype.push.apply(aODataErrorMessage, aMessages.filter(
+									message => sap.ui.base.Object.isA(message, "sap.ui.core.message.Message") && message.getTechnical()
+								).map(message => message.getMessage()));
+							} else if (sap.ui.base.Object.isA(aMessages, "sap.ui.core.message.Message") && aMessages.getTechnical() && aMessages.getMessage()) {
+								// ここに入ることがあるのかは不明だが、API仕様上は配列とは限らないので念のため
+								aODataErrorMessage.push(aMessages.getMessage());
+							}
+						}
+						if (aODataErrorMessage.length > 0) {
+							reject(aODataErrorMessage, oData);
+							return;
+						}
+						resolve(oData);
+					},
+					error: oError => {
+						MessageBox.error(oError.message);
+					}
+				});
+			});
+		},
+
 		_createODataBatchResponseHandler: function(handleSuccessResponse, handleErrorResponse) {
 			return oData => {
 				let bHasError = false;
@@ -135,7 +164,7 @@ sap.ui.define([
 					// ドキュメント https://sapui5.hana.ondemand.com/#/topic/81c735e69d354de98b0bd139e4bd4e10 をみても、MessageManager からエラーメッセージを取得するのが
 					// 標準のやり方のようなので、MessageManager から取得する。
 					const aMessages = sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/");
-					let oDataErrorMessage = this.getResourceText("changesSentErrorMessage");
+					let oDataErrorMessage;
 					if (aMessages) {
 						if (Array.isArray(aMessages)) {
 							oDataErrorMessage = aMessages.filter(
@@ -146,6 +175,9 @@ sap.ui.define([
 							// ここに入ることがあるのかは不明だが、API仕様上は配列とは限らないので念のため
 							oDataErrorMessage = aMessages.getMessage();
 						}
+					}
+					if (!oDataErrorMessage) {
+						oDataErrorMessage = this.getResourceText("changesSentErrorMessage");
 					}
 					if (handleErrorResponse) {
 						handleErrorResponse(oData, oDataErrorMessage);

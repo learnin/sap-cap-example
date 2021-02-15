@@ -2,8 +2,9 @@ sap.ui.define([
 	"com/example/example01/controller/BaseController",
 	"sap/ui/core/Fragment",
 	"sap/ui/model/json/JSONModel",
+	"sap/m/MessageBox",
 	"sap/m/MessageToast"
-], function (BaseController, Fragment, JSONModel, MessageToast) {
+], function (BaseController, Fragment, JSONModel, MessageBox, MessageToast) {
 	"use strict";
 
 	return BaseController.extend("com.example.example01.controller.book.Book", {
@@ -32,12 +33,26 @@ sap.ui.define([
 			this._setEditing(false);
 		},
 		onSave: function () {
-			this.submitChanges(this.getModel(), {
-				handleSuccessResponse: oData => {
-					MessageToast.show(this.getResourceText("changesSentMessage"));
-					this._showGeneralInformationFragment("BookDisplayGeneralInformation");
-					this._setEditing(false);
-				}
+			const oModel = this.getModel();
+			if (!oModel.hasPendingChanges()) {
+				MessageToast.show(this.getResourceText("noChanges"));
+				this._showGeneralInformationFragment("BookDisplayGeneralInformation");
+				this._setEditing(false);
+				return;
+			}
+			// this.submitChanges(oModel, {
+			// 	handleSuccessResponse: oData => {
+			// 		MessageToast.show(this.getResourceText("changesSentMessage"));
+			// 		this._showGeneralInformationFragment("BookDisplayGeneralInformation");
+			// 		this._setEditing(false);
+			// 	}
+			// });
+			this.submitChanges2(oModel).then(oData => {
+				MessageToast.show(this.getResourceText("changesSentMessage"));
+				this._showGeneralInformationFragment("BookDisplayGeneralInformation");
+				this._setEditing(false);
+			}).catch((aODataErrorMessage, oData) => {
+				MessageBox.error(aODataErrorMessage.join("\n"));
 			});
 		},
 		_onRouteMatched: function (oEvent) {
