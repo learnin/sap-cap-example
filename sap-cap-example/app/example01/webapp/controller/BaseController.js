@@ -1,10 +1,11 @@
 sap.ui.define([
 	"sap/m/MessageBox",
+	"sap/ui/core/message/Message",
 	"sap/ui/core/mvc/Controller",
 	"sap/ui/core/routing/History",
 	"sap/ui/core/UIComponent",
 	"com/example/example01/model/formatter"
-], function (MessageBox, Controller, History, UIComponent, formatter) {
+], function (MessageBox, Message, Controller, History, UIComponent, formatter) {
 	"use strict";
 
 	return Controller.extend("com.example.example01.controller.BaseController", {
@@ -111,30 +112,71 @@ sap.ui.define([
 		submitChanges2: function(oODataV2Model, mParameters) {
 			return new Promise((resolve, reject) => {
 				oODataV2Model.submitChanges({
-					success: oData => {
+					success: oResponse => {
+						const aStatusCodes = this._getBatchResponseStatusCodes(oResponse);
+						const bIsSuccess = aStatusCodes.every(iStatusCode => iStatusCode >= 200 && iStatusCode < 300);
+						if (bIsSuccess) {
+							return resolve(oResponse);
+						}
+
+						// 排他制御エラー
+						const bIsConcurrentControlError = aStatusCodes.some(iStatusCode => iStatusCode === 412);
+
 						const aMessages = sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/");
-						const aODataErrorMessage = [];
+						const aODataErrorMessages = [];
 						if (aMessages) {
 							if (Array.isArray(aMessages)) {
-								Array.prototype.push.apply(aODataErrorMessage, aMessages.filter(
-									message => sap.ui.base.Object.isA(message, "sap.ui.core.message.Message") && message.getTechnical()
-								).map(message => message.getMessage()));
-							} else if (sap.ui.base.Object.isA(aMessages, "sap.ui.core.message.Message") && aMessages.getTechnical() && aMessages.getMessage()) {
+								Array.prototype.push.apply(aODataErrorMessages, aMessages.filter(
+									oMessage => sap.ui.base.Object.isA(oMessage, "sap.ui.core.message.Message")
+										&& oMessage.getTechnical()
+										&& !oMessage.getPersistent()
+								));
+							} else if (sap.ui.base.Object.isA(aMessages, "sap.ui.core.message.Message")
+								&& aMessages.getTechnical()
+								&& !aMessages.getPersistent()) {
 								// ここに入ることがあるのかは不明だが、API仕様上は配列とは限らないので念のため
-								aODataErrorMessage.push(aMessages.getMessage());
+								aODataErrorMessages.push(aMessages);
 							}
 						}
-						if (aODataErrorMessage.length > 0) {
-							reject(aODataErrorMessage, oData);
-							return;
-						}
-						resolve(oData);
+						if (bIsConcurrentControlError) {
+							// TODO: 呼び出し元で確認ダイアログを出す（排他制御エラー時）のか、メッセージボックスを出すのかの判定ができる情報を渡す必要あり
+							reject([this.getResourceText("concurrentControlErrorMessage")], aODataErrorMessages, oResponse);
+						} else if (aODataErrorMessages.length > 0) {
+							reject(aODataErrorMessages.map(oMessage => oMessage.getMessage()), aODataErrorMessages, oResponse);
+						} else {
+							reject([this.getResourceText("oDataGeneralErrorMessage")], aODataErrorMessages, oResponse);
+						}						
 					},
 					error: oError => {
-						MessageBox.error(oError.message);
+						reject([this.getResourceText("oDataGeneralErrorMessage")], new Message({
+							message: oError.message
+						}));
 					}
 				});
 			});
+		},
+
+		_getBatchResponseStatusCodes: function(oResponse) {
+			const aResults = [];
+			if (!oResponse || !oResponse.__batchResponses) {
+				return aResults;
+			}
+			const aBatchResponses = oResponse.__batchResponses;
+			const iBatchResponsesLength = aBatchResponses.length;
+			for (let i = 0; i < iBatchResponsesLength; i++) {
+				if (!aBatchResponses[i].__changeResponses) {
+					continue;
+				}
+				let aChangeResponses = aBatchResponses[i].__changeResponses;
+				for (let j = 0, iChangeResponsesLength = aChangeResponses.length; j < iChangeResponsesLength; j++) {
+					if (aChangeResponses[j].statusCode) {
+						aResults.push(aChangeResponses[j].statusCode);
+					} else if (aChangeResponses[j].response && aChangeResponses[j].response.statusCode) {
+						aResults.push(aChangeResponses[j].response.statusCode);
+					}
+				}
+			}
+			return aResults;
 		},
 
 		_createODataBatchResponseHandler: function(handleSuccessResponse, handleErrorResponse) {
