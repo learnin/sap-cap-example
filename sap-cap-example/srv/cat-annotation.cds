@@ -34,3 +34,4 @@ annotate CatalogService.Books with @(UI: {
         ]
     }
 });
+annotate CatalogService.Books with {modifiedAt @odata.etag};
