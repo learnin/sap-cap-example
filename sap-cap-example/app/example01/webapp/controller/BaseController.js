@@ -1,11 +1,19 @@
 sap.ui.define([
+	"sap/m/Bar",
+	"sap/m/Button",
+	"sap/m/Dialog",
 	"sap/m/MessageBox",
+	"sap/m/MessageItem",
+	"sap/m/MessageView",
+	"sap/m/Text",
 	"sap/ui/core/message/Message",
 	"sap/ui/core/mvc/Controller",
 	"sap/ui/core/routing/History",
+	"sap/ui/core/IconPool",
 	"sap/ui/core/UIComponent",
+	"sap/ui/model/json/JSONModel",
 	"com/example/example01/model/formatter"
-], function (MessageBox, Message, Controller, History, UIComponent, formatter) {
+], function (Bar, Button, Dialog, MessageBox, MessageItem, MessageView, Text, Message, Controller, History, IconPool, UIComponent, JSONModel, formatter) {
 	"use strict";
 
 	return Controller.extend("com.example.example01.controller.BaseController", {
@@ -111,16 +119,17 @@ sap.ui.define([
 
 		submitChanges2: function(oODataV2Model, mParameters) {
 			return new Promise((resolve, reject) => {
+				// TODO: mParameters を渡す
 				oODataV2Model.submitChanges({
 					success: oResponse => {
 						const aStatusCodes = this._getBatchResponseStatusCodes(oResponse);
-						const bIsSuccess = aStatusCodes.every(iStatusCode => iStatusCode >= 200 && iStatusCode < 300);
+						const bIsSuccess = aStatusCodes.every(iStatusCode => iStatusCode.substring(0, 1) === "2");
 						if (bIsSuccess) {
 							return resolve(oResponse);
 						}
 
 						// 排他制御エラー
-						const bIsConcurrentControlError = aStatusCodes.some(iStatusCode => iStatusCode === 412);
+						const bIsConcurrentControlError = aStatusCodes.some(iStatusCode => iStatusCode === "412");
 
 						const aMessages = sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/");
 						const aODataErrorMessages = [];
@@ -139,8 +148,19 @@ sap.ui.define([
 							}
 						}
 						if (bIsConcurrentControlError) {
+							this._showConcurrentControlErrorMessageDialog(oODataV2Model);
+							// MessageBox.warning(this.getResourceText("concurrentControlErrorMessage"), {
+							// 	actions: ["Refresh", MessageBox.Action.CANCEL],
+							// 	emphasizedAction: "Refresh",
+							// 	onClose: function(oAction) {
+							// 		if (oAction === "Refresh") {
+							// 			oODataV2Model.refresh();
+							// 		}
+							// 		// TODO: キャンセル時に保存・キャンセルボタンのバーもキャンセルするか要確認
+							// 	}
+							// });
 							// TODO: 呼び出し元で確認ダイアログを出す（排他制御エラー時）のか、メッセージボックスを出すのかの判定ができる情報を渡す必要あり
-							reject([this.getResourceText("concurrentControlErrorMessage")], aODataErrorMessages, oResponse);
+							// reject([this.getResourceText("concurrentControlErrorMessage")], aODataErrorMessages, oResponse);
 						} else if (aODataErrorMessages.length > 0) {
 							reject(aODataErrorMessages.map(oMessage => oMessage.getMessage()), aODataErrorMessages, oResponse);
 						} else {
@@ -154,6 +174,56 @@ sap.ui.define([
 					}
 				});
 			});
+		},
+
+		_showConcurrentControlErrorMessageDialog: function(oODataV2Model) {
+			const oMessageView = new MessageView({
+				showDetailsPageHeader: false,
+				itemSelect: function () {
+					oBackButton.setVisible(true);
+				},
+				items: new MessageItem({
+					type: sap.ui.core.MessageType.Error,
+					title: this.getResourceText("concurrentControlErrorMessage")
+				})
+			});
+			const oBackButton = new Button({
+				icon: IconPool.getIconURI("nav-back"),
+				press: function () {
+					oMessageView.navigateBack();
+					this.setVisible(false);
+				}
+			});
+
+			const oDialog = new Dialog({
+				draggable: true,
+				content: oMessageView,
+				state: sap.ui.core.ValueState.Error,
+				beginButton: new Button({
+					text: "Refresh",
+					press: function () {
+						oODataV2Model.refresh();
+						this.getParent().close();
+					},
+				}),
+				endButton: new Button({
+					text: "Cancel",
+					press: function () {
+						this.getParent().close();
+					}
+				}),
+				customHeader: new Bar({
+					contentMiddle: [
+						new Text({ text: "Messages"})
+					],
+					contentLeft: [oBackButton]
+				}),
+				contentHeight: "400px",
+				contentWidth: "450px",
+				verticalScrolling: false
+			});
+			oMessageView.navigateBack();
+			oDialog.open();
 		},
 
 		_getBatchResponseStatusCodes: function(oResponse) {

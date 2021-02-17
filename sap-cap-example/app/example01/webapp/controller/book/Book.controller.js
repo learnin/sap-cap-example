@@ -52,7 +52,6 @@ sap.ui.define([
 				this._showGeneralInformationFragment("BookDisplayGeneralInformation");
 				this._setEditing(false);
 			}).catch((aODataErrorMessage, oData) => {
-				console.log("@@@@@");
 				MessageBox.error(aODataErrorMessage.join("\n"));
 			});
 		},
