@@ -1,19 +1,37 @@
 sap.ui.define([
 	"sap/m/Bar",
 	"sap/m/Button",
+	"sap/m/ButtonType",
 	"sap/m/Dialog",
 	"sap/m/MessageBox",
 	"sap/m/MessageItem",
 	"sap/m/MessageView",
 	"sap/m/Text",
+	"sap/ui/base/Object",
 	"sap/ui/core/message/Message",
 	"sap/ui/core/mvc/Controller",
 	"sap/ui/core/routing/History",
 	"sap/ui/core/IconPool",
 	"sap/ui/core/UIComponent",
-	"sap/ui/model/json/JSONModel",
+	"sap/ui/core/ValueState",
 	"com/example/example01/model/formatter"
-], function (Bar, Button, Dialog, MessageBox, MessageItem, MessageView, Text, Message, Controller, History, IconPool, UIComponent, JSONModel, formatter) {
+], function (
+	Bar,
+	Button,
+	ButtonType,
+	Dialog,
+	MessageBox,
+	MessageItem,
+	MessageView,
+	Text,
+	BaseObject,
+	Message,
+	Controller,
+	History,
+	IconPool,
+	UIComponent,
+	ValueState,
+	formatter) {
 	"use strict";
 
 	return Controller.extend("com.example.example01.controller.BaseController", {
@@ -103,88 +121,66 @@ sap.ui.define([
 			}
 		},
 
-		submitChanges: function(oODataV2Model, mParameters) {
-			mParameters = mParameters || {};
-			const mDefaultParameters = {
-				success: this._createODataBatchResponseHandler(
-					mParameters.handleSuccessResponse,
-					mParameters.handleErrorResponse),
-				error: oError => {
-					MessageBox.error(oError.message);
-				}
-			};
-			const mMergedParameters = {...mDefaultParameters, ...mParameters};
-			return oODataV2Model.submitChanges(mMergedParameters);
-		},
-
-		submitChanges2: function(oODataV2Model, mParameters) {
+		submitChanges: function (oODataV2Model, mParameters) {
 			return new Promise((resolve, reject) => {
-				// TODO: mParameters を渡す
-				oODataV2Model.submitChanges({
-					success: oResponse => {
-						const aStatusCodes = this._getBatchResponseStatusCodes(oResponse);
-						const bIsSuccess = aStatusCodes.every(iStatusCode => iStatusCode.substring(0, 1) === "2");
-						if (bIsSuccess) {
-							return resolve(oResponse);
-						}
-
-						// 排他制御エラー
-						const bIsConcurrentControlError = aStatusCodes.some(iStatusCode => iStatusCode === "412");
-
-						const aMessages = sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/");
-						const aODataErrorMessages = [];
-						if (aMessages) {
-							if (Array.isArray(aMessages)) {
-								Array.prototype.push.apply(aODataErrorMessages, aMessages.filter(
-									oMessage => sap.ui.base.Object.isA(oMessage, "sap.ui.core.message.Message")
-										&& oMessage.getTechnical()
-										&& !oMessage.getPersistent()
-								));
-							} else if (sap.ui.base.Object.isA(aMessages, "sap.ui.core.message.Message")
-								&& aMessages.getTechnical()
-								&& !aMessages.getPersistent()) {
-								// ここに入ることがあるのかは不明だが、API仕様上は配列とは限らないので念のため
-								aODataErrorMessages.push(aMessages);
-							}
-						}
-						if (bIsConcurrentControlError) {
-							this._showConcurrentControlErrorMessageDialog(oODataV2Model);
-							// MessageBox.warning(this.getResourceText("concurrentControlErrorMessage"), {
-							// 	actions: ["Refresh", MessageBox.Action.CANCEL],
-							// 	emphasizedAction: "Refresh",
-							// 	onClose: function(oAction) {
-							// 		if (oAction === "Refresh") {
-							// 			oODataV2Model.refresh();
-							// 		}
-							// 		// TODO: キャンセル時に保存・キャンセルボタンのバーもキャンセルするか要確認
-							// 	}
-							// });
-							// TODO: 呼び出し元で確認ダイアログを出す（排他制御エラー時）のか、メッセージボックスを出すのかの判定ができる情報を渡す必要あり
-							// reject([this.getResourceText("concurrentControlErrorMessage")], aODataErrorMessages, oResponse);
-						} else if (aODataErrorMessages.length > 0) {
-							reject(aODataErrorMessages.map(oMessage => oMessage.getMessage()), aODataErrorMessages, oResponse);
-						} else {
-							reject([this.getResourceText("oDataGeneralErrorMessage")], aODataErrorMessages, oResponse);
-						}						
-					},
-					error: oError => {
-						reject([this.getResourceText("oDataGeneralErrorMessage")], new Message({
-							message: oError.message
-						}));
+				const oParam = { ...mParameters };
+				oParam.success = oResponse => {
+					const aStatusCodes = this._getBatchResponseStatusCodes(oResponse);
+					const bIsSuccess = aStatusCodes.every(iStatusCode => iStatusCode.substring(0, 1) === "2");
+					if (bIsSuccess) {
+						return resolve(oResponse);
 					}
-				});
+
+					// 楽観的排他制御エラー
+					const bIsConcurrentModificationError = aStatusCodes.some(iStatusCode => iStatusCode === "412");
+
+					// https://sapui5.hana.ondemand.com/#/topic/b4f12660538147f8839b05cb03f1d478 のサンプルコードおよび
+					// When the OData service reports errors while writing data, the OData Model adds them to the MessageModel as technical messages.
+					// という記述から、ODataMessageParser は ODataレスポンスがエラーの場合は MessageModel の "/" パスに technical メッセージとしてエラーメッセージをセットする仕様の模様。
+					// （なお、エラーメッセージは JSON.parse(oData.__batchResponses[].__changeResponses[].response.body).error.message.value でも取得可能）
+					// ドキュメント https://sapui5.hana.ondemand.com/#/topic/81c735e69d354de98b0bd139e4bd4e10 をみても、MessageManager からエラーメッセージを取得するのが
+					// 標準のやり方のようなので、MessageManager から取得する。
+					const aMessages = sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/");
+					const aODataErrorMessages = [];
+					if (aMessages) {
+						if (Array.isArray(aMessages)) {
+							Array.prototype.push.apply(aODataErrorMessages, aMessages.filter(
+								oMessage => BaseObject.isA(oMessage, "sap.ui.core.message.Message")
+									&& oMessage.getTechnical()
+									&& !oMessage.getPersistent()
+							));
+						} else if (BaseObject.isA(aMessages, "sap.ui.core.message.Message")
+							&& aMessages.getTechnical()
+							&& !aMessages.getPersistent()) {
+							// ここに入ることがあるのかは不明だが、API仕様上は配列とは限らないので念のため
+							aODataErrorMessages.push(aMessages);
+						}
+					}
+					if (bIsConcurrentModificationError) {
+						this._showConcurrentModificationErrorMessageDialog(oODataV2Model);
+					} else if (aODataErrorMessages.length > 0) {
+						reject(aODataErrorMessages.map(oMessage => oMessage.getMessage()), aODataErrorMessages, oResponse);
+					} else {
+						reject([this.getResourceText("base.message.oDataGeneralError")], aODataErrorMessages, oResponse);
+					}
+				};
+				oParam.error = oError => {
+					reject([this.getResourceText("base.message.oDataGeneralError")], new Message({
+						message: oError.message
+					}));
+				};
+				oODataV2Model.submitChanges(oParam);
 			});
 		},
 
-		_showConcurrentControlErrorMessageDialog: function(oODataV2Model) {
+		_showConcurrentModificationErrorMessageDialog: function (oODataV2Model) {
 			const oMessageView = new MessageView({
 				showDetailsPageHeader: false,
 				itemSelect: function () {
 					oBackButton.setVisible(true);
 				},
 				items: new MessageItem({
-					type: sap.ui.core.MessageType.Error,
-					title: this.getResourceText("concurrentControlErrorMessage")
+					title: this.getResourceText("base.message.concurrentModification")
 				})
 			});
 			const oBackButton = new Button({
@@ -198,35 +194,34 @@ sap.ui.define([
 			const oDialog = new Dialog({
 				draggable: true,
 				content: oMessageView,
-				state: sap.ui.core.ValueState.Error,
+				state: ValueState.Error,
 				beginButton: new Button({
-					text: "Refresh",
+					text: this.getResourceText("base.button.refresh"),
+					type: ButtonType.Emphasized,
 					press: function () {
 						oODataV2Model.refresh();
 						this.getParent().close();
 					},
 				}),
 				endButton: new Button({
-					text: "Cancel",
+					text: this.getResourceText("base.button.cancel"),
 					press: function () {
 						this.getParent().close();
 					}
 				}),
 				customHeader: new Bar({
-					contentMiddle: [
-						new Text({ text: "Messages"})
-					],
-					contentLeft: [oBackButton]
+					contentLeft: oBackButton,
+					contentMiddle: new Text({ text: this.getResourceText("base.title.messages") })
 				}),
 				contentHeight: "400px",
-				contentWidth: "450px",
+				contentWidth: "460px",
 				verticalScrolling: false
 			});
 			oMessageView.navigateBack();
 			oDialog.open();
 		},
 
-		_getBatchResponseStatusCodes: function(oResponse) {
+		_getBatchResponseStatusCodes: function (oResponse) {
 			const aResults = [];
 			if (!oResponse || !oResponse.__batchResponses) {
 				return aResults;
@@ -247,61 +242,6 @@ sap.ui.define([
 				}
 			}
 			return aResults;
-		},
-
-		_createODataBatchResponseHandler: function(handleSuccessResponse, handleErrorResponse) {
-			return oData => {
-				let bHasError = false;
-				if (!oData.__batchResponses) {
-					bHasError = true;
-				} else {
-					bHasError = oData.__batchResponses.some(function (batchResponse) {
-						if (!batchResponse.__changeResponses) {
-							return true;
-						}
-						return batchResponse.__changeResponses.some(function (changeResponse) {
-							if ((changeResponse.statusCode && changeResponse.statusCode.substring(0, 1) === "2")
-								|| (changeResponse.response && changeResponse.response.statusCode && changeResponse.response.statusCode.substring(0, 1) === "2")) {
-								return false;
-							}
-							return true;
-						});
-					});
-				}
-				if (bHasError) {
-					// https://sapui5.hana.ondemand.com/#/topic/b4f12660538147f8839b05cb03f1d478 のサンプルコードおよび
-					// When the OData service reports errors while writing data, the OData Model adds them to the MessageModel as technical messages.
-					// という記述から、ODataMessageParser は ODataレスポンスがエラーの場合は MessageModel の "/" パスに technical メッセージとしてエラーメッセージをセットする仕様の模様。
-					// （なお、エラーメッセージは JSON.parse(oData.__batchResponses[].__changeResponses[].response.body).error.message.value でも取得可能）
-					// ドキュメント https://sapui5.hana.ondemand.com/#/topic/81c735e69d354de98b0bd139e4bd4e10 をみても、MessageManager からエラーメッセージを取得するのが
-					// 標準のやり方のようなので、MessageManager から取得する。
-					const aMessages = sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/");
-					let oDataErrorMessage;
-					if (aMessages) {
-						if (Array.isArray(aMessages)) {
-							oDataErrorMessage = aMessages.filter(
-								message => sap.ui.base.Object.isA(message, "sap.ui.core.message.Message") && message.getTechnical()
-							).map(message => message.getMessage())
-							.join("\n");
-						} else if (sap.ui.base.Object.isA(aMessages, "sap.ui.core.message.Message") && aMessages.getTechnical() && aMessages.getMessage()) {
-							// ここに入ることがあるのかは不明だが、API仕様上は配列とは限らないので念のため
-							oDataErrorMessage = aMessages.getMessage();
-						}
-					}
-					if (!oDataErrorMessage) {
-						oDataErrorMessage = this.getResourceText("changesSentErrorMessage");
-					}
-					if (handleErrorResponse) {
-						handleErrorResponse(oData, oDataErrorMessage);
-						// TODO
-						// handleErrorResponse(oData, aMessages);
-					} else {
-						MessageBox.error(oDataErrorMessage);
-					}
-				} else if (handleSuccessResponse) {
-					handleSuccessResponse(oData);
-				}
-			};
 		}
 	});
 
