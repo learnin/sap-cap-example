@@ -132,7 +132,7 @@ sap.ui.define([
 		 * @public
 		 * @param {sap.ui.model.odata.v2.ODataModel} oODataV2Model サブミット対象のモデル
 		 * @param {Object} mParameters sap.ui.model.odata.v2.ODataModel#submitChanges のパラメータ。ただし、success, error は無視される。
-		 * @returns {Promise<Object>|Promise<Error, sap.ui.core.message.Message[], [Object]>} Promise 引数は、正常時：レスポンス、エラー時：エラー、メッセージオブジェクト配列、[レスポンス]
+		 * @returns {Promise<Object>|Promise<ODataError>|Promise<ConcurrentModificationError>} Promise 排他制御エラー時は Promise<ConcurrentModificationError>
 		 */
 		submitChanges: function (oODataV2Model, mParameters) {
 			return new Promise((resolve, reject) => {
@@ -172,18 +172,23 @@ sap.ui.define([
 
 					if (bIsConcurrentModificationError) {
 						return reject(
-							new ConcurrentModificationError(this.getResourceBundle("baseI18n").getText("base.message.concurrentModification")),
-							aODataErrorMessages,
-							oResponse);
+							new ConcurrentModificationError(this.getResourceBundle("baseI18n").getText("base.message.concurrentModification"), {
+								messages: aODataErrorMessages,
+								response: oResponse
+							}));
 					}
-					reject(new Error(this.getResourceBundle("baseI18n").getText("base.message.saveError")), aODataErrorMessages, oResponse);
+					reject(new ODataError(this.getResourceBundle("baseI18n").getText("base.message.saveError"), {
+						messages: aODataErrorMessages,
+						response: oResponse
+					}));
 				};
 				oParam.error = oError => {
 					reject(
-						new Error(this.getResourceBundle("baseI18n").getText("base.message.saveError")),
-						[new Message({
-							message: oError.message
-						})]);
+						new ODataError(this.getResourceBundle("baseI18n").getText("base.message.saveError"), {
+							messages: [new Message({
+								message: oError.message
+							})]
+						}));
 				};
 				oODataV2Model.submitChanges(oParam);
 			});
@@ -263,9 +268,39 @@ sap.ui.define([
 
 });
 
-class ConcurrentModificationError extends Error {
-	constructor(message) {
-		super(message)
+class ODataError extends Error {
+	constructor(sMessage, mParameters) {
+		super(sMessage)
+
+		Object.defineProperty(this, "name", {
+			configurable: true,
+			enumerable: false,
+			value: this.constructor.name,
+			writable: true,
+		});
+
+		// Maintains proper stack trace for where our error was thrown (only available on V8)
+		if (Error.captureStackTrace) {
+			Error.captureStackTrace(this, ODataError)
+		}
+
+		if (mParameters) {
+			this.messages = mParameters.messages;
+			this.response = mParameters.response;
+		}
+		if (!this.messages) {
+			this.messages = [];
+		}
+	}
+
+	getMessageStrings() {
+		return this.messages.map(oMessage => oMessage.getMessage());
+	}
+};
+
+class ConcurrentModificationError extends ODataError {
+	constructor(sMessage, mParameters) {
+		super(sMessage, mParameters)
 
 		Object.defineProperty(this, "name", {
 			configurable: true,

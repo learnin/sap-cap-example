@@ -40,18 +40,19 @@ sap.ui.define([
 				this._setEditing(false);
 				return;
 			}
-			this.submitChanges(oModel).then(oData => {
+			this.submitChanges(oModel).then(oResponse => {
 				MessageToast.show(this.getResourceText("app.message.saved"));
 				this._showGeneralInformationFragment("BookDisplayGeneralInformation");
 				this._setEditing(false);
-			}).catch((error, aErrorMessages) => {
+			}).catch((error) => {
 				if (error instanceof ConcurrentModificationError) {
 					this.showConcurrentModificationErrorMessageDialog(oModel);
 					return;
 				}
 				let sMessage = error.message;
-				if (aErrorMessages.length > 0) {
-					sMessage = aErrorMessages.map(oMessage => oMessage.getMessage()).join("\n");
+				const aMessages = error.getMessageStrings();
+				if (aMessages.length > 0) {
+					sMessage = aMessages.join("\n");
 				}
 				MessageBox.error(sMessage);
 			});
