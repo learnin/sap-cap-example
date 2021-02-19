@@ -62,10 +62,11 @@ sap.ui.define([
 		/**
 		 * Convenience method for getting the resource bundle.
 		 * @public
+		 * @param {string} [sModelName=i18n] the resource bundl model name. default is "i18n".
 		 * @returns {sap.base.i18n.ResourceBundle|Promise<sap.base.i18n.ResourceBundle>} the resourceBundle of the component
 		 */
-		getResourceBundle: function () {
-			return this.getOwnerComponent().getModel("i18n").getResourceBundle();
+		getResourceBundle: function (sModelName = "i18n") {
+			return this.getOwnerComponent().getModel(sModelName).getResourceBundle();
 		},
 
 		/**
@@ -82,9 +83,9 @@ sap.ui.define([
 		 * // リソースバンドルの設定が非同期の場合
 		 * this.getResourceText((text) => MessageToast.show(text), "textKey", "placeholder1", "placeholder2");
 		 * @public
-		 * @param {string|getResourceTextCallback} vKeyOrCallback - リソースバンドルの設定が同期の場合：キー文字列、非同期の場合：コールバック関数
-		 * @param {string} [sFirstArgOrKey] - リソースバンドルの設定が同期の場合：1つ目のプレースホルダ文字列、非同期の場合：キー文字列
-		 * @param {...string} [aArgs] - リソースバンドルの設定が同期の場合：2つ目以降のプレースホルダ文字列、非同期の場合：1つ目以降のプレースホルダ文字列
+		 * @param {string|getResourceTextCallback} vKeyOrCallback リソースバンドルの設定が同期の場合：キー文字列、非同期の場合：コールバック関数
+		 * @param {string} [sFirstArgOrKey] リソースバンドルの設定が同期の場合：1つ目のプレースホルダ文字列、非同期の場合：キー文字列
+		 * @param {...string} [aArgs] リソースバンドルの設定が同期の場合：2つ目以降のプレースホルダ文字列、非同期の場合：1つ目以降のプレースホルダ文字列
 		 * @returns {string|void} リソースバンドルの設定が同期の場合：取得した文字列、非同期の場合：なし
 		 */
 		getResourceText: function (vKeyOrCallback, sFirstArgOrKey, ...aArgs) {
@@ -117,10 +118,22 @@ sap.ui.define([
 			if (sPreviousHash !== undefined) {
 				window.history.back();
 			} else {
-				this.getRouter().navTo("appHome", {}, true /*no history*/);
+				const defaultRoute = this.getRouter().getRouteInfoByHash("");
+				if (defaultRoute && defaultRoute.name) {
+					this.getRouter().navTo(defaultRoute.name, {}, true /*no history*/);
+				} else {
+					this.getRouter().navTo("appHome", {}, true /*no history*/);
+				}
 			}
 		},
 
+		/**
+		 * V2 の ODataModel の変更をサブミットする。
+		 * @public
+		 * @param {sap.ui.model.odata.v2.ODataModel} oODataV2Model サブミット対象のモデル
+		 * @param {Object} mParameters sap.ui.model.odata.v2.ODataModel#submitChanges のパラメータ。ただし、success, error は無視される。
+		 * @returns {Promise<Object>|Promise<Error, sap.ui.core.message.Message[], [Object]>} Promise 引数は、正常時：レスポンス、エラー時：エラー、メッセージオブジェクト配列、[レスポンス]
+		 */
 		submitChanges: function (oODataV2Model, mParameters) {
 			return new Promise((resolve, reject) => {
 				const oParam = { ...mParameters };
@@ -156,31 +169,34 @@ sap.ui.define([
 							aODataErrorMessages.push(aMessages);
 						}
 					}
+
 					if (bIsConcurrentModificationError) {
-						this._showConcurrentModificationErrorMessageDialog(oODataV2Model);
-					} else if (aODataErrorMessages.length > 0) {
-						reject(aODataErrorMessages.map(oMessage => oMessage.getMessage()), aODataErrorMessages, oResponse);
-					} else {
-						reject([this.getResourceText("base.message.oDataGeneralError")], aODataErrorMessages, oResponse);
+						return reject(
+							new ConcurrentModificationError(this.getResourceBundle("baseI18n").getText("base.message.concurrentModification")),
+							aODataErrorMessages,
+							oResponse);
 					}
+					reject(new Error(this.getResourceBundle("baseI18n").getText("base.message.saveError")), aODataErrorMessages, oResponse);
 				};
 				oParam.error = oError => {
-					reject([this.getResourceText("base.message.oDataGeneralError")], new Message({
-						message: oError.message
-					}));
+					reject(
+						new Error(this.getResourceBundle("baseI18n").getText("base.message.saveError")),
+						[new Message({
+							message: oError.message
+						})]);
 				};
 				oODataV2Model.submitChanges(oParam);
 			});
 		},
 
-		_showConcurrentModificationErrorMessageDialog: function (oODataV2Model) {
+		showConcurrentModificationErrorMessageDialog: function (oODataV2Model) {
 			const oMessageView = new MessageView({
 				showDetailsPageHeader: false,
 				itemSelect: function () {
 					oBackButton.setVisible(true);
 				},
 				items: new MessageItem({
-					title: this.getResourceText("base.message.concurrentModification")
+					title: this.getResourceBundle("baseI18n").getText("base.message.concurrentModification")
 				})
 			});
 			const oBackButton = new Button({
@@ -196,7 +212,7 @@ sap.ui.define([
 				content: oMessageView,
 				state: ValueState.Error,
 				beginButton: new Button({
-					text: this.getResourceText("base.button.refresh"),
+					text: this.getResourceBundle("baseI18n").getText("base.button.refresh"),
 					type: ButtonType.Emphasized,
 					press: function () {
 						oODataV2Model.refresh();
@@ -204,14 +220,14 @@ sap.ui.define([
 					},
 				}),
 				endButton: new Button({
-					text: this.getResourceText("base.button.cancel"),
+					text: this.getResourceBundle("baseI18n").getText("base.button.cancel"),
 					press: function () {
 						this.getParent().close();
 					}
 				}),
 				customHeader: new Bar({
 					contentLeft: oBackButton,
-					contentMiddle: new Text({ text: this.getResourceText("base.title.messages") })
+					contentMiddle: new Text({ text: this.getResourceBundle("baseI18n").getText("base.title.messages") })
 				}),
 				contentHeight: "400px",
 				contentWidth: "460px",
@@ -246,3 +262,21 @@ sap.ui.define([
 	});
 
 });
+
+class ConcurrentModificationError extends Error {
+	constructor(message) {
+		super(message)
+
+		Object.defineProperty(this, "name", {
+			configurable: true,
+			enumerable: false,
+			value: this.constructor.name,
+			writable: true,
+		});
+
+		// Maintains proper stack trace for where our error was thrown (only available on V8)
+		if (Error.captureStackTrace) {
+			Error.captureStackTrace(this, ConcurrentModificationError)
+		}
+	}
+};

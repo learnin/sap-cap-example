@@ -21,7 +21,7 @@
                     "annotations": [
                         "annotation"
                     ],
-                    "odataVersion" : "2.0",
+                    "odataVersion": "2.0",
                     "localUri": "localService/metadata.xml"
                 }
             },
@@ -72,7 +72,7 @@
             "js": [],
             "css": [
                 {
-                  "uri": "css/style.css"
+                    "uri": "css/style.css"
                 }
             ]
         },
@@ -94,26 +94,18 @@
             "components": {}
         },
         "models": {
-            "i18n": {
+            "baseI18n": {
                 "type": "sap.ui.model.resource.ResourceModel",
-                "uri": "i18n/i18n.properties",
                 "settings": {
-                    "bundleName": "com.example.example01.i18n.i18n"
+                    "bundleUrl": "i18n/base-i18n.properties"
                 }
             },
-            "@i18n": {
+            "i18n": {
                 "type": "sap.ui.model.resource.ResourceModel",
-                "uri": "i18n/i18n.properties"
+                "settings": {
+                    "bundleUrl": "i18n/i18n.properties"
+                }
             },
-            "i18n|sap.suite.ui.generic.template.ListReport|Books": {
-                "type": "sap.ui.model.resource.ResourceModel",
-                "uri": "i18n/ListReport/Books/i18n.properties"
-            },
-            "i18n|sap.suite.ui.generic.template.ObjectPage|Books": {
-                "type": "sap.ui.model.resource.ResourceModel",
-                "uri": "i18n/ObjectPage/Books/i18n.properties"
-            },
-            
             "catalog": {
                 "dataSource": "catalogService",
                 "preload": true,
@@ -136,52 +128,56 @@
         },
         "routing": {
             "config": {
-              "routerClass": "sap.m.routing.Router",
-              "viewType": "XML",
-              "viewPath": "com.example.example01.view",
-              "controlId": "app",
-              "controlAggregation": "pages",
-              "transition": "slide",
-              "bypassed": {
-                "target": "notFound"
+                "routerClass": "sap.m.routing.Router",
+                "viewType": "XML",
+                "viewPath": "com.example.example01.view",
+                "controlId": "app",
+                "controlAggregation": "pages",
+                "transition": "slide",
+                "bypassed": {
+                    "target": "notFound"
+                },
+                "async": true
             },
-              "async": true
-            },
-            "routes": [{
-				"pattern": "",
-				"name": "appHome",
-				"target": "home"
-			}, {
-				"pattern": "books",
-				"name": "bookList",
-				"target": "books"
-			}, {
-				"pattern": "books/{id}",
-				"name": "book",
-				"target": "book"
-			}],
-			"targets": {
-				"home": {
-					"viewId": "home",
-					"viewName": "Home",
-					"viewLevel": 1
-				},
-				"notFound": {
-					"viewId": "notFound",
-					"viewName": "NotFound",
-					"transition": "show"
-				},
-				"books": {
-					"viewId": "bookList",
-					"viewName": "book.BookList",
-					"viewLevel": 2
-				},
+            "routes": [
+                {
+                    "pattern": "",
+                    "name": "appHome",
+                    "target": "home"
+                },
+                {
+                    "pattern": "books",
+                    "name": "bookList",
+                    "target": "books"
+                },
+                {
+                    "pattern": "books/{id}",
+                    "name": "book",
+                    "target": "book"
+                }
+            ],
+            "targets": {
+                "home": {
+                    "viewId": "home",
+                    "viewName": "Home",
+                    "viewLevel": 1
+                },
+                "notFound": {
+                    "viewId": "notFound",
+                    "viewName": "NotFound",
+                    "transition": "show"
+                },
+                "books": {
+                    "viewId": "bookList",
+                    "viewName": "book.BookList",
+                    "viewLevel": 2
+                },
                 "book": {
-					"viewId": "book",
-					"viewName": "book.Book",
+                    "viewId": "book",
+                    "viewName": "book.Book",
                     "viewLevel": 3
-				}
-			}
+                }
+            }
         }
     },
     "sap.platform.abap": {

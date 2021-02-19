@@ -44,8 +44,16 @@ sap.ui.define([
 				MessageToast.show(this.getResourceText("app.message.saved"));
 				this._showGeneralInformationFragment("BookDisplayGeneralInformation");
 				this._setEditing(false);
-			}).catch((aODataErrorMessage, oData) => {
-				MessageBox.error(aODataErrorMessage.join("\n"));
+			}).catch((error, aErrorMessages) => {
+				if (error instanceof ConcurrentModificationError) {
+					this.showConcurrentModificationErrorMessageDialog(oModel);
+					return;
+				}
+				let sMessage = error.message;
+				if (aErrorMessages.length > 0) {
+					sMessage = aErrorMessages.map(oMessage => oMessage.getMessage()).join("\n");
+				}
+				MessageBox.error(sMessage);
 			});
 		},
 		_onRouteMatched: function (oEvent) {
