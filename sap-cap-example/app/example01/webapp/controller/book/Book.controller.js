@@ -3,8 +3,10 @@ sap.ui.define([
 	"sap/m/MessageToast",
 	"sap/ui/core/Fragment",
 	"sap/ui/model/json/JSONModel",
+	"../../base/exception/ConcurrentModificationException",
+	"../../base/exception/ODataException",
 	"../BaseController"
-], function (MessageBox, MessageToast, Fragment, JSONModel, BaseController) {
+], function (MessageBox, MessageToast, Fragment, JSONModel, ConcurrentModificationException, ODataException, BaseController) {
 	"use strict";
 
 	return BaseController.extend("com.example.example01.controller.book.Book", {
@@ -45,14 +47,16 @@ sap.ui.define([
 				this._showGeneralInformationFragment("BookDisplayGeneralInformation");
 				this._setEditing(false);
 			}).catch((error) => {
-				if (error instanceof ConcurrentModificationError) {
+				if (error instanceof ConcurrentModificationException) {
 					this.showConcurrentModificationErrorMessageDialog(oModel);
 					return;
 				}
 				let sMessage = error.message;
-				const aMessages = error.getMessageStrings();
-				if (aMessages.length > 0) {
-					sMessage = aMessages.join("\n");
+				if (error instanceof ODataException) {
+					const aMessages = error.getMessageStrings();
+					if (aMessages.length > 0) {
+						sMessage = aMessages.join("\n");
+					}
 				}
 				MessageBox.error(sMessage);
 			});
@@ -102,10 +106,10 @@ sap.ui.define([
 			}
 			return pFragment;
 		},
-		_isEditing: function() {
+		_isEditing: function () {
 			return this.getModel("state").getProperty("/isEditing");
 		},
-		_setEditing: function(bIsEditing) {
+		_setEditing: function (bIsEditing) {
 			this.getModel("state").setProperty("/isEditing", bIsEditing);
 		}
 	});

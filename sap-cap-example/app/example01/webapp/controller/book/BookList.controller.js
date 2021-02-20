@@ -1,5 +1,5 @@
 sap.ui.define([
-	"com/example/example01/controller/BaseController",
+	"../BaseController",
 	"sap/ui/model/Filter",
 	"sap/ui/model/FilterOperator",
 	"sap/ui/model/FilterType",
