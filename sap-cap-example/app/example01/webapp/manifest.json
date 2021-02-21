@@ -94,10 +94,10 @@
             "components": {}
         },
         "models": {
-            "baseI18n": {
+            "fwI18n": {
                 "type": "sap.ui.model.resource.ResourceModel",
                 "settings": {
-                    "bundleUrl": "i18n/base-i18n.properties"
+                    "bundleUrl": "fw/i18n/i18n.properties"
                 }
             },
             "i18n": {

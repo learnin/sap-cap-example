@@ -2,12 +2,12 @@
 	controllerName="com.example.example01.controller.Home"
 	xmlns="sap.m"
 	xmlns:mvc="sap.ui.core.mvc">
-	<Page title="{i18n>homePageTitle}" class="sapUiResponsiveContentPadding">
+	<Page title="{i18n>label.home}" class="sapUiResponsiveContentPadding">
 		<content>
-			<Button id="displayNotFoundBtn" text="{i18n>DisplayNotFound}" press=".onDisplayNotFound" class="sapUiTinyMarginEnd"/>
-			<Button id="navToBookListBtn" text="{i18n>navToBookList}" press=".onNavToBookList" class="sapUiTinyMarginEnd"/>
+			<Button id="displayNotFoundBtn" text="{i18n>label.displayNotFound}" press=".onDisplayNotFound" class="sapUiTinyMarginEnd"/>
+			<Button id="navToBookListBtn" text="{i18n>label.navToBookList}" press=".onNavToBookList" class="sapUiTinyMarginEnd"/>
 			<Button
-                text="{i18n>getBooksFromOData}"
+                text="{i18n>label.getBooksFromOData}"
                 press=".onGetBooksFromOData"/>
 		</content>
 	</Page>

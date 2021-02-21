@@ -8,7 +8,7 @@
 	height="100%">
 
 	<m:Page
-		title="{i18n>Book}"
+		title="{i18n>label.book}"
 		showNavButton="true"
 		navButtonPress=".onNavBack">
 		<ObjectPageLayout id="ObjectPageLayout" upperCaseAnchorBar="false">
@@ -29,7 +29,7 @@
 					</snappedTitleOnMobile>
 
 					<actions>
-						<m:Button text="Edit" type="Emphasized" press=".onEdit" enabled="{= !${state>/isEditing}}" />
+						<m:Button text="{i18n>label.edit}" type="Emphasized" press=".onEdit" enabled="{= !${state>/isEditing}}" />
 					</actions>
 				</ObjectPageDynamicHeaderTitle>
 			</headerTitle>
@@ -38,7 +38,7 @@
 				<m:FlexBox wrap="Wrap" fitContainer="true">
 					<m:VBox class="sapUiLargeMarginEnd sapUiSmallMarginBottom">
 						<m:HBox class="sapUiTinyMarginBottom" renderType="Bare">
-							<m:Label text="{i18n>titleLabelText}" class="sapUiTinyMarginEnd" />
+							<m:Label text="{i18n>label.title}" class="sapUiTinyMarginEnd" />
 							<m:Text text="{title}" />
 						</m:HBox>
 					</m:VBox>
@@ -46,9 +46,9 @@
 			</headerContent>
 
 			<sections>
-				<ObjectPageSection titleUppercase="false" title="{i18n>generalInformation}">
+				<ObjectPageSection titleUppercase="false" title="{i18n>label.generalInformation}">
 					<subSections>
-						<ObjectPageSubSection title="{i18n>generalInformation}" showTitle="false" id="generalInformationSubSection">
+						<ObjectPageSubSection title="{i18n>label.generalInformation}" showTitle="false" id="generalInformationSubSection">
 							<blocks>
 								<!-- Fragment を onInit で差し込むことも可能だが、Fragment 分の領域を確保しておかないと初期表示時に下にスクロールしてしまうためビューで差し込む -->
 								<core:Fragment fragmentName="com.example.example01.view.book.BookDisplayGeneralInformation" type="XML" />
@@ -56,9 +56,9 @@
 						</ObjectPageSubSection>
 					</subSections>
 				</ObjectPageSection>
-				<ObjectPageSection titleUppercase="false" title="{i18n>items}">
+				<ObjectPageSection titleUppercase="false" title="{i18n>label.items}">
 					<subSections>
-						<ObjectPageSubSection title="{i18n>items}">
+						<ObjectPageSubSection title="{i18n>label.items}">
 							<blocks>
 								<m:Table
 									class="sapUxAPObjectPageSubSectionAlignContent"
@@ -147,12 +147,12 @@
             <m:Button
                 id="saveButton"
                 type="Emphasized"
-                text="{i18n>saveButtonText}"
+                text="{i18n>label.save}"
                 enabled="{= ${message>/}.length === 0}"
                 press=".onSave"/>
             <m:Button
                 id="resetChangesButton"
-                text="{i18n>resetChangesButtonText}"
+                text="{i18n>label.resetChanges}"
                 press=".onResetChanges"/>
             </m:Toolbar>
         </m:footer>

@@ -10,13 +10,13 @@
 		columnsXL="4"
 		editable="true">
 
-		<Label text="{i18n>idLabelText}" />
+		<Label text="{i18n>label.id}" />
 		<Text text="{ID}" />
 
-		<Label text="{i18n>titleLabelText}" />
+		<Label text="{i18n>label.title}" />
 		<Input value="{title}" />
 
-		<Label text="{i18n>stockLabelText}" />
-		<Input value="{path: 'stock', type: 'sap.ui.model.type.Integer'}" />
+		<Label text="{i18n>label.stock}" />
+		<Input value="{path: 'stock', type: 'sap.ui.model.type.String'}" />
 	</forms:SimpleForm>
 </core:FragmentDefinition>

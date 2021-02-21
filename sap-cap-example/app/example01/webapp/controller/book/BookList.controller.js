@@ -63,9 +63,9 @@ sap.ui.define([
 						});
 					});
 					if (bHasError) {
-						MessageBox.error(this.getResourceText("changesSentErrorMessage"));
+						MessageBox.error(this.getResourceText("message.changesSentError"));
 					} else {
-						MessageToast.show(this.getResourceText("changesSentMessage"));
+						MessageToast.show(this.getResourceText("message.saved"));
 					}
 					this._setUIChanges(false);
 				},

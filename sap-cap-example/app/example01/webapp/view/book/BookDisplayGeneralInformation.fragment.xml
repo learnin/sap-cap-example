@@ -9,13 +9,13 @@
 		columnsL="3"
 		columnsXL="4">
 
-		<Label text="{i18n>idLabelText}" />
+		<Label text="{i18n>label.id}" />
 		<Text text="{ID}" />
 
-		<Label text="{i18n>titleLabelText}" />
+		<Label text="{i18n>label.title}" />
 		<Text text="{title}" />
 
-		<Label text="{i18n>stockLabelText}" />
+		<Label text="{i18n>label.stock}" />
 		<Text text="{
 			path: 'stock',
 			type: 'sap.ui.model.type.Integer',

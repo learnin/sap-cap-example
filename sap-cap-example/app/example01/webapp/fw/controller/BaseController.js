@@ -3,6 +3,7 @@ sap.ui.define([
 	"sap/m/Button",
 	"sap/m/ButtonType",
 	"sap/m/Dialog",
+	"sap/m/MessageBox",
 	"sap/m/MessageItem",
 	"sap/m/MessageView",
 	"sap/m/Text",
@@ -21,6 +22,7 @@ sap.ui.define([
 	Button,
 	ButtonType,
 	Dialog,
+	MessageBox,
 	MessageItem,
 	MessageView,
 	Text,
@@ -36,7 +38,7 @@ sap.ui.define([
 	BaseFormatter) {
 	"use strict";
 
-	return Controller.extend("base.controller.BaseController", {
+	return Controller.extend("fw.controller.BaseController", {
 
 		BaseFormatter: BaseFormatter,
 
@@ -79,6 +81,7 @@ sap.ui.define([
 		 */
 		/**
 		 * i18n リソースバンドルからテキストを取得する。
+		 * 
 		 * @example
 		 * // リソースバンドルの設定が同期の場合
 		 * MessageToast.show(this.getResourceText("textKey", "placeholder1", "placeholder2"));
@@ -131,14 +134,15 @@ sap.ui.define([
 
 		/**
 		 * V2 の ODataModel の変更をサブミットする。
+		 * 
 		 * @public
 		 * @param {sap.ui.model.odata.v2.ODataModel} oODataV2Model サブミット対象のモデル
-		 * @param {Object} mParameters sap.ui.model.odata.v2.ODataModel#submitChanges のパラメータ。ただし、success, error は無視される。
+		 * @param {Object} mParameter sap.ui.model.odata.v2.ODataModel#submitChanges のパラメータ。ただし、success, error は無視される。
 		 * @returns {Promise<Object>|Promise<ODataException>|Promise<ConcurrentModificationException>} Promise 排他制御エラー時は Promise<ConcurrentModificationException>
 		 */
-		submitChanges: function (oODataV2Model, mParameters) {
+		submitChanges: function (oODataV2Model, mParameter) {
 			return new Promise((resolve, reject) => {
-				const oParam = { ...mParameters };
+				const oParam = { ...mParameter };
 				oParam.success = oResponse => {
 					const aStatusCodes = this._getBatchResponseStatusCodes(oResponse);
 					const bIsSuccess = aStatusCodes.every(iStatusCode => iStatusCode.substring(0, 1) === "2");
@@ -174,19 +178,19 @@ sap.ui.define([
 
 					if (bIsConcurrentModificationError) {
 						return reject(
-							new ConcurrentModificationException(this.getResourceBundle("baseI18n").getText("base.message.concurrentModification"), {
+							new ConcurrentModificationException(this.getResourceBundle("fwI18n").getText("fw.message.concurrentModification"), {
 								messages: aODataErrorMessages,
 								response: oResponse
 							}));
 					}
-					reject(new ODataException(this.getResourceBundle("baseI18n").getText("base.message.saveError"), {
+					reject(new ODataException(this.getResourceBundle("fwI18n").getText("fw.message.saveError"), {
 						messages: aODataErrorMessages,
 						response: oResponse
 					}));
 				};
 				oParam.error = oError => {
 					reject(
-						new ODataException(this.getResourceBundle("baseI18n").getText("base.message.saveError"), {
+						new ODataException(this.getResourceBundle("fwI18n").getText("fw.message.saveError"), {
 							messages: [new Message({
 								message: oError.message
 							})]
@@ -196,14 +200,52 @@ sap.ui.define([
 			});
 		},
 
-		showConcurrentModificationErrorMessageDialog: function (oODataV2Model) {
+		/**
+		 * {@see #submitChanges} のデフォルトエラーハンドラ。
+		 * 
+		 * @public
+		 * @param {Object} oError 例外またはエラー
+		 * @param {sap.ui.model.odata.v2.ODataModel} oODataV2Model サブミット対象のモデル
+		 * @param {Object} [mParameter] パラメータ。排他制御エラー以外のエラーの場合 mParameter.error(sMessage, sap.ui.core.message.Message[]?) が呼ばれる
+		 */
+		defaultSubmitChangesErrorHandler: function (oError, oODataV2Model, mParameter) {
+			if (oError instanceof ConcurrentModificationException) {
+				this.showConcurrentModificationErrorMessageDialog(oODataV2Model);
+				return;
+			}
+			let sMessage = oError.message;
+			if (oError instanceof ODataException) {
+				if (mParameter && mParameter.error) {
+					mParameter.error(sMessage, oError.messages);
+					return;
+				}
+				const aMessages = oError.getMessageStrings();
+				if (aMessages.length > 0) {
+					sMessage = aMessages.join("\n");
+				}
+			}
+			if (mParameter && mParameter.error) {
+				mParameter.error(sMessage);
+			} else {
+				MessageBox.error(sMessage);
+			}
+		},
+
+		/**
+		 * 排他制御エラー時のメッセージダイアログを表示する。
+		 * 
+		 * @public
+		 * @param {sap.ui.model.odata.v2.ODataModel} oODataV2Model サブミット対象のモデル
+		 * @param {Object} [mDialogParameter] sap.m.Dialog のパラメータ
+		 */
+		showConcurrentModificationErrorMessageDialog: function (oODataV2Model, mDialogParameter) {
 			const oMessageView = new MessageView({
 				showDetailsPageHeader: false,
 				itemSelect: function () {
 					oBackButton.setVisible(true);
 				},
 				items: new MessageItem({
-					title: this.getResourceBundle("baseI18n").getText("base.message.concurrentModification")
+					title: this.getResourceBundle("fwI18n").getText("fw.message.concurrentModification")
 				})
 			});
 			const oBackButton = new Button({
@@ -214,12 +256,12 @@ sap.ui.define([
 				}
 			});
 
-			const oDialog = new Dialog({
+			const oDefaultDialogParam = {
 				draggable: true,
 				content: oMessageView,
 				state: ValueState.Error,
 				beginButton: new Button({
-					text: this.getResourceBundle("baseI18n").getText("base.button.refresh"),
+					text: this.getResourceBundle("fwI18n").getText("fw.label.refresh"),
 					type: ButtonType.Emphasized,
 					press: function () {
 						oODataV2Model.refresh();
@@ -227,19 +269,21 @@ sap.ui.define([
 					},
 				}),
 				endButton: new Button({
-					text: this.getResourceBundle("baseI18n").getText("base.button.cancel"),
+					text: this.getResourceBundle("fwI18n").getText("fw.label.cancel"),
 					press: function () {
 						this.getParent().close();
 					}
 				}),
 				customHeader: new Bar({
 					contentLeft: oBackButton,
-					contentMiddle: new Text({ text: this.getResourceBundle("baseI18n").getText("base.title.messages") })
+					contentMiddle: new Text({ text: this.getResourceBundle("fwI18n").getText("fw.label.messages") })
 				}),
 				contentHeight: "400px",
 				contentWidth: "460px",
 				verticalScrolling: false
-			});
+			};
+			const oDialogParam = { ...oDefaultDialogParam, ...mDialogParameter };
+			const oDialog = new Dialog(oDialogParam);
 			oMessageView.navigateBack();
 			oDialog.open();
 		},

@@ -4,7 +4,7 @@
 	xmlns:mvc="sap.ui.core.mvc">
 	<Page
 		id="bookListPage"
-		title="{i18n>BookList}"
+		title="{i18n>label.bookList}"
 		busy="{state>/isBusy}"
 		showNavButton="true"
 		navButtonPress=".onNavBack"
@@ -27,7 +27,7 @@
 					<SearchField
 						id="searchField"
 						width="20%"
-						placeholder="{i18n>searchFieldPlaceholder}"
+						placeholder="{i18n>label.searchFieldPlaceholder}"
 						enabled="{= !${state>/hasUIChanges}}"
 						search=".onSearch"/>
 				</content>
@@ -35,13 +35,13 @@
 			</headerToolbar>
 			<columns>
 				<Column id="idColumn">
-					<Text text="{i18n>idLabelText}"/>
+					<Text text="{i18n>label.id}"/>
 				</Column>
 				<Column id="titleColumn">
-					<Text text="{i18n>titleLabelText}"/>
+					<Text text="{i18n>label.title}"/>
 				</Column>
 				<Column id="stockColumn">
-					<Text text="{i18n>stockLabelText}"/>
+					<Text text="{i18n>label.stock}"/>
 				</Column>
 				<Column id="navColumn">
 					
@@ -79,12 +79,12 @@
 			<Button
 				id="saveButton"
 				type="Emphasized"
-				text="{i18n>saveButtonText}"
+				text="{i18n>label.save}"
 				enabled="{= ${message>/}.length === 0}"
 				press=".onSave"/>
 			<Button
 				id="resetChangesButton"
-				text="{i18n>resetChangesButtonText}"
+				text="{i18n>label.resetChanges}"
 				press=".onResetChanges"/>
 			</Toolbar>
 		</footer>

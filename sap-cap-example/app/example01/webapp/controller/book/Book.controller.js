@@ -1,12 +1,9 @@
 sap.ui.define([
-	"sap/m/MessageBox",
 	"sap/m/MessageToast",
 	"sap/ui/core/Fragment",
 	"sap/ui/model/json/JSONModel",
-	"../../base/exception/ConcurrentModificationException",
-	"../../base/exception/ODataException",
 	"../BaseController"
-], function (MessageBox, MessageToast, Fragment, JSONModel, ConcurrentModificationException, ODataException, BaseController) {
+], function (MessageToast, Fragment, JSONModel, BaseController) {
 	"use strict";
 
 	return BaseController.extend("com.example.example01.controller.book.Book", {
@@ -37,29 +34,16 @@ sap.ui.define([
 		onSave: function () {
 			const oModel = this.getModel();
 			if (!oModel.hasPendingChanges()) {
-				MessageToast.show(this.getResourceText("app.message.noChanges"));
+				MessageToast.show(this.getResourceText("message.noChanges"));
 				this._showGeneralInformationFragment("BookDisplayGeneralInformation");
 				this._setEditing(false);
 				return;
 			}
 			this.submitChanges(oModel).then(oResponse => {
-				MessageToast.show(this.getResourceText("app.message.saved"));
+				MessageToast.show(this.getResourceText("message.saved"));
 				this._showGeneralInformationFragment("BookDisplayGeneralInformation");
 				this._setEditing(false);
-			}).catch((error) => {
-				if (error instanceof ConcurrentModificationException) {
-					this.showConcurrentModificationErrorMessageDialog(oModel);
-					return;
-				}
-				let sMessage = error.message;
-				if (error instanceof ODataException) {
-					const aMessages = error.getMessageStrings();
-					if (aMessages.length > 0) {
-						sMessage = aMessages.join("\n");
-					}
-				}
-				MessageBox.error(sMessage);
-			});
+			}).catch(oError => this.defaultSubmitChangesErrorHandler(oError, oModel));
 		},
 		_onRouteMatched: function (oEvent) {
 			const oView = this.getView();
