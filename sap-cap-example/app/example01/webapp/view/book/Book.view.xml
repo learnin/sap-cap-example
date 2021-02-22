@@ -8,6 +8,7 @@
 	height="100%">
 
 	<m:Page
+		id="messageHandlingPage"
 		title="{i18n>label.book}"
 		showNavButton="true"
 		navButtonPress=".onNavBack">
@@ -143,17 +144,25 @@
 		</ObjectPageLayout>
 		<m:footer>
             <m:Toolbar visible="{state>/isEditing}">
-            <m:ToolbarSpacer/>
-            <m:Button
-                id="saveButton"
-                type="Emphasized"
-                text="{i18n>label.save}"
-                enabled="{= ${message>/}.length === 0}"
-                press=".onSave"/>
-            <m:Button
-                id="resetChangesButton"
-                text="{i18n>label.resetChanges}"
-                press=".onResetChanges"/>
+				<m:Button
+					id="messagePopoverButton"
+					visible="{= ${message>/}.length > 0}"
+					icon="sap-icon://message-error"
+					type="Negative"
+					text="{= ${message>/}.length}"
+					press=".onMessagePopover"
+					ariaHasPopup="Dialog"/>
+				<m:ToolbarSpacer/>
+				<m:Button
+					id="saveButton"
+					type="Emphasized"
+					text="{i18n>label.save}"
+					enabled="{= ${message>/}.length === 0}"
+					press=".onSave"/>
+				<m:Button
+					id="resetChangesButton"
+					text="{i18n>label.resetChanges}"
+					press=".onResetChanges"/>
             </m:Toolbar>
         </m:footer>
 	</m:Page>

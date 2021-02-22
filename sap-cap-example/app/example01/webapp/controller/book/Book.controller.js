@@ -1,9 +1,12 @@
 sap.ui.define([
+	"sap/m/MessageItem",
+	"sap/m/MessagePopover",
 	"sap/m/MessageToast",
+	"sap/ui/core/Element",
 	"sap/ui/core/Fragment",
 	"sap/ui/model/json/JSONModel",
 	"../BaseController"
-], function (MessageToast, Fragment, JSONModel, BaseController) {
+], function (MessageItem, MessagePopover, MessageToast, Element, Fragment, JSONModel, BaseController) {
 	"use strict";
 
 	return BaseController.extend("com.example.example01.controller.book.Book", {
@@ -18,6 +21,11 @@ sap.ui.define([
 			this.getRouter().getRoute("book").attachMatched(this._onRouteMatched, this);
 
 			this._oFragmentsCache = {};
+
+			const oMessageManager = sap.ui.getCore().getMessageManager();
+			oMessageManager.removeAllMessages();
+			oMessageManager.registerObject(this.byId("ObjectPageLayout"), true);
+			this.setModel(oMessageManager.getMessageModel(), "message");
 		},
 		onEdit: function (oEvent) {
 			if (this._isEditing()) {
@@ -44,6 +52,41 @@ sap.ui.define([
 				this._showGeneralInformationFragment("BookDisplayGeneralInformation");
 				this._setEditing(false);
 			}).catch(oError => this.defaultSubmitChangesErrorHandler(oError, oModel));
+		},
+		onMessagePopover: function (oEvent) {
+			if (!this._oMessagePopover) {
+				this._oMessagePopover = this._createMessagePopover();
+			}
+			this._oMessagePopover.toggle(oEvent.getSource());
+		},
+		_createMessagePopover: function () {
+			const oMessagePopover = new MessagePopover({
+				activeTitlePress: oEvent => {
+					const oItem = oEvent.getParameter("item");
+					const oPage = this.byId("messageHandlingPage");
+					const oMessage = oItem.getBindingContext("message").getObject();
+					const oControl = Element.registry.get(oMessage.getControlId());
+
+					if (oControl) {
+						const domRef = oControl.getDomRef();
+						if (domRef) {
+							oPage.scrollToElement(domRef, 200, [0, -100]);
+						}
+						setTimeout(() => oControl.focus(), 300);
+					}
+				},
+				items: {
+					path: "message>/",
+					template: new MessageItem({
+						title: "{message>message}",
+						subtitle: "{message>additionalText}",
+						activeTitle: { parts: [{ path: 'message>controlIds' }], formatter: (sControlId) => !!sControlId },
+						type: "{message>type}"
+					})
+				}
+			});
+			this.byId("messagePopoverButton").addDependent(oMessagePopover);
+			return oMessagePopover;
 		},
 		_onRouteMatched: function (oEvent) {
 			const oView = this.getView();
