@@ -62,15 +62,13 @@ sap.ui.define([
 		_createMessagePopover: function () {
 			const oMessagePopover = new MessagePopover({
 				activeTitlePress: oEvent => {
-					const oItem = oEvent.getParameter("item");
-					const oPage = this.byId("messageHandlingPage");
-					const oMessage = oItem.getBindingContext("message").getObject();
+					const oMessage = oEvent.getParameter("item").getBindingContext("message").getObject();
 					const oControl = Element.registry.get(oMessage.getControlId());
 
 					if (oControl) {
 						const domRef = oControl.getDomRef();
 						if (domRef) {
-							oPage.scrollToElement(domRef, 200, [0, -100]);
+							this.byId("messageHandlingPage").scrollToElement(domRef, 200, [0, -100]);
 						}
 						setTimeout(() => oControl.focus(), 300);
 					}
@@ -80,8 +78,9 @@ sap.ui.define([
 					template: new MessageItem({
 						title: "{message>message}",
 						subtitle: "{message>additionalText}",
-						activeTitle: { parts: [{ path: 'message>controlIds' }], formatter: (sControlId) => !!sControlId },
-						type: "{message>type}"
+						activeTitle: "{= ${message>controlIds}.length > 0}",
+						type: "{message>type}",
+						description: "{message>description}"
 					})
 				}
 			});
