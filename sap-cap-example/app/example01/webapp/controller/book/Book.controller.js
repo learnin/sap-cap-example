@@ -40,6 +40,14 @@ sap.ui.define([
 			this._setEditing(false);
 		},
 		onSave: function () {
+			if (this._hasValidateError()) {
+				if (!this._oMessagePopover) {
+					this._oMessagePopover = this._createMessagePopover();
+				}
+				this._oMessagePopover.openBy(this.byId("messagePopoverButton"));
+				return;
+			}
+
 			const oModel = this.getModel();
 			if (!oModel.hasPendingChanges()) {
 				MessageToast.show(this.getResourceText("message.noChanges"));
@@ -47,6 +55,7 @@ sap.ui.define([
 				this._setEditing(false);
 				return;
 			}
+
 			this.submitChanges(oModel).then(oResponse => {
 				MessageToast.show(this.getResourceText("message.saved"));
 				this._showGeneralInformationFragment("BookDisplayGeneralInformation");
@@ -58,6 +67,9 @@ sap.ui.define([
 				this._oMessagePopover = this._createMessagePopover();
 			}
 			this._oMessagePopover.toggle(oEvent.getSource());
+		},
+		_hasValidateError: function() {
+			return this.getModel("message").getProperty("/").length > 0;
 		},
 		_createMessagePopover: function () {
 			const oMessagePopover = new MessagePopover({

@@ -13,10 +13,21 @@
 		<Label text="{i18n>label.id}" />
 		<Text text="{ID}" />
 
-		<Label text="{i18n>label.title}" required="true" />
-		<Input value="{title}" />
-
-		<Label text="{i18n>label.stock}" required="true" />
-		<Input value="{path: 'stock', type: 'sap.ui.model.type.Integer'}" />
+		<Label text="{i18n>label.title}" labelFor="title" required="true" />
+		<Input id="title" value="{
+			path: 'title',
+			type: 'sap.ui.model.type.String',
+			constraints: {
+				minLength: 1,
+				maxLength: 100
+			}}" />
+		<Label text="{i18n>label.stock}" labelFor="stock" required="true" />
+		<Input id="stock" value="{
+			path: 'stock',
+			type: 'sap.ui.model.type.Integer',
+			constraints: {
+				minimum: 0,
+				maximum: 9999999999
+			}}" />
 	</forms:SimpleForm>
 </core:FragmentDefinition>

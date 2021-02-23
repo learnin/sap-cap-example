@@ -157,7 +157,6 @@
 					id="saveButton"
 					type="Emphasized"
 					text="{i18n>label.save}"
-					enabled="{= ${message>/}.length === 0}"
 					press=".onSave"/>
 				<m:Button
 					id="resetChangesButton"
