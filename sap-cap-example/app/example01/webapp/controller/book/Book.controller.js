@@ -1,12 +1,19 @@
 sap.ui.define([
+	"sap/m/Bar",
+	"sap/m/Button",
+	"sap/m/Dialog",
 	"sap/m/MessageItem",
 	"sap/m/MessagePopover",
 	"sap/m/MessageToast",
+	"sap/m/MessageView",
+	"sap/m/Text",
 	"sap/ui/core/Element",
 	"sap/ui/core/Fragment",
+	"sap/ui/core/IconPool",
+	"sap/ui/core/ValueState",
 	"sap/ui/model/json/JSONModel",
 	"../BaseController"
-], function (MessageItem, MessagePopover, MessageToast, Element, Fragment, JSONModel, BaseController) {
+], function (Bar, Button, Dialog, MessageItem, MessagePopover, MessageToast, MessageView, Text, Element, Fragment, IconPool, ValueState, JSONModel, BaseController) {
 	"use strict";
 
 	return BaseController.extend("com.example.example01.controller.book.Book", {
@@ -41,10 +48,7 @@ sap.ui.define([
 		},
 		onSave: function () {
 			if (this._hasValidateError()) {
-				if (!this._oMessagePopover) {
-					this._oMessagePopover = this._createMessagePopover();
-				}
-				this._oMessagePopover.openBy(this.byId("messagePopoverButton"));
+				this._showValidationErrorMessageDialog({});
 				return;
 			}
 
@@ -68,13 +72,86 @@ sap.ui.define([
 			}
 			this._oMessagePopover.toggle(oEvent.getSource());
 		},
-		_hasValidateError: function() {
+		/**
+		 * バリデーションエラー時のメッセージダイアログを表示する。
+		 * 
+		 * @public
+		 * @param {Object} [mDialogParameter] sap.m.Dialog のパラメータ
+		 */
+		_showValidationErrorMessageDialog: function (mDialogParameter) {
+			const oBackButton = new Button({
+				icon: IconPool.getIconURI("nav-back"),
+				press: function () {
+					oMessageView.navigateBack();
+					this.setVisible(false);
+				}
+			});
+
+			const oDefaultDialogParam = {
+				draggable: true,
+				state: ValueState.Error,
+				beginButton: new Button({
+					text: this.getResourceBundle("fwI18n").getText("fw.label.cancel"),
+					press: function () {
+						this.getParent().close();
+					}
+				}),
+				customHeader: new Bar({
+					contentLeft: oBackButton,
+					contentMiddle: new Text({ text: this.getResourceText("label.validationMessages") })
+				}),
+				contentHeight: "400px",
+				contentWidth: "460px",
+				verticalScrolling: false
+			};
+			const oDialogParam = { ...oDefaultDialogParam, ...mDialogParameter };
+			const oDialog = new Dialog(oDialogParam);
+
+			const oMessageView = new MessageView({
+				showDetailsPageHeader: false,
+				itemSelect: function () {
+					oBackButton.setVisible(true);
+				},
+				listSelect: function () {
+					oBackButton.setVisible(false);
+				},
+				activeTitlePress: oEvent => {
+					const oMessage = oEvent.getParameters().item.getBindingContext().getObject();
+					const oControl = Element.registry.get(oMessage.getControlId());
+
+					if (oControl) {
+						const domRef = oControl.getDomRef();
+						if (domRef) {
+							this.byId("messageHandlingPage").scrollToElement(domRef, 200, [0, -100]);
+						}
+						oDialog.close();
+						setTimeout(() => oControl.focus(), 300);
+					}
+				},
+				items: {
+					path: "/",
+					template: new MessageItem({
+						title: "{message}",
+						subtitle: "{additionalText}",
+						activeTitle: "{= ${controlIds}.length > 0}",
+						type: "{type}",
+						description: "{description}"
+					})
+				}
+			});
+			oMessageView.setModel(this.getModel("message"));
+
+			oDialog.addContent(oMessageView);
+			oMessageView.navigateBack();
+			oDialog.open();
+		},
+		_hasValidateError: function () {
 			return this.getModel("message").getProperty("/").length > 0;
 		},
 		_createMessagePopover: function () {
 			const oMessagePopover = new MessagePopover({
 				activeTitlePress: oEvent => {
-					const oMessage = oEvent.getParameter("item").getBindingContext("message").getObject();
+					const oMessage = oEvent.getParameters().item.getBindingContext("message").getObject();
 					const oControl = Element.registry.get(oMessage.getControlId());
 
 					if (oControl) {
