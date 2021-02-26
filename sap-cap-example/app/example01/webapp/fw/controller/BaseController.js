@@ -11,6 +11,7 @@ sap.ui.define([
 	"sap/ui/core/message/Message",
 	"sap/ui/core/mvc/Controller",
 	"sap/ui/core/routing/History",
+	"sap/ui/core/Element",
 	"sap/ui/core/IconPool",
 	"sap/ui/core/UIComponent",
 	"sap/ui/core/ValueState",
@@ -30,6 +31,7 @@ sap.ui.define([
 	Message,
 	Controller,
 	History,
+	Element,
 	IconPool,
 	UIComponent,
 	ValueState,
@@ -126,14 +128,12 @@ sap.ui.define([
 				const defaultRoute = this.getRouter().getRouteInfoByHash("");
 				if (defaultRoute && defaultRoute.name) {
 					this.getRouter().navTo(defaultRoute.name, {}, true /*no history*/);
-				} else {
-					this.getRouter().navTo("appHome", {}, true /*no history*/);
 				}
 			}
 		},
 
 		/**
-		 * V2 の ODataModel の変更をサブミットする。
+		 * {@link sap.ui.model.odata.v2.ODataModel ODataModel} の変更をサブミットする。
 		 * 
 		 * @public
 		 * @param {sap.ui.model.odata.v2.ODataModel} oODataV2Model サブミット対象のモデル
@@ -201,7 +201,7 @@ sap.ui.define([
 		},
 
 		/**
-		 * {@see #submitChanges} のデフォルトエラーハンドラ。
+		 * {@link #submitChanges #submitChanges} のデフォルトエラーハンドラ。
 		 * 
 		 * @public
 		 * @param {Object} oError 例外またはエラー
@@ -284,6 +284,97 @@ sap.ui.define([
 			};
 			const oDialogParam = { ...oDefaultDialogParam, ...mDialogParameter };
 			const oDialog = new Dialog(oDialogParam);
+			oMessageView.navigateBack();
+			oDialog.open();
+		},
+
+		/**
+		 * バリデーションエラーの有無を返す。
+		 * 
+		 * @public
+		 * @returns {boolean} true: バリデーションエラーがある場合 false: ない場合
+		 */
+		hasValidationError: function () {
+			// https://sapui5.hana.ondemand.com/1.36.6/docs/guide/62b1481d3e084cb49dd30956d183c6a0.html に記載されている通り
+			// MessageManager は Singleton であり、そのことと
+			// https://github.com/SAP/openui5/blob/0f35245b74ac8eee554292500dfb68af365f1e42/src/sap.ui.core/src/sap/ui/core/message/MessageManager.js
+			// の実装を合わせると、#getMessageModel で返される MessageModel も Singleton となっているので、
+			// MessageModel をビューにセットしなくても、同じインスタンスを取得可能。
+			// ただし、XMLビュー等から参照させる場合はモデルにセットした方が実装しやすい。
+			// この BaseController としてはビューへの MessageModel のセットは前提としない（継承先のアプリ側で必要に応じてセットすればよい）。
+			return sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/").length > 0;
+		},
+
+		/**
+		 * バリデーションエラー時のメッセージダイアログを表示する。
+		 * 
+		 * @public
+		 * @param {Object} [mDialogParameter] sap.m.Dialog のパラメータ
+		 */
+		showValidationErrorMessageDialog: function (mDialogParameter) {
+			if (!this.hasValidationError()) {
+				return;
+			}
+
+			const oBackButton = new Button({
+				icon: IconPool.getIconURI("nav-back"),
+				press: function () {
+					oMessageView.navigateBack();
+					this.setVisible(false);
+				}
+			});
+
+			const oDefaultDialogParam = {
+				draggable: true,
+				state: ValueState.Error,
+				beginButton: new Button({
+					text: this.getResourceBundle("fwI18n").getText("fw.label.cancel"),
+					press: function () {
+						this.getParent().close();
+					}
+				}),
+				customHeader: new Bar({
+					contentLeft: oBackButton,
+					contentMiddle: new Text({ text: this.getResourceBundle("fwI18n").getText("fw.label.validationMessages") })
+				}),
+				contentHeight: "400px",
+				contentWidth: "460px",
+				verticalScrolling: false
+			};
+			const oDialogParam = { ...oDefaultDialogParam, ...mDialogParameter };
+			const oDialog = new Dialog(oDialogParam);
+
+			const oMessageView = new MessageView({
+				showDetailsPageHeader: false,
+				itemSelect: function () {
+					oBackButton.setVisible(true);
+				},
+				listSelect: function () {
+					oBackButton.setVisible(false);
+				},
+				activeTitlePress: oEvent => {
+					const oMessage = oEvent.getParameters().item.getBindingContext().getObject();
+					const oControl = Element.registry.get(oMessage.getControlId());
+
+					oDialog.close();
+					if (oControl) {
+						setTimeout(() => oControl.focus(), 300);
+					}
+				},
+				items: {
+					path: "/",
+					template: new MessageItem({
+						title: "{message}",
+						subtitle: "{additionalText}",
+						activeTitle: "{= ${controlIds}.length > 0}",
+						type: "{type}",
+						description: "{description}"
+					})
+				}
+			});
+			oMessageView.setModel(sap.ui.getCore().getMessageManager().getMessageModel());
+
+			oDialog.addContent(oMessageView);
 			oMessageView.navigateBack();
 			oDialog.open();
 		},

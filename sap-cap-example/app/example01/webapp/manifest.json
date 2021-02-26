@@ -76,20 +76,16 @@
                 }
             ]
         },
+        "resourceRoots": {
+            "fw": "./fw"
+        },
         "dependencies": {
             "minUI5Version": "1.65.0",
             "libs": {
                 "sap.ui.core": {
                     "lazy": false
                 },
-                "sap.ui.generic.app": {
-                    "lazy": false
-                },
-                "sap.suite.ui.generic.template": {
-                    "lazy": false
-                },
-                "sap.m": {},
-                "sap.ui.layout": {}
+                "sap.m": {}
             },
             "components": {}
         },

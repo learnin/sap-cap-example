@@ -1,14 +1,13 @@
 <mvc:View
 	controllerName="com.example.example01.controller.book.Book"
-	xmlns:mvc="sap.ui.core.mvc"
 	xmlns="sap.uxap"
 	xmlns:m="sap.m"
 	xmlns:core="sap.ui.core"
-	xmlns:forms="sap.ui.layout.form"
+	xmlns:mvc="sap.ui.core.mvc"
+	xmlns:fwc="fw.control"
 	height="100%">
 
 	<m:Page
-		id="messageHandlingPage"
 		title="{i18n>label.book}"
 		showNavButton="true"
 		navButtonPress=".onNavBack">
@@ -144,14 +143,7 @@
 		</ObjectPageLayout>
 		<m:footer>
             <m:Toolbar visible="{state>/isEditing}">
-				<m:Button
-					id="messagePopoverButton"
-					visible="{= ${message>/}.length > 0}"
-					icon="sap-icon://message-error"
-					type="Negative"
-					text="{= ${message>/}.length}"
-					press=".onMessagePopover"
-					ariaHasPopup="Dialog"/>
+				<fwc:MessagePopoverButton/>
 				<m:ToolbarSpacer/>
 				<m:Button
 					id="saveButton"
