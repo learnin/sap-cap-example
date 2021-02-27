@@ -57,7 +57,14 @@ sap.ui.define([
 			const oMessagePopover = new MessagePopover({
 				activeTitlePress: oEvent => {
 					const oMessage = oEvent.getParameters().item.getBindingContext().getObject();
-					const oControl = Element.registry.get(oMessage.getControlId());
+					let sControlId = oMessage.getControlId();
+					if (!sControlId) {
+						const aTargets = oMessage.getTargets();
+						if (aTargets && aTargets[0]) {
+							sControlId = aTargets[0].substring(0, aTargets[0].indexOf("/"));
+						}
+					}
+					const oControl = Element.registry.get(sControlId);
 
 					if (oControl) {
 						setTimeout(() => oControl.focus(), 300);
@@ -68,7 +75,7 @@ sap.ui.define([
 					template: new MessageItem({
 						title: "{message}",
 						subtitle: "{additionalText}",
-						activeTitle: "{= ${controlIds}.length > 0}",
+						activeTitle: "{= ${controlIds}.length > 0 || !!${target}}",
 						type: "{type}",
 						description: "{description}"
 					})

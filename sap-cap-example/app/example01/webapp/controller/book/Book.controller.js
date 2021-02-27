@@ -2,8 +2,9 @@ sap.ui.define([
 	"sap/m/MessageToast",
 	"sap/ui/core/Fragment",
 	"sap/ui/model/json/JSONModel",
+	"fw/validator/Validator",
 	"../BaseController"
-], function (MessageToast, Fragment, JSONModel, BaseController) {
+], function (MessageToast, Fragment, JSONModel, Validator, BaseController) {
 	"use strict";
 
 	return BaseController.extend("com.example.example01.controller.book.Book", {
@@ -36,7 +37,9 @@ sap.ui.define([
 			this._setEditing(false);
 		},
 		onSave: function () {
-			if (this.hasValidationError()) {
+			const validator = new Validator();
+			if (!validator.validate(this.byId("ObjectPageLayout"))) {
+			// if (this.hasValidationError()) {
 				this.showValidationErrorMessageDialog();
 				return;
 			}
