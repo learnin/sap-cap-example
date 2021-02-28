@@ -1,24 +1,25 @@
-sap.ui.define(
-	[
-		"sap/ui/core/message/Message",
-		"sap/ui/core/MessageType",
-		"sap/ui/core/ValueState"
-	],
-	function (Message, MessageType, ValueState) {
-		"use strict";
+sap.ui.define([
+	"sap/ui/core/message/Message",
+	"sap/ui/core/MessageType",
+	"sap/ui/core/ValueState"
+], function (Message, MessageType, ValueState) {
+	"use strict";
 
+	/**
+	 * バリデータ。
+	 * SAPUI5 の標準のバリデーションの仕組みは基本的にフォームフィールドの change イベントで実行されるため
+	 * 必須フィールドに未入力のまま保存ボタン等を押された時にはバリデーションが実行されない。
+	 * 本バリデータはそれに対応するためのもので、必須フィールドのバリデーションを行う。
+	 * （必須チェック以外は標準の仕組みでカバーできるため本バリデータでは行わない）
+	 *
+	 * @class
+	 */
+	class Validator {
 		/**
-		 * @name        nl.qualiture.plunk.demo.utils.Validator
-		 *
-		 * @class
-		 * @classdesc   Validator class.<br/>
-		 *
-		 * @version     Oktober 2015
-		 * @author      Robin van het Hof
+		 * @constructor
+		 * @public
 		 */
-		var Validator = function () {
-			this._isValid = true;
-			this._isValidationPerformed = false;
+		constructor() {
 			this._aPossibleAggregations = [
 				"items",
 				"content",
@@ -32,35 +33,23 @@ sap.ui.define(
 				"cells",
 				"_page"
 			];
-			this._aValidateProperties = ["value", "selectedKey", "text"]; // yes, I want to validate Select and Text controls too
-		};
+			// sap.m.InputBaseにrequiredとvalueがあるので、サブクラス
+			// （sap.ca.ui.DatePicker sap.m.ComboBoxTextField sap.m.DateTimeField sap.m.Input sap.m.MaskInput sap.m.TextArea）は"value"でOK。
+			// sap.m.ComboBox sap.m.MultiComboBoxもsap.m.InputBaseが親にいるので同じ。
+			// sap.m.SelectにrequiredとselectedKeyがある。
+			// "text"はいらないかも。
+			this._aValidateProperties = ["value", "selectedKey", "text"];
+		}
 
 		/**
-		 * Returns true _only_ when the form validation has been performed, and no validation errors were found
-		 * @memberof nl.qualiture.plunk.demo.utils.Validator
+		 * 引数のコントロール配下のフィールドのバリデーションを行う。
 		 *
-		 * @returns {boolean}
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement} oControl 検証対象のコントロールやエレメント
+		 * @returns {boolean} true: valid、false: invalid
 		 */
-		Validator.prototype.isValid = function () {
-			return this._isValidationPerformed && this._isValid;
-		};
-
-		/**
-		 * Recursively validates the given oControl and any aggregations (i.e. child controls) it may have
-		 * @memberof nl.qualiture.plunk.demo.utils.Validator
-		 *
-		 * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl - The control or element to be validated.
-		 * @return {boolean} whether the oControl is valid or not.
-		 */
-		Validator.prototype.validate = function (oControl) {
-			this._isValid = true;
-			sap.ui
-				.getCore()
-				.getMessageManager()
-				.removeAllMessages();
-			this._validate(oControl);
-			return this.isValid();
-		};
+		validate(oControl) {
+			return this._validate(oControl);
+		}
 
 		/**
 		 * Clear the value state of all the controls
@@ -68,91 +57,87 @@ sap.ui.define(
 		 *
 		 * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl - The control or element to be validated.
 		 */
-		Validator.prototype.clearValueState = function (oControl) {
+		clearValueState(oControl) {
 			if (!oControl) return;
 
 			if (oControl.setValueState) oControl.setValueState(ValueState.None);
 
 			this._recursiveCall(oControl, this.clearValueState);
-		};
+		}
 
 		/**
-		 * Recursively validates the given oControl and any aggregations (i.e. child controls) it may have
-		 * @memberof nl.qualiture.plunk.demo.utils.Validator
+		 * 引数のコントロール配下のフィールドのバリデーションを行う。
 		 *
-		 * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl - The control or element to be validated.
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement} oControl 検証対象のコントロールやエレメント
+		 * @returns {boolean}　true: valid、false: invalid
 		 */
-		Validator.prototype._validate = function (oControl) {
-			var i,
-				isValidatedControl = true,
-				isValid = true;
+		_validate(oControl) {
+			// let i = 0;
+			let isValidatedControl = true;
+			let isValid = true;
 
-			// only validate controls and elements which have a 'visible' property
-			// and are visible controls (invisible controls make no sense checking)
-			if (
-				!(
-					(oControl instanceof sap.ui.core.Control ||
-						oControl instanceof sap.ui.layout.form.FormContainer ||
-						oControl instanceof sap.ui.layout.form.FormElement ||
-						oControl instanceof sap.m.IconTabFilter) &&
-					oControl.getVisible()
-				)
-			) {
-				return;
+			if (!((oControl instanceof sap.ui.core.Control ||
+				oControl instanceof sap.ui.layout.form.FormContainer ||
+				oControl instanceof sap.ui.layout.form.FormElement ||
+				oControl instanceof sap.m.IconTabFilter) &&
+				oControl.getVisible())) {
+				return true;
 			}
 
-			if (
-				oControl.getRequired &&
-				oControl.getRequired() === true &&
-				oControl.getEnabled &&
-				oControl.getEnabled() === true
-			) {
-				// Control required
+			// TODO: 例えばsap.m.CheckBox（getPartiallySelectedかgetSelected）、sap.ui.unified.FileUploader（value）、sap.m.RadioButton（getSelected）、
+			// sap.m.RadioButtonGroup（getSelectedIndex）、sap.ui.unified.Calendar（getSelectedDates）には
+			// requiredはないので対応していないが、LabelのlabelForをたどることでチェックできそう
+			if (oControl.getRequired && oControl.getRequired() === true &&
+				oControl.getEnabled && oControl.getEnabled() === true) {
 				isValid = this._validateRequired(oControl);
-			} else if (
-				(i = this._hasType(oControl)) !== -1 &&
-				oControl.getEnabled &&
-				oControl.getEnabled() === true
-			) {
-				// Control constraints
-				isValid = this._validateConstraint(oControl, i);
-			} else if (
-				oControl.getValueState &&
-				oControl.getValueState() === ValueState.Error
-			) {
-				// Control custom validation
-				isValid = false;
-				this._setValueState(oControl, ValueState.Error, "Wrong input");
+			// 必須チェック以外は、標準のバリデーションがonChangeで動くのでそれに任せればいいはず
+			// } else if ((i = this._hasType(oControl)) !== -1 && oControl.getEnabled && oControl.getEnabled() === true) {
+			// 	// Control constraints
+			// 	isValid = this._validateConstraint(oControl, i);
+			// } else if (oControl.getValueState && oControl.getValueState() === ValueState.Error) {
+			// 	// Control custom validation
+			// 	isValid = false;
+			// 	this._setValueState(oControl, ValueState.Error, "Wrong input");
 			} else {
 				isValidatedControl = false;
 			}
 
 			if (!isValid) {
-				this._isValid = false;
 				this._addMessage(oControl);
 			}
 
-			// if the control could not be validated, it may have aggregations
 			if (!isValidatedControl) {
-				this._recursiveCall(oControl, this._validate);
+				if (!this._recursiveValidate(oControl, this._validate)) {
+					isValid = false;
+				}
 			}
-			this._isValidationPerformed = true;
-		};
+			return isValid;
+		}
+
+		_resolveMessageTarget(oControl) {
+			if (oControl.getBindingPath("value")) {
+				return oControl.getId() + "/value";
+			}
+			if (oControl.getBindingPath("selectedKey")) {
+				return oControl.getId() + "/selectedKey";
+			}
+			return undefined;
+		}
 
 		/**
-		 * Check if the control is required
-		 * @memberof nl.qualiture.plunk.demo.utils.Validator
+		 * 引数のコントロールやエレメントの必須チェックを行う。
 		 *
-		 * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl - The control or element to be validated.
-		 * @return {bool} this._isValid - If the property is valid
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement} oControl 検証対象のコントロールやエレメント
+		 * @returns {boolean}　true: valid、false: invalid
 		 */
-		Validator.prototype._validateRequired = function (oControl) {
+		_validateRequired(oControl) {
 			// check control for any properties worth validating
 			var isValid = true;
 
 			for (var i = 0; i < this._aValidateProperties.length; i += 1) {
 				try {
 					oControl.getBinding(this._aValidateProperties[i]);
+					// FIXME APIドキュメントにgetPropertyではなくgetValue等getXxxを使うように書かれている
 					var oExternalValue = oControl.getProperty(
 						this._aValidateProperties[i]
 					);
@@ -164,6 +149,27 @@ sap.ui.define(
 							"Please fill this mandatory field!"
 						);
 						isValid = false;
+						if (oControl.attachChange) {
+							// ValueState とエラーメッセージが残ったままにならないように、対象のコントロールの change イベントで ValueState とエラーメッセージを除去する。
+							const fnOnChange = oEvent => {
+								oControl.detachChange(fnOnChange);
+
+								const oMessageManager = sap.ui.getCore().getMessageManager();
+								const oMessageModel = oMessageManager.getMessageModel();
+								const sTarget = this._resolveMessageTarget(oControl);
+								const oMessage = oMessageModel.getProperty("/").find(oMsg => oMsg.getMessageProcessor() === undefined && oMsg.getTarget() === sTarget);
+								if (oMessage) {
+									oMessageManager.removeMessages(oMessage);
+								}
+								// 不正な値を入力された場合、標準のバリデーションによりエラーステートがセットされている可能性があるため、
+								// エラーメッセージがまだあるか確認し、ない場合にのみエラーステートをクリアする。
+								if (oControl.setValueState &&
+									!oMessageModel.getProperty("/").find(oMsg => oMsg.getMessageProcessor() && oMsg.getTarget() === sTarget)) {
+									oControl.setValueState(ValueState.None);
+								}
+							};
+							oControl.attachChange(fnOnChange);
+						}
 					} else if (
 						oControl.getAggregation("picker") &&
 						oControl.getProperty("selectedKey").length === 0
@@ -176,7 +182,6 @@ sap.ui.define(
 						);
 						isValid = false;
 					} else {
-						oControl.setValueState(ValueState.None);
 						isValid = true;
 						break;
 					}
@@ -185,47 +190,47 @@ sap.ui.define(
 				}
 			}
 			return isValid;
-		};
+		}
 
-		/**
-		 * Check if the control is required
-		 * @memberof nl.qualiture.plunk.demo.utils.Validator
-		 *
-		 * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl - The control or element to be validated.
-		 * @param {int} i - The index of the property
-		 * @return {bool} this._isValid - If the property is valid
-		 */
-		Validator.prototype._validateConstraint = function (oControl, i) {
-			var isValid = true;
+		// /**
+		//  * Check if the control is required
+		//  * @memberof nl.qualiture.plunk.demo.utils.Validator
+		//  *
+		//  * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl - The control or element to be validated.
+		//  * @param {int} i - The index of the property
+		//  * @return {bool} - If the property is valid
+		//  */
+		// _validateConstraint(oControl, i) {
+		// 	var isValid = true;
 
-			try {
-				var editable = oControl.getProperty("editable");
-			} catch (ex) {
-				editable = true;
-			}
+		// 	try {
+		// 		var editable = oControl.getProperty("editable");
+		// 	} catch (ex) {
+		// 		editable = true;
+		// 	}
 
-			if (editable) {
-				try {
-					// try validating the bound value
-					var oControlBinding = oControl.getBinding(
-						this._aValidateProperties[i]
-					);
-					var oExternalValue = oControl.getProperty(
-						this._aValidateProperties[i]
-					);
-					var oInternalValue = oControlBinding
-						.getType()
-						.parseValue(oExternalValue, oControlBinding.sInternalType);
-					oControlBinding.getType().validateValue(oInternalValue);
-					oControl.setValueState(ValueState.None);
-				} catch (ex) {
-					// catch any validation errors
-					isValid = false;
-					this._setValueState(oControl, ValueState.Error, ex.message);
-				}
-			}
-			return isValid;
-		};
+		// 	if (editable) {
+		// 		try {
+		// 			// try validating the bound value
+		// 			var oControlBinding = oControl.getBinding(
+		// 				this._aValidateProperties[i]
+		// 			);
+		// 			var oExternalValue = oControl.getProperty(
+		// 				this._aValidateProperties[i]
+		// 			);
+		// 			var oInternalValue = oControlBinding
+		// 				.getType()
+		// 				.parseValue(oExternalValue, oControlBinding.sInternalType);
+		// 			oControlBinding.getType().validateValue(oInternalValue);
+		// 			oControl.setValueState(ValueState.None);
+		// 		} catch (ex) {
+		// 			// catch any validation errors
+		// 			isValid = false;
+		// 			this._setValueState(oControl, ValueState.Error, ex.message);
+		// 		}
+		// 	}
+		// 	return isValid;
+		// }
 
 		/**
 		 * Add message to the MessageManager
@@ -234,7 +239,7 @@ sap.ui.define(
 		 * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl - The control or element to be validated.
 		 * @param {string} sMessage - Customize the message
 		 */
-		Validator.prototype._addMessage = function (oControl, sMessage) {
+		_addMessage(oControl, sMessage) {
 			var sLabel,
 				eMessageType = MessageType.Error;
 
@@ -266,47 +271,43 @@ sap.ui.define(
 							: sMessage, // Get Message from ValueStateText if available
 						type: eMessageType,
 						additionalText: sLabel, // Get label from the form element
-						// TODO: 常に /value でいいか要確認
-						target: oControl.getId() + "/value"
+						target: this._resolveMessageTarget(oControl)
 					})
 				);
-		};
+		}
 
-		/**
-		 * Check if the control property has a data type, then returns the index of the property to validate
-		 * @memberof nl.qualiture.plunk.demo.utils.Validator
-		 *
-		 * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl - The control or element to be validated.
-		 * @return {int} i - The index of the property to validate
-		 */
-		Validator.prototype._hasType = function (oControl) {
-			// check if a data type exists (which may have validation constraints)
-			for (var i = 0; i < this._aValidateProperties.length; i += 1) {
-				if (
-					oControl.getBinding(this._aValidateProperties[i]) &&
-					oControl.getBinding(this._aValidateProperties[i]).getType()
-				)
-					return i;
-			}
-			return -1;
-		};
+		// /**
+		//  * Check if the control property has a data type, then returns the index of the property to validate
+		//  * @memberof nl.qualiture.plunk.demo.utils.Validator
+		//  *
+		//  * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl - The control or element to be validated.
+		//  * @return {int} i - The index of the property to validate
+		//  */
+		// _hasType(oControl) {
+		// 	// check if a data type exists (which may have validation constraints)
+		// 	for (var i = 0; i < this._aValidateProperties.length; i += 1) {
+		// 		if (
+		// 			oControl.getBinding(this._aValidateProperties[i]) &&
+		// 			oControl.getBinding(this._aValidateProperties[i]).getType()
+		// 		)
+		// 			return i;
+		// 	}
+		// 	return -1;
+		// }
 
 		/**
 		 * Set ValueState and ValueStateText of the control
 		 * @memberof nl.qualiture.plunk.demo.utils.Validator
 		 *
-		 * @param {sap.ui.core.ValueState} eValueState - The ValueState to be set
+		 * @param {sap.ui.core.ValueState} oValueState - The ValueState to be set
 		 * @param {string} sText - The ValueStateText to be set
 		 */
-		Validator.prototype._setValueState = function (
-			oControl,
-			eValueState,
-			sText
-		) {
-			oControl.setValueState(eValueState);
-			if (oControl.getValueStateText && !oControl.getValueStateText())
+		_setValueState(oControl, oValueState, sText) {
+			oControl.setValueState(oValueState);
+			if (oControl.getValueStateText && !oControl.getValueStateText()) {
 				oControl.setValueStateText(sText);
-		};
+			}
+		}
 
 		/**
 		 * Recursively calls the function on all the children of the aggregation
@@ -315,7 +316,7 @@ sap.ui.define(
 		 * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl - The control or element to be validated.
 		 * @param {function} fFunction - The function to call recursively
 		 */
-		Validator.prototype._recursiveCall = function (oControl, fFunction) {
+		_recursiveCall(oControl, fFunction) {
 			for (var i = 0; i < this._aPossibleAggregations.length; i += 1) {
 				var aControlAggregation = oControl.getAggregation(
 					this._aPossibleAggregations[i]
@@ -333,7 +334,34 @@ sap.ui.define(
 					fFunction.call(this, aControlAggregation);
 				}
 			}
-		};
+		}
+
+		_recursiveValidate(oControl, fFunction) {
+			let isValid = true;
+
+			for (var i = 0; i < this._aPossibleAggregations.length; i += 1) {
+				var aControlAggregation = oControl.getAggregation(
+					this._aPossibleAggregations[i]
+				);
+
+				if (!aControlAggregation) continue;
+
+				if (aControlAggregation instanceof Array) {
+					// generally, aggregations are of type Array
+					for (var j = 0; j < aControlAggregation.length; j += 1) {
+						if (!fFunction.call(this, aControlAggregation[j])) {
+							isValid = false;
+						}
+					}
+				} else {
+					// ...however, with sap.ui.layout.form.Form, it is a single object *sigh*
+					if (!fFunction.call(this, aControlAggregation)) {
+						isValid = false;
+					}
+				}
+			}
+			return isValid;
+		}
 
 		/**
 		 * Recursively calls the function on all the children of the aggregation
@@ -342,9 +370,7 @@ sap.ui.define(
 		 * @param {sap.ui.core.ValueState} eValueState
 		 * @return {sap.ui.core.MessageType} eMessageType
 		 */
-		Validator.prototype._convertValueStateToMessageType = function (
-			eValueState
-		) {
+		_convertValueStateToMessageType(eValueState) {
 			var eMessageType;
 
 			switch (eValueState) {
@@ -367,8 +393,8 @@ sap.ui.define(
 					eMessageType = MessageType.Error;
 			}
 			return eMessageType;
-		};
+		}
 
-		return Validator;
 	}
-);
+	return Validator;
+});

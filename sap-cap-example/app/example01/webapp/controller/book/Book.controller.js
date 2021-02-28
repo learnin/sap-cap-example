@@ -2,7 +2,7 @@ sap.ui.define([
 	"sap/m/MessageToast",
 	"sap/ui/core/Fragment",
 	"sap/ui/model/json/JSONModel",
-	"fw/validator/Validator",
+	"../../validator/Validator",
 	"../BaseController"
 ], function (MessageToast, Fragment, JSONModel, Validator, BaseController) {
 	"use strict";
@@ -33,13 +33,13 @@ sap.ui.define([
 		},
 		onResetChanges: function () {
 			this.getModel().resetChanges();
+			// TODO バリデータのメソッドを実行してエラーステートとメッセージをクリアする
 			this._showGeneralInformationFragment("BookDisplayGeneralInformation");
 			this._setEditing(false);
 		},
 		onSave: function () {
 			const validator = new Validator();
-			if (!validator.validate(this.byId("ObjectPageLayout"))) {
-			// if (this.hasValidationError()) {
+			if (!validator.validate(this.byId("ObjectPageLayout")) || this.hasValidationError()) {
 				this.showValidationErrorMessageDialog();
 				return;
 			}
