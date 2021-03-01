@@ -1,8 +1,21 @@
 sap.ui.define([
+	"sap/m/CheckBox",
+	"sap/m/Input",
+	"sap/m/Select",
+	"sap/ui/base/Object",
+	"sap/ui/core/message/ControlMessageProcessor",
 	"sap/ui/core/message/Message",
 	"sap/ui/core/MessageType",
 	"sap/ui/core/ValueState"
-], function (Message, MessageType, ValueState) {
+], function (
+	CheckBox,
+	Input,
+	Select,
+	BaseObject,
+	ControlMessageProcessor,
+	Message,
+	MessageType,
+	ValueState) {
 	"use strict";
 
 	/**
@@ -18,9 +31,11 @@ sap.ui.define([
 		/**
 		 * @constructor
 		 * @public
+		 * @param {Object} mParameter
 		 */
-		constructor() {
-			this._aPossibleAggregations = [
+		constructor(mParameter) {
+			// TODO: これで過不足ないか
+			this._aTargetAggregations = [
 				"items",
 				"content",
 				"form",
@@ -33,17 +48,25 @@ sap.ui.define([
 				"cells",
 				"_page"
 			];
-			// sap.m.InputBaseにrequiredとvalueがあるので、サブクラス
-			// （sap.ca.ui.DatePicker sap.m.ComboBoxTextField sap.m.DateTimeField sap.m.Input sap.m.MaskInput sap.m.TextArea）は"value"でOK。
-			// sap.m.ComboBox sap.m.MultiComboBoxもsap.m.InputBaseが親にいるので同じ。
-			// sap.m.SelectにrequiredとselectedKeyがある。
-			// "text"はいらないかも。
-			this._aValidateProperties = ["value", "selectedKey", "text"];
+			if (mParameter && mParameter.targetAggregations) {
+				if (Array.isArray(mParameter.targetAggregations)) {
+					mParameter.targetAggregations.forEach(sTargetAggregation => {
+						if (!this._aTargetAggregations.includes(sTargetAggregation)) {
+							this._aTargetAggregations.push(sTargetAggregation);
+						}
+					});
+				} else {
+					if (!this._aTargetAggregations.includes(mParameter.targetAggregations)) {
+						this._aTargetAggregations.push(mParameter.targetAggregations);
+					}
+				}
+			}
 		}
 
 		/**
-		 * 引数のコントロール配下のフィールドのバリデーションを行う。
+		 * 引数のコントロールもしくはその配下のコントロールやエレメントのバリデーションを行う。
 		 *
+		 * @public
 		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement} oControl 検証対象のコントロールやエレメント
 		 * @returns {boolean} true: valid、false: invalid
 		 */
@@ -52,17 +75,60 @@ sap.ui.define([
 		}
 
 		/**
-		 * Clear the value state of all the controls
-		 * @memberof nl.qualiture.plunk.demo.utils.Validator
+		 * 引数のコントロールもしくはその配下のコントロールやエレメントについて、本クラスにより追加されたメッセージを
+		 * {@link sap.ui.core.message.MessageManager MessageManager} から除去する。
+		 * その結果、該当コントロールやエレメントにメッセージがなくなった場合は、{@link sap.ui.core.ValueState ValueState} もクリアする。
 		 *
-		 * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl - The control or element to be validated.
+		 * @public
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement} oControl 検証対象のコントロールやエレメント
 		 */
-		clearValueState(oControl) {
-			if (!oControl) return;
+		removeErrors(oControl) {
+			this._removeErrors(oControl);
+		}
 
-			if (oControl.setValueState) oControl.setValueState(ValueState.None);
+		// TODO: 相関バリデーションをアプリで実装した際にバリデートエラー時に呼べるaddMessage系のメソッドを用意する
 
-			this._recursiveCall(oControl, this.clearValueState);
+		_removeErrors(oControl) {
+			if (this._isValidationTarget(oControl)) {
+				this._removeMessagesAndValueState(oControl);
+			} else {
+				// 入力コントロールやエレメントでなかった場合は、aggregation のコントロールやエレメントを再帰的に処理する。
+				for (let i = 0; i < this._aTargetAggregations.length; i++) {
+					const aControlAggregation = oControl.getAggregation(this._aTargetAggregations[i]);
+					if (!aControlAggregation) {
+						continue;
+					}
+					if (Array.isArray(aControlAggregation)) {
+						for (let j = 0; j < aControlAggregation.length; j++) {
+							this._removeErrors(aControlAggregation[j]);
+						}
+					} else {
+						this._removeErrors(aControlAggregation);
+					}
+				}
+			}
+		}
+
+		_removeMessagesAndValueState(oControl) {
+			const oMessageManager = sap.ui.getCore().getMessageManager();
+			const oMessageModel = oMessageManager.getMessageModel();
+			const sTarget = this._resolveMessageTarget(oControl);
+
+			const oMessage = oMessageModel.getProperty("/").find(oMsg =>
+				BaseObject.isA(oMsg.getMessageProcessor(), _ValidatorMessageProcessor.getMetadata().getName()) && oMsg.getTarget() === sTarget);
+			if (oMessage) {
+				oMessageManager.removeMessages(oMessage);
+			}
+			// 不正な値を入力された場合、標準のバリデーションによりエラーステートがセットされている可能性があるため、
+			// エラーメッセージがまだあるか確認し、ない場合にのみエラーステートをクリアする。
+			if (oControl.setValueState &&
+				!oMessageModel.getProperty("/").find(oMsg => oMsg.getTarget() === sTarget)) {
+				this._setValueState(oControl, ValueState.None, null);
+			}
+		}
+
+		_isValidationTarget(oControl) {
+			return oControl.getRequired && oControl.getRequired() === true && oControl.getEnabled && oControl.getEnabled() === true;
 		}
 
 		/**
@@ -72,10 +138,6 @@ sap.ui.define([
 		 * @returns {boolean}　true: valid、false: invalid
 		 */
 		_validate(oControl) {
-			// let i = 0;
-			let isValidatedControl = true;
-			let isValid = true;
-
 			if (!((oControl instanceof sap.ui.core.Control ||
 				oControl instanceof sap.ui.layout.form.FormContainer ||
 				oControl instanceof sap.ui.layout.form.FormElement ||
@@ -84,31 +146,31 @@ sap.ui.define([
 				return true;
 			}
 
-			// TODO: 例えばsap.m.CheckBox（getPartiallySelectedかgetSelected）、sap.ui.unified.FileUploader（value）、sap.m.RadioButton（getSelected）、
+			let isValid = true;
+
+			// TODO: 例えばsap.m.CheckBox（getSelected）、sap.ui.unified.FileUploader（value）、sap.m.RadioButton（getSelected）、
 			// sap.m.RadioButtonGroup（getSelectedIndex）、sap.ui.unified.Calendar（getSelectedDates）には
 			// requiredはないので対応していないが、LabelのlabelForをたどることでチェックできそう
-			if (oControl.getRequired && oControl.getRequired() === true &&
-				oControl.getEnabled && oControl.getEnabled() === true) {
+			if (this._isValidationTarget(oControl)) {
 				isValid = this._validateRequired(oControl);
-			// 必須チェック以外は、標準のバリデーションがonChangeで動くのでそれに任せればいいはず
-			// } else if ((i = this._hasType(oControl)) !== -1 && oControl.getEnabled && oControl.getEnabled() === true) {
-			// 	// Control constraints
-			// 	isValid = this._validateConstraint(oControl, i);
-			// } else if (oControl.getValueState && oControl.getValueState() === ValueState.Error) {
-			// 	// Control custom validation
-			// 	isValid = false;
-			// 	this._setValueState(oControl, ValueState.Error, "Wrong input");
 			} else {
-				isValidatedControl = false;
-			}
-
-			if (!isValid) {
-				this._addMessage(oControl);
-			}
-
-			if (!isValidatedControl) {
-				if (!this._recursiveValidate(oControl, this._validate)) {
-					isValid = false;
+				// 入力コントロールやエレメントでなかった場合は、aggregation のコントロールやエレメントを再帰的に検証する。
+				for (let i = 0; i < this._aTargetAggregations.length; i++) {
+					const aControlAggregation = oControl.getAggregation(this._aTargetAggregations[i]);
+					if (!aControlAggregation) {
+						continue;
+					}
+					if (Array.isArray(aControlAggregation)) {
+						for (let j = 0; j < aControlAggregation.length; j++) {
+							if (!this._validate(aControlAggregation[j])) {
+								isValid = false;
+							}
+						}
+					} else {
+						if (!this._validate(aControlAggregation)) {
+							isValid = false;
+						}
+					}
 				}
 			}
 			return isValid;
@@ -118,10 +180,65 @@ sap.ui.define([
 			if (oControl.getBindingPath("value")) {
 				return oControl.getId() + "/value";
 			}
+			// TODO: sap.m.Select で動作確認必要
 			if (oControl.getBindingPath("selectedKey")) {
 				return oControl.getId() + "/selectedKey";
 			}
+			// TODO: sap.m.RadioButton で動作確認必要
+			if (oControl.getBindingPath("selected")) {
+				return oControl.getId() + "/selected";
+			}
+			// TODO: sap.m.RadioButtonGroup で動作確認必要
+			if (oControl.getBindingPath("selectedIndex")) {
+				return oControl.getId() + "/selectedIndex";
+			}
+			// TODO: sap.ui.unified.Calendar で動作確認必要
+			if (oControl.getBindingPath("selectedDates")) {
+				return oControl.getId() + "/selectedDates";
+			}
 			return undefined;
+		}
+
+		/**
+		 * 
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement} oControl 検証対象のコントロールやエレメント
+		 * @returns {boolean}
+		 */
+		_isNullValue(oControl) {
+			// sap.m.InputBase（サブクラスに sap.ca.ui.DatePicker, sap.m.ComboBoxTextField, sap.m.DateTimeField, sap.m.Input,
+			// sap.m.MaskInput, sap.m.TextArea, sap.m.ComboBox, sap.m.MultiComboBox 等がある）
+			if (oControl.getBindingPath("value")) {
+				return !oControl.getValue();
+			}
+			// TODO: sap.m.Select で動作確認必要
+			if (oControl.getBindingPath("selectedKey")) {
+				return !oControl.getSelectedKey();
+			}
+			// TODO: sap.m.RadioButton で動作確認必要
+			if (oControl.getBindingPath("selected")) {
+				return !oControl.getSelected();
+			}
+			// TODO: sap.m.RadioButtonGroup で動作確認必要
+			if (oControl.getBindingPath("selectedIndex")) {
+				return oControl.getSelectedIndex() === -1 ? true : false;
+			}
+			// TODO: sap.ui.unified.Calendar で動作確認必要
+			if (oControl.getBindingPath("selectedDates")) {
+				return oControl.getSelectedDates().length === 0;
+			}
+			return false;
+		}
+
+		_getMessageTextByControl(oControl) {
+			if (oControl.getBindingPath("selectedKey") ||
+				oControl.getBindingPath("selected") ||
+				oControl.getBindingPath("selectedIndex") ||
+				oControl.getBindingPath("selectedDates")) {
+				// TODO: i18n
+				return "Required to select.";
+			}
+			// TODO: i18n
+			return "Required to input.";
 		}
 
 		/**
@@ -131,270 +248,80 @@ sap.ui.define([
 		 * @returns {boolean}　true: valid、false: invalid
 		 */
 		_validateRequired(oControl) {
-			// check control for any properties worth validating
-			var isValid = true;
+			if (!this._isNullValue(oControl)) {
+				return true;
+			}
 
-			for (var i = 0; i < this._aValidateProperties.length; i += 1) {
-				try {
-					oControl.getBinding(this._aValidateProperties[i]);
-					// FIXME APIドキュメントにgetPropertyではなくgetValue等getXxxを使うように書かれている
-					var oExternalValue = oControl.getProperty(
-						this._aValidateProperties[i]
-					);
+			const sMessageText = this._getMessageTextByControl(oControl);
+			this._setValueState(oControl, ValueState.Error, sMessageText);
+			this._addMessage(oControl, sMessageText);
 
-					if (!oExternalValue || oExternalValue === "") {
-						this._setValueState(
-							oControl,
-							ValueState.Error,
-							"Please fill this mandatory field!"
-						);
-						isValid = false;
-						if (oControl.attachChange) {
-							// ValueState とエラーメッセージが残ったままにならないように、対象のコントロールの change イベントで ValueState とエラーメッセージを除去する。
-							const fnOnChange = oEvent => {
-								oControl.detachChange(fnOnChange);
+			if (oControl.attachChange) {
+				// ValueState とエラーメッセージが残ったままにならないように、対象のコントロールの change イベントで ValueState とエラーメッセージを除去する。
+				const fnOnChange = oEvent => {
+					oControl.detachChange(fnOnChange);
+					this._removeMessagesAndValueState(oControl);
+				};
+				oControl.attachChange(fnOnChange);
+			}
+			return false;
+		}
 
-								const oMessageManager = sap.ui.getCore().getMessageManager();
-								const oMessageModel = oMessageManager.getMessageModel();
-								const sTarget = this._resolveMessageTarget(oControl);
-								const oMessage = oMessageModel.getProperty("/").find(oMsg => oMsg.getMessageProcessor() === undefined && oMsg.getTarget() === sTarget);
-								if (oMessage) {
-									oMessageManager.removeMessages(oMessage);
-								}
-								// 不正な値を入力された場合、標準のバリデーションによりエラーステートがセットされている可能性があるため、
-								// エラーメッセージがまだあるか確認し、ない場合にのみエラーステートをクリアする。
-								if (oControl.setValueState &&
-									!oMessageModel.getProperty("/").find(oMsg => oMsg.getMessageProcessor() && oMsg.getTarget() === sTarget)) {
-									oControl.setValueState(ValueState.None);
-								}
-							};
-							oControl.attachChange(fnOnChange);
-						}
-					} else if (
-						oControl.getAggregation("picker") &&
-						oControl.getProperty("selectedKey").length === 0
-					) {
-						// might be a select
-						this._setValueState(
-							oControl,
-							ValueState.Error,
-							"Please choose an entry!"
-						);
-						isValid = false;
-					} else {
-						isValid = true;
-						break;
+		_getLabelText(oControl) {
+			if (oControl instanceof Input ||
+				oControl instanceof CheckBox ||
+				oControl instanceof Select) {
+				const oParent = oControl.getParent();
+				if (oParent) {
+					const oLabel = oParent.getLabel();
+					if (oLabel) {
+						return oLabel.getText();
 					}
-				} catch (ex) {
-					// Validation failed
 				}
 			}
-			return isValid;
+			return undefined;
 		}
 
-		// /**
-		//  * Check if the control is required
-		//  * @memberof nl.qualiture.plunk.demo.utils.Validator
-		//  *
-		//  * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl - The control or element to be validated.
-		//  * @param {int} i - The index of the property
-		//  * @return {bool} - If the property is valid
-		//  */
-		// _validateConstraint(oControl, i) {
-		// 	var isValid = true;
-
-		// 	try {
-		// 		var editable = oControl.getProperty("editable");
-		// 	} catch (ex) {
-		// 		editable = true;
-		// 	}
-
-		// 	if (editable) {
-		// 		try {
-		// 			// try validating the bound value
-		// 			var oControlBinding = oControl.getBinding(
-		// 				this._aValidateProperties[i]
-		// 			);
-		// 			var oExternalValue = oControl.getProperty(
-		// 				this._aValidateProperties[i]
-		// 			);
-		// 			var oInternalValue = oControlBinding
-		// 				.getType()
-		// 				.parseValue(oExternalValue, oControlBinding.sInternalType);
-		// 			oControlBinding.getType().validateValue(oInternalValue);
-		// 			oControl.setValueState(ValueState.None);
-		// 		} catch (ex) {
-		// 			// catch any validation errors
-		// 			isValid = false;
-		// 			this._setValueState(oControl, ValueState.Error, ex.message);
-		// 		}
-		// 	}
-		// 	return isValid;
-		// }
-
 		/**
-		 * Add message to the MessageManager
-		 * @memberof nl.qualiture.plunk.demo.utils.Validator
+		 * {@link sap.ui.core.message.MessageManager MessageManager} にメッセージを追加する。
 		 *
-		 * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl - The control or element to be validated.
-		 * @param {string} sMessage - Customize the message
+		 * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl 検証対象のコントロールやエレメント
+		 * @param {string} sMessageText エラーメッセージ
 		 */
-		_addMessage(oControl, sMessage) {
-			var sLabel,
-				eMessageType = MessageType.Error;
-
-			if (sMessage === undefined) sMessage = "Wrong input"; // Default message
-
-			switch (oControl.getMetadata().getName()) {
-				case "sap.m.CheckBox":
-				case "sap.m.Input":
-				case "sap.m.Select":
-					sLabel = oControl
-						.getParent()
-						.getLabel()
-						.getText();
-					break;
-			}
-
-			if (oControl.getValueState)
-				eMessageType = this._convertValueStateToMessageType(
-					oControl.getValueState()
-				);
-
-			sap.ui
-				.getCore()
-				.getMessageManager()
-				.addMessages(
-					new Message({
-						message: oControl.getValueStateText
-							? oControl.getValueStateText()
-							: sMessage, // Get Message from ValueStateText if available
-						type: eMessageType,
-						additionalText: sLabel, // Get label from the form element
-						target: this._resolveMessageTarget(oControl)
-					})
-				);
+		_addMessage(oControl, sMessageText) {
+			sap.ui.getCore().getMessageManager().addMessages(new Message({
+				message: sMessageText,
+				type: MessageType.Error,
+				additionalText: this._getLabelText(oControl),
+				processor: new _ValidatorMessageProcessor(),
+				target: this._resolveMessageTarget(oControl)
+			}));
 		}
 
-		// /**
-		//  * Check if the control property has a data type, then returns the index of the property to validate
-		//  * @memberof nl.qualiture.plunk.demo.utils.Validator
-		//  *
-		//  * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl - The control or element to be validated.
-		//  * @return {int} i - The index of the property to validate
-		//  */
-		// _hasType(oControl) {
-		// 	// check if a data type exists (which may have validation constraints)
-		// 	for (var i = 0; i < this._aValidateProperties.length; i += 1) {
-		// 		if (
-		// 			oControl.getBinding(this._aValidateProperties[i]) &&
-		// 			oControl.getBinding(this._aValidateProperties[i]).getType()
-		// 		)
-		// 			return i;
-		// 	}
-		// 	return -1;
-		// }
-
 		/**
-		 * Set ValueState and ValueStateText of the control
-		 * @memberof nl.qualiture.plunk.demo.utils.Validator
+		 * 引数のコントロールに {@link sap.ui.core.ValueState ValueState} と ValueStateText をセットする。
 		 *
-		 * @param {sap.ui.core.ValueState} oValueState - The ValueState to be set
-		 * @param {string} sText - The ValueStateText to be set
+		 * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl 検証対象のコントロールやエレメント
+		 * @param {sap.ui.core.ValueState} oValueState セットするステート
+		 * @param {string} sText セットするステートテキスト
 		 */
 		_setValueState(oControl, oValueState, sText) {
-			oControl.setValueState(oValueState);
-			if (oControl.getValueStateText && !oControl.getValueStateText()) {
+			if (oControl.setValueState) {
+				oControl.setValueState(oValueState);
+			}
+			if (oControl.setValueStateText) {
 				oControl.setValueStateText(sText);
 			}
 		}
-
-		/**
-		 * Recursively calls the function on all the children of the aggregation
-		 * @memberof nl.qualiture.plunk.demo.utils.Validator
-		 *
-		 * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl - The control or element to be validated.
-		 * @param {function} fFunction - The function to call recursively
-		 */
-		_recursiveCall(oControl, fFunction) {
-			for (var i = 0; i < this._aPossibleAggregations.length; i += 1) {
-				var aControlAggregation = oControl.getAggregation(
-					this._aPossibleAggregations[i]
-				);
-
-				if (!aControlAggregation) continue;
-
-				if (aControlAggregation instanceof Array) {
-					// generally, aggregations are of type Array
-					for (var j = 0; j < aControlAggregation.length; j += 1) {
-						fFunction.call(this, aControlAggregation[j]);
-					}
-				} else {
-					// ...however, with sap.ui.layout.form.Form, it is a single object *sigh*
-					fFunction.call(this, aControlAggregation);
-				}
-			}
-		}
-
-		_recursiveValidate(oControl, fFunction) {
-			let isValid = true;
-
-			for (var i = 0; i < this._aPossibleAggregations.length; i += 1) {
-				var aControlAggregation = oControl.getAggregation(
-					this._aPossibleAggregations[i]
-				);
-
-				if (!aControlAggregation) continue;
-
-				if (aControlAggregation instanceof Array) {
-					// generally, aggregations are of type Array
-					for (var j = 0; j < aControlAggregation.length; j += 1) {
-						if (!fFunction.call(this, aControlAggregation[j])) {
-							isValid = false;
-						}
-					}
-				} else {
-					// ...however, with sap.ui.layout.form.Form, it is a single object *sigh*
-					if (!fFunction.call(this, aControlAggregation)) {
-						isValid = false;
-					}
-				}
-			}
-			return isValid;
-		}
-
-		/**
-		 * Recursively calls the function on all the children of the aggregation
-		 * @memberof nl.qualiture.plunk.demo.utils.Validator
-		 *
-		 * @param {sap.ui.core.ValueState} eValueState
-		 * @return {sap.ui.core.MessageType} eMessageType
-		 */
-		_convertValueStateToMessageType(eValueState) {
-			var eMessageType;
-
-			switch (eValueState) {
-				case ValueState.Error:
-					eMessageType = MessageType.Error;
-					break;
-				case ValueState.Information:
-					eMessageType = MessageType.Information;
-					break;
-				case ValueState.None:
-					eMessageType = MessageType.None;
-					break;
-				case ValueState.Success:
-					eMessageType = MessageType.Success;
-					break;
-				case ValueState.Warning:
-					eMessageType = MessageType.Warning;
-					break;
-				default:
-					eMessageType = MessageType.Error;
-			}
-			return eMessageType;
-		}
-
 	}
+
+	/**
+	 * Validator で MseesageManager からメッセージを削除する際に、
+	 * Validator で追加したメッセージを判別可能とするためにメッセージにセットする MessageProcessor。
+	 * 処理内容は、{@link sap.ui.core.message.ControlMessageProcessor ControlMessageProcessor} と同一。
+	 */
+	const _ValidatorMessageProcessor = ControlMessageProcessor.extend("fw.validator.Validator._ValidatorMessageProcessor", {
+	});
+
 	return Validator;
 });

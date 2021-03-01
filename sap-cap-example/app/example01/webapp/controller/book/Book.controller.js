@@ -22,7 +22,9 @@ sap.ui.define([
 
 			const oMessageManager = sap.ui.getCore().getMessageManager();
 			oMessageManager.removeAllMessages();
-			oMessageManager.registerObject(this.byId("ObjectPageLayout"), true);
+
+			// manifest.json で sap.ui5.handleValidation を true にしている場合は不要 cf. https://sapui5.hana.ondemand.com/#/topic/a90d93df5a024e8bb18826b699c9aaa7.html
+			// oMessageManager.registerObject(this.getView(), true);
 		},
 		onEdit: function (oEvent) {
 			if (this._isEditing()) {
@@ -33,13 +35,17 @@ sap.ui.define([
 		},
 		onResetChanges: function () {
 			this.getModel().resetChanges();
-			// TODO バリデータのメソッドを実行してエラーステートとメッセージをクリアする
 			this._showGeneralInformationFragment("BookDisplayGeneralInformation");
 			this._setEditing(false);
+
+			new Validator().removeErrors(this.getView());
 		},
 		onSave: function () {
+			const oView = this.getView();
 			const validator = new Validator();
-			if (!validator.validate(this.byId("ObjectPageLayout")) || this.hasValidationError()) {
+			validator.removeErrors(oView);
+
+			if (!validator.validate(oView) || this.hasValidationError()) {
 				this.showValidationErrorMessageDialog();
 				return;
 			}

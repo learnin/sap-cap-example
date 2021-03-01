@@ -11,7 +11,7 @@
 		title="{i18n>label.book}"
 		showNavButton="true"
 		navButtonPress=".onNavBack">
-		<ObjectPageLayout id="ObjectPageLayout" upperCaseAnchorBar="false">
+		<ObjectPageLayout upperCaseAnchorBar="false">
 			<headerTitle>
 				<ObjectPageDynamicHeaderTitle>
 					<expandedHeading>
