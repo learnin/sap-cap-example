@@ -20,8 +20,7 @@
 			constraints: {
 				minLength: 1,
 				maxLength: 100
-			}}" 
-			required="true" />
+			}}" />
 		<Label text="{i18n>label.stock}" labelFor="stock" required="true" />
 		<Input id="stock" value="{
 			path: 'stock',
@@ -29,7 +28,6 @@
 			constraints: {
 				minimum: 0,
 				maximum: 9999999999
-			}}"
-			required="true" />
+			}}" />
 	</forms:SimpleForm>
 </core:FragmentDefinition>
