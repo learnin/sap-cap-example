@@ -23,6 +23,7 @@
 			<headerToolbar>
 				<OverflowToolbar>
 				<content>
+					<Text text="{count>/count}" />
 					<ToolbarSpacer/>
 					<SearchField
 						id="searchField"

@@ -33,6 +33,32 @@ sap.ui.define([
 
 			oMessageModelBinding.attachChange(this.onMessageBindingChange, this);
 			this._bTechnicalErrors = false;
+
+			// OData の総データ件数（ページングされる可能性のあるレスポンスデータの件数ではなく、$inlinecount でデータ取得した際に返される __count の値）を表示するための
+			// モデルをバインディングしておき、ODataModel のリクエスト完了時にレスポンスの値を取得してセットする。
+			// なお、OData V4 なら https://sapui5.hana.ondemand.com/#/topic/77d2310b637b490495d78b393ed6aa64 のように実装できるみたい。
+			const oCountModel = new JSONModel({
+				count: 0
+			});
+			this.setModel(oCountModel, "count");
+			oCatalog.attachRequestCompleted(oEvent => {
+				if (!oEvent.getParameters().success) {
+					return;
+				}
+				const oResponse = oEvent.getParameters().response;
+				if (!oResponse) {
+					return;
+				}
+				const sResponseText = oResponse.responseText;
+				if (sResponseText) {
+					try {
+						const oResponseText = JSON.parse(sResponseText);
+						oCountModel.setProperty("/count", oResponseText.d.__count);
+					} catch (oError) {
+						console.error(oError);
+					}
+				}
+			});
 		},
 		onNavToBookPage: function (oEvent) {
 			// onStockChange のように引数に id を追加するのではなく、以下のように oEvent からバインドコンテキスト経由でバインドされているモデルのプロパティを取得することも可能。
