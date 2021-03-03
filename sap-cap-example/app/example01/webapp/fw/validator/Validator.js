@@ -75,6 +75,14 @@ sap.ui.define([
 		validate(oControl) {
 			// 例えば sap.m.CheckBox など、required プロパティをもたないコントロールやエレメントについても必須チェックを可能とするために
 			// required プロパティが true でかつ、labelFor プロパティがあるラベルがあれば、その labelFor の対象コントロールやエレメントも必須チェック対象とする。
+			// TODO: これだと、複数のRadioButtonからariaLabelledBydで1つのLabelを指す場合に未対応。
+			// そもそもsap.ui.core.LabelEnablement.isRequiredを使えばLabelそのものを取得しなくても、上記を含めて判定してくれるっぽいのでこれを使うように修正する。
+			// ちなみにsap.ui.core.LabelEnablement.getReferencingLabelsは以下の結果だった。
+			// - SimpleForm内で、labelForあり											ラベルID取得OK
+			// - SimpleForm内で、labelForなし、入力コントロール側にariaLabelledBydあり		ラベルID取得OK
+			// - SimpleForm内で、labelForなし、入力コントロール側にariaLabelledBydなし		ラベルID取得OK
+			// - SimpleForm外で、labelForあり											ラベルID取得OK
+			// - SimpleForm外で、labelForなし、入力コントロール側にariaLabelledBydなし		ラベルID取得NG（紐付ける手がかりが一切ないので当たり前）
 			const aRequiredLabelsWithLabelFor = Element.registry.filter((oElement, sID) =>
 				oElement.getRequired && oElement.getRequired() &&
 				oElement.getLabelFor && oElement.getLabelFor() &&
@@ -245,15 +253,13 @@ sap.ui.define([
 			if (oControl.getBindingPath("value")) {
 				return oControl.getId() + "/value";
 			}
-			// TODO: sap.m.Select で動作確認必要
 			if (oControl.getBindingPath("selectedKey")) {
 				return oControl.getId() + "/selectedKey";
 			}
-			// TODO: sap.m.RadioButton で動作確認必要
+			// TODO: sap.m.RadioButton で動作確認必要（ariaLabelledByによるLabelのrequiredの参照が必要）
 			if (oControl.getBindingPath("selected")) {
 				return oControl.getId() + "/selected";
 			}
-			// TODO: sap.m.RadioButtonGroup で動作確認必要
 			if (oControl.getBindingPath("selectedIndex")) {
 				return oControl.getId() + "/selectedIndex";
 			}
@@ -261,6 +267,7 @@ sap.ui.define([
 			if (oControl.getBindingPath("selectedDates")) {
 				return oControl.getId() + "/selectedDates";
 			}
+			// TODO: バインディングされていない場合のサポート（メソッドの有無で判別する）
 			return undefined;
 		}
 
@@ -275,7 +282,6 @@ sap.ui.define([
 			if (oControl.getBindingPath("value")) {
 				return !oControl.getValue();
 			}
-			// TODO: sap.m.Select で動作確認必要
 			if (oControl.getBindingPath("selectedKey")) {
 				return !oControl.getSelectedKey();
 			}
@@ -283,14 +289,16 @@ sap.ui.define([
 			if (oControl.getBindingPath("selected")) {
 				return !oControl.getSelected();
 			}
-			// TODO: sap.m.RadioButtonGroup で動作確認必要
 			if (oControl.getBindingPath("selectedIndex")) {
+				// TODO: sap.m.RadioButtonGroupでselectedIndex のバインド値が null や undefined の場合 getSelectedIndex() は 0となる。
+				// また、選択肢に存在しない正数値の場合はその値になるので何らかの対応が必要
 				return oControl.getSelectedIndex() === -1 ? true : false;
 			}
 			// TODO: sap.ui.unified.Calendar で動作確認必要
 			if (oControl.getBindingPath("selectedDates")) {
 				return oControl.getSelectedDates().length === 0;
 			}
+			// TODO: バインディングされていない場合のサポート（メソッドの有無で判別する）
 			return false;
 		}
 
@@ -307,6 +315,8 @@ sap.ui.define([
 		}
 
 		_getLabelText(oControl) {
+			// TODO: これだと、SimpleForm 内のように LabelとControlが1つのコントロール内に含まれる構造にならないと取得できない。
+			// sap.ui.core.LabelEnablement.getReferencingLabels を使うように修正する。（それならSimpleForm外でも取得できる）
 			if (oControl instanceof Input ||
 				oControl instanceof CheckBox ||
 				oControl instanceof Select) {

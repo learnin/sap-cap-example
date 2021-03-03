@@ -25,6 +25,9 @@ sap.ui.define([
 					console.log(error);
 				}
 			});
+		},
+		onNavToValidatorExample: function () {
+			this.getRouter().navTo("validatorExample");
 		}
 	});
 });

@@ -1,0 +1,82 @@
+<mvc:View
+	controllerName="com.example.example01.controller.ValidatorExample"
+	xmlns="sap.m"
+	xmlns:l="sap.ui.layout"
+	xmlns:core="sap.ui.core"
+	xmlns:forms="sap.ui.layout.form"
+	xmlns:mvc="sap.ui.core.mvc"
+	xmlns:fwc="fw.control">
+	<Page
+		title="Validator Example"
+		showNavButton="true"
+		navButtonPress=".onNavBack">
+		<l:VerticalLayout class="sapUiContentPadding">
+			<Title text="In the SimpleForm" />
+			<forms:SimpleForm
+				class="sapUxAPObjectPageSubSectionAlignContent"
+				layout="ColumnLayout"
+				columnsM="2"
+				columnsL="3"
+				columnsXL="4"
+				editable="true">
+				<Label text="Required label" labelFor="requiredLabelInputInForm" required="true" />
+				<Input id="requiredLabelInputInForm" value="{inForm>/requiredLabelInput}" />
+
+				<Label text="Required Input" labelFor="requiredInputInForm" />
+				<Input id="requiredInputInForm" value="{inForm>/requiredInput}" required="true" />
+
+				<Label text="Required Select" labelFor="requiredSelectInForm" />
+				<Select
+					id="requiredSelectInForm"
+					autoAdjustWidth="true"
+					forceSelection="false"
+					selectedKey="{inForm>/selectedKeyOfRequiredSelect}"
+					items="{
+						path: 'inForm>/requiredSelect'
+					}"
+					required="true">
+					<core:Item key="{value}" text="{text}" />
+				</Select>
+
+				<!-- 現状、必須チェック未対応 -->
+				<Label id="requiredRadioLabelInForm" text="Required RadioButton" required="true" />
+				<RadioButton id="requiredRadio1" groupName="GroupA" text="{inForm>/requiredRadio1}" selected="{inForm>/selectedOfRequiredRadio1}" ariaLabelledBy="requiredRadioLabelInForm" />
+				<RadioButton id="requiredRadio2" groupName="GroupA" text="{inForm>/requiredRadio2}" selected="{inForm>/selectedOfRequiredRadio2}" ariaLabelledBy="requiredRadioLabelInForm" />
+
+				<Label text="Required RadioButtonGroup" labelFor="requiredRadioGroupInForm" required="true" />
+				<RadioButtonGroup id="requiredRadioGroupInForm" columns="2" selectedIndex="{inForm>/selectedIndexOfRequiredRadioGroup}">
+					<RadioButton text="{inForm>/requiredRadioGroup1}" />
+					<RadioButton text="{inForm>/requiredRadioGroup2}" />
+				</RadioButtonGroup>
+
+				<!-- TODO: ariaLabelledBy の対応後、2重にエラーメッセージが登録されないか確認必要 -->
+				<Label id="requiredRadioGroup2LabelInForm" text="Required RadioButtonGroup2" labelFor="requiredRadioGroup2InForm" required="true" />
+				<RadioButtonGroup id="requiredRadioGroup2InForm" columns="2" selectedIndex="{inForm>/selectedIndexOfRequiredRadioGroup2}">
+					<RadioButton text="{inForm>/requiredRadioGroup21}" ariaLabelledBy="requiredRadioGroup2LabelInForm" />
+					<RadioButton text="{inForm>/requiredRadioGroup22}" ariaLabelledBy="requiredRadioGroup2LabelInForm" />
+				</RadioButtonGroup>
+			</forms:SimpleForm>
+
+			<Title text="Out of the SimpleForm" />
+			<!-- <Label text="Required label" labelFor="requiredLabelInputOutForm" required="true" />
+			<Input id="requiredLabelInputOutForm" value="{outForm>/requiredLabelInput}" /> -->
+
+			<Title text="No binding" />
+		</l:VerticalLayout>
+		<footer>
+            <Toolbar>
+				<fwc:MessagePopoverButton/>
+				<ToolbarSpacer/>
+				<Button
+					id="saveButton"
+					type="Emphasized"
+					text="{i18n>label.save}"
+					press=".onSave"/>
+				<Button
+					id="resetChangesButton"
+					text="{i18n>label.resetChanges}"
+					press=".onResetChanges"/>
+            </Toolbar>
+        </footer>
+	</Page>
+</mvc:View>

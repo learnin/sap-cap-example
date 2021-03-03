@@ -150,6 +150,11 @@
                     "pattern": "books/{id}",
                     "name": "book",
                     "target": "book"
+                },
+                {
+                    "pattern": "validatorExample",
+                    "name": "validatorExample",
+                    "target": "validatorExample"
                 }
             ],
             "targets": {
@@ -172,6 +177,11 @@
                     "viewId": "book",
                     "viewName": "book.Book",
                     "viewLevel": 3
+                },
+                "validatorExample": {
+                    "viewId": "validatorExample",
+                    "viewName": "ValidatorExample",
+                    "viewLevel": 1
                 }
             }
         }
