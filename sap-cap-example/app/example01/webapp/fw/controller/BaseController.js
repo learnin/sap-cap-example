@@ -11,7 +11,6 @@ sap.ui.define([
 	"sap/ui/core/message/Message",
 	"sap/ui/core/mvc/Controller",
 	"sap/ui/core/routing/History",
-	"sap/ui/core/Element",
 	"sap/ui/core/IconPool",
 	"sap/ui/core/UIComponent",
 	"sap/ui/core/ValueState",
@@ -31,7 +30,6 @@ sap.ui.define([
 	Message,
 	Controller,
 	History,
-	Element,
 	IconPool,
 	UIComponent,
 	ValueState,
@@ -354,7 +352,7 @@ sap.ui.define([
 				},
 				activeTitlePress: oEvent => {
 					const oMessage = oEvent.getParameters().item.getBindingContext().getObject();
-					const oControl = Element.registry.get(oMessage.getControlId());
+					const oControl = sap.ui.getCore().byId(oMessage.getControlId());
 
 					oDialog.close();
 					if (oControl) {

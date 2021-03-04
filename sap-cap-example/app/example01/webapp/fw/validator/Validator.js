@@ -1,22 +1,14 @@
 sap.ui.define([
-	"sap/m/CheckBox",
-	"sap/m/Input",
-	"sap/m/Select",
 	"sap/ui/base/Object",
 	"sap/ui/core/message/ControlMessageProcessor",
 	"sap/ui/core/message/Message",
-	"sap/ui/core/Element",
 	"sap/ui/core/LabelEnablement",
 	"sap/ui/core/MessageType",
 	"sap/ui/core/ValueState"
 ], function (
-	CheckBox,
-	Input,
-	Select,
 	BaseObject,
 	ControlMessageProcessor,
 	Message,
-	Element,
 	LabelEnablement,
 	MessageType,
 	ValueState) {
@@ -178,7 +170,7 @@ sap.ui.define([
 
 			for (let i = 0, n = aMessagesAddedByThisValidator.length; i < n; i++) {
 				const oMessage = aMessagesAddedByThisValidator[i];
-				const oControl = Element.registry.get(oMessage.getValidationErrorControlId());
+				const oControl = sap.ui.getCore().byId(oMessage.getValidationErrorControlId());
 				if (!oControl) {
 					if (!oTargetRootControl) {
 						oMessageManager.removeMessages(oMessage);
@@ -314,9 +306,9 @@ sap.ui.define([
 		 */
 		_getLabelText(oControl) {
 			const aLabelId = LabelEnablement.getReferencingLabels(oControl);
-			if (aLabelId.length > 0) {
-				const oLabel = Element.registry.get(aLabelId[0]);
-				if (oLabel) {
+			if (aLabelId && aLabelId.length > 0) {
+				const oLabel = sap.ui.getCore().byId(aLabelId[0]);
+				if (oLabel && oLabel.getText) {
 					return oLabel.getText();
 				}
 			}
@@ -370,6 +362,10 @@ sap.ui.define([
 			
 			if (mParameters && mParameters.validationErrorControlId) {
 				this.validationErrorControlId = mParameters.validationErrorControlId;
+				// https://sapui5.hana.ondemand.com/#/api/sap.ui.core.message.Message/methods/getControlId に InputBase のコントロールにしか
+				// controlIdはセットされないと書かれている。実際に、例えば RadioButton ではセットされない。なぜ、こういう仕様にしているのかは不明。
+				// 本メッセージクラスではコントロールに関わらずセットする（ただし、何らかの問題が見つかった場合はセットするのをやめる可能性あり）。
+				this.addControlId(mParameters.validationErrorControlId);
 			}
 		}
 	});

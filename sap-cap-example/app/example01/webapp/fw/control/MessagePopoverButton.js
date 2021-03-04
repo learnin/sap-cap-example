@@ -5,7 +5,6 @@ sap.ui.define([
 	"sap/m/MessageItem",
 	"sap/m/MessagePopover",
 	"sap/ui/core/aria/HasPopup",
-	"sap/ui/core/Element",
 	"sap/ui/model/BindingMode"
 ], function (
 	Button,
@@ -14,7 +13,6 @@ sap.ui.define([
 	MessageItem,
 	MessagePopover,
 	HasPopup,
-	Element,
 	BindingMode) {
 	"use strict";
 
@@ -57,7 +55,7 @@ sap.ui.define([
 			const oMessagePopover = new MessagePopover({
 				activeTitlePress: oEvent => {
 					const oMessage = oEvent.getParameters().item.getBindingContext().getObject();
-					const oControl = Element.registry.get(oMessage.getControlId());
+					const oControl = sap.ui.getCore().byId(oMessage.getControlId());
 
 					if (oControl) {
 						setTimeout(() => oControl.focus(), 300);

@@ -14,13 +14,13 @@
 		<l:VerticalLayout>
 			<Title text="In the SimpleForm" />
 			<forms:SimpleForm>
-				<Label text="Required label" labelFor="requiredLabelInputInForm" required="true" />
+				<Label text="Required label in Form" labelFor="requiredLabelInputInForm" required="true" />
 				<Input id="requiredLabelInputInForm" value="{inForm>/requiredLabelInput}" />
 
-				<Label text="Required Input" labelFor="requiredInputInForm" />
+				<Label text="Required Input in Form" labelFor="requiredInputInForm" />
 				<Input id="requiredInputInForm" value="{inForm>/requiredInput}" required="true" />
 
-				<Label text="Required Select" labelFor="requiredSelectInForm" />
+				<Label text="Required Select in Form" labelFor="requiredSelectInForm" />
 				<Select
 					id="requiredSelectInForm"
 					autoAdjustWidth="true"
@@ -32,27 +32,30 @@
 					required="true">
 					<core:Item key="{value}" text="{text}" />
 				</Select>
+				<!-- <Select items="{inForm>/requiredSelect}">
+					<items>
+					<core:Item key="{value}" text="{text}" />
+					</items>
+				</Select> -->
 
-				<Label id="requiredRadioLabelInForm" text="Required RadioButton" required="true" />
+				<Label id="requiredRadioLabelInForm" text="Required RadioButton in Form" required="true" />
 				<RadioButton id="requiredRadio1" groupName="GroupA" text="{inForm>/requiredRadio1}" selected="{inForm>/selectedOfRequiredRadio1}" ariaLabelledBy="requiredRadioLabelInForm" />
 				<RadioButton id="requiredRadio2" groupName="GroupA" text="{inForm>/requiredRadio2}" selected="{inForm>/selectedOfRequiredRadio2}" ariaLabelledBy="requiredRadioLabelInForm" />
 
-				<Label text="Required RadioButtonGroup" labelFor="requiredRadioGroupInForm" required="true" />
+				<Label text="Required RadioButtonGroup in Form" labelFor="requiredRadioGroupInForm" required="true" />
 				<RadioButtonGroup id="requiredRadioGroupInForm" columns="2" selectedIndex="{inForm>/selectedIndexOfRequiredRadioGroup}">
 					<RadioButton text="{inForm>/requiredRadioGroup1}" />
 					<RadioButton text="{inForm>/requiredRadioGroup2}" />
 				</RadioButtonGroup>
 
-				<Label id="requiredRadioGroup2LabelInForm" text="Required RadioButtonGroup2" labelFor="requiredRadioGroup2InForm" required="true" />
+				<Label id="requiredRadioGroup2LabelInForm" text="Required RadioButtonGroup2 in Form" labelFor="requiredRadioGroup2InForm" required="true" />
 				<RadioButtonGroup id="requiredRadioGroup2InForm" columns="2" selectedIndex="{inForm>/selectedIndexOfRequiredRadioGroup2}">
 					<RadioButton text="{inForm>/requiredRadioGroup21}" ariaLabelledBy="requiredRadioGroup2LabelInForm" />
 					<RadioButton text="{inForm>/requiredRadioGroup22}" ariaLabelledBy="requiredRadioGroup2LabelInForm" />
 				</RadioButtonGroup>
 
-				<Label text="Required Calendar" labelFor="requiredCalendarInForm" required="true" />
-				<u:Calendar
-					id="requiredCalendarInForm"
-					selectedDates="{inForm>/requiredCalendar}">
+				<Label text="Required Calendar in Form" labelFor="requiredCalendarInForm" required="true" />
+				<u:Calendar id="requiredCalendarInForm" selectedDates="{inForm>/requiredCalendar}">
 					<u:selectedDates>
 						<u:DateRange startDate="{startDate}" />
 					</u:selectedDates>
@@ -60,8 +63,24 @@
 			</forms:SimpleForm>
 
 			<Title text="Out of the SimpleForm" />
-			<Label text="Required label" labelFor="requiredLabelInputOutForm" required="true" />
+			<Label text="Required label out Form" labelFor="requiredLabelInputOutForm" required="true" />
 			<Input id="requiredLabelInputOutForm" value="{outForm>/requiredLabelInput}" />
+
+			<Label text="Required Input out Form" labelFor="requiredInputOutForm" />
+			<Input id="requiredInputOutForm" value="{outForm>/requiredInput}" required="true" />
+
+			<!-- <Label text="Required Select out Form" labelFor="requiredSelectOutForm" />
+			<Select
+				id="requiredSelectOutForm"
+				autoAdjustWidth="true"
+				forceSelection="false"
+				selectedKey="{outForm>/selectedKeyOfRequiredSelect}"
+				items="{
+					path: 'outForm>/requiredSelect'
+				}"
+				required="true">
+				<core:Item key="{value}" text="{text}" />
+			</Select> -->
 
 			<Title text="No binding" />
 		</l:VerticalLayout>
