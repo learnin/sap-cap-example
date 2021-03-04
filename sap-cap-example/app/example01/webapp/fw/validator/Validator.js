@@ -6,6 +6,7 @@ sap.ui.define([
 	"sap/ui/core/message/ControlMessageProcessor",
 	"sap/ui/core/message/Message",
 	"sap/ui/core/Element",
+	"sap/ui/core/LabelEnablement",
 	"sap/ui/core/MessageType",
 	"sap/ui/core/ValueState"
 ], function (
@@ -16,6 +17,7 @@ sap.ui.define([
 	ControlMessageProcessor,
 	Message,
 	Element,
+	LabelEnablement,
 	MessageType,
 	ValueState) {
 	"use strict";
@@ -73,22 +75,7 @@ sap.ui.define([
 		 * @returns {boolean} true: valid、false: invalid
 		 */
 		validate(oControl) {
-			// 例えば sap.m.CheckBox など、required プロパティをもたないコントロールやエレメントについても必須チェックを可能とするために
-			// required プロパティが true でかつ、labelFor プロパティがあるラベルがあれば、その labelFor の対象コントロールやエレメントも必須チェック対象とする。
-			// TODO: これだと、複数のRadioButtonからariaLabelledBydで1つのLabelを指す場合に未対応。
-			// そもそもsap.ui.core.LabelEnablement.isRequiredを使えばLabelそのものを取得しなくても、上記を含めて判定してくれるっぽいのでこれを使うように修正する。
-			// ちなみにsap.ui.core.LabelEnablement.getReferencingLabelsは以下の結果だった。
-			// - SimpleForm内で、labelForあり											ラベルID取得OK
-			// - SimpleForm内で、labelForなし、入力コントロール側にariaLabelledBydあり		ラベルID取得OK
-			// - SimpleForm内で、labelForなし、入力コントロール側にariaLabelledBydなし		ラベルID取得OK
-			// - SimpleForm外で、labelForあり											ラベルID取得OK
-			// - SimpleForm外で、labelForなし、入力コントロール側にariaLabelledBydなし		ラベルID取得NG（紐付ける手がかりが一切ないので当たり前）
-			const aRequiredLabelsWithLabelFor = Element.registry.filter((oElement, sID) =>
-				oElement.getRequired && oElement.getRequired() &&
-				oElement.getLabelFor && oElement.getLabelFor() &&
-				oElement.getVisible && oElement.getVisible());
-			const aRequiredLabelFors = aRequiredLabelsWithLabelFor.map(oLabel => oLabel.getLabelFor());
-			return this._validate(oControl, aRequiredLabelFors);
+			return this._validate(oControl);
 		}
 
 		/**
@@ -118,7 +105,7 @@ sap.ui.define([
 		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement} oControl 検証対象のコントロールやエレメント
 		 * @returns {boolean}　true: valid、false: invalid
 		 */
-		_validate(oControl, aRequiredControlIds) {
+		_validate(oControl) {
 			if (!((oControl instanceof sap.ui.core.Control ||
 				oControl instanceof sap.ui.layout.form.FormContainer ||
 				oControl instanceof sap.ui.layout.form.FormElement ||
@@ -129,8 +116,10 @@ sap.ui.define([
 
 			let isValid = true;
 
-			if (oControl.getEnabled && oControl.getEnabled() &&
-				((oControl.getRequired && oControl.getRequired()) || aRequiredControlIds.includes(oControl.getId()))) {
+			// sap.ui.core.LabelEnablement#isRequired は対象コントロール・エレメント自体の required 属性だけでなく、
+		    // labelFor 属性で紐づく Label や、対象コントロール・エレメント側の ariaLabelledBy 属性で紐づく Label の required 属性まで見て判断してくれる。
+			if (((oControl.getEnabled && oControl.getEnabled()) || !oControl.getEnabled) &&
+				LabelEnablement.isRequired(oControl)) {
 				isValid = this._validateRequired(oControl);
 			} else {
 				// 入力コントロールやエレメントでなかった場合は、aggregation のコントロールやエレメントを再帰的に検証する。
@@ -141,12 +130,12 @@ sap.ui.define([
 					}
 					if (Array.isArray(aControlAggregation)) {
 						for (let j = 0; j < aControlAggregation.length; j++) {
-							if (!this._validate(aControlAggregation[j], aRequiredControlIds)) {
+							if (!this._validate(aControlAggregation[j])) {
 								isValid = false;
 							}
 						}
 					} else {
-						if (!this._validate(aControlAggregation, aRequiredControlIds)) {
+						if (!this._validate(aControlAggregation)) {
 							isValid = false;
 						}
 					}
@@ -263,7 +252,6 @@ sap.ui.define([
 			if (oControl.getBindingPath("selectedIndex")) {
 				return oControl.getId() + "/selectedIndex";
 			}
-			// TODO: sap.ui.unified.Calendar で動作確認必要
 			if (oControl.getBindingPath("selectedDates")) {
 				return oControl.getId() + "/selectedDates";
 			}
@@ -294,9 +282,9 @@ sap.ui.define([
 				// また、選択肢に存在しない正数値の場合はその値になるので何らかの対応が必要
 				return oControl.getSelectedIndex() === -1 ? true : false;
 			}
-			// TODO: sap.ui.unified.Calendar で動作確認必要
 			if (oControl.getBindingPath("selectedDates")) {
-				return oControl.getSelectedDates().length === 0;
+				const aSelectedDates = oControl.getSelectedDates();
+				return aSelectedDates.length === 0 || !aSelectedDates[0].getStartDate();
 			}
 			// TODO: バインディングされていない場合のサポート（メソッドの有無で判別する）
 			return false;
@@ -314,18 +302,22 @@ sap.ui.define([
 			return "Required to input.";
 		}
 
+		/**
+		 * sap.ui.core.LabelEnablement#getReferencingLabels は
+		 * labelFor 属性で紐づく Label や、対象コントロール・エレメント側の ariaLabelledBy 属性で紐づく Label まで取得してくれる。
+		 * 試した結果は以下の通り。
+		/* - SimpleForm内で、labelForあり											ラベルID取得OK
+		/* - SimpleForm内で、labelForなし、入力コントロール側にariaLabelledByあり		ラベルID取得OK
+		/* - SimpleForm内で、labelForなし、入力コントロール側にariaLabelledByなし		ラベルID取得OK
+		/* - SimpleForm外で、labelForあり											ラベルID取得OK
+		/* - SimpleForm外で、labelForなし、入力コントロール側にariaLabelledByなし		ラベルID取得NG（紐付ける手がかりが一切ないので当たり前）
+		 */
 		_getLabelText(oControl) {
-			// TODO: これだと、SimpleForm 内のように LabelとControlが1つのコントロール内に含まれる構造にならないと取得できない。
-			// sap.ui.core.LabelEnablement.getReferencingLabels を使うように修正する。（それならSimpleForm外でも取得できる）
-			if (oControl instanceof Input ||
-				oControl instanceof CheckBox ||
-				oControl instanceof Select) {
-				const oParent = oControl.getParent();
-				if (oParent) {
-					const oLabel = oParent.getLabel();
-					if (oLabel) {
-						return oLabel.getText();
-					}
+			const aLabelId = LabelEnablement.getReferencingLabels(oControl);
+			if (aLabelId.length > 0) {
+				const oLabel = Element.registry.get(aLabelId[0]);
+				if (oLabel) {
+					return oLabel.getText();
 				}
 			}
 			return undefined;
