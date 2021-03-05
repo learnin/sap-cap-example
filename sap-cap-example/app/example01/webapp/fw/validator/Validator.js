@@ -30,7 +30,6 @@ sap.ui.define([
 		 * @param {Object} mParameter
 		 */
 		constructor(mParameter) {
-			// TODO: これで過不足ないか
 			this._aTargetAggregations = [
 				"items",
 				"content",
@@ -109,7 +108,8 @@ sap.ui.define([
 			let isValid = true;
 
 			// sap.ui.core.LabelEnablement#isRequired は対象コントロール・エレメント自体の required 属性だけでなく、
-		    // labelFor 属性で紐づく Label や、対象コントロール・エレメント側の ariaLabelledBy 属性で紐づく Label の required 属性まで見て判断してくれる。
+		    // labelFor 属性で紐づく Label や、sap.ui.layout.form.SimpleForm 内での対象コントロール・エレメントの直前の Label の required 属性まで見て判断してくれる。
+			// （なお、ariaLabelledBy で参照される Label までは見てくれない）
 			if (((oControl.getEnabled && oControl.getEnabled()) || !oControl.getEnabled) &&
 				LabelEnablement.isRequired(oControl)) {
 				isValid = this._validateRequired(oControl);
@@ -229,25 +229,23 @@ sap.ui.define([
 		}
 
 		_resolveMessageTarget(oControl) {
-			// sap.m.InputBase（サブクラスに sap.ca.ui.DatePicker, sap.m.ComboBoxTextField, sap.m.DateTimeField, sap.m.Input,
-			// sap.m.MaskInput, sap.m.TextArea, sap.m.ComboBox, sap.m.MultiComboBox 等がある）
-			if (oControl.getBindingPath("value")) {
-				return oControl.getId() + "/value";
-			}
-			if (oControl.getBindingPath("selectedKey")) {
+			if (oControl.getBindingPath("selectedKey") || oControl.getSelectedKey) {
 				return oControl.getId() + "/selectedKey";
 			}
-			// TODO: sap.m.RadioButton で動作確認必要（ariaLabelledByによるLabelのrequiredの参照が必要）
-			if (oControl.getBindingPath("selected")) {
+			if (oControl.getBindingPath("selected") || oControl.getSelected) {
 				return oControl.getId() + "/selected";
 			}
-			if (oControl.getBindingPath("selectedIndex")) {
+			if (oControl.getBindingPath("selectedIndex") || oControl.getSelectedIndex) {
 				return oControl.getId() + "/selectedIndex";
 			}
-			if (oControl.getBindingPath("selectedDates")) {
+			if (oControl.getBindingPath("selectedDates") || oControl.getSelectedDates) {
 				return oControl.getId() + "/selectedDates";
 			}
-			// TODO: バインディングされていない場合のサポート（メソッドの有無で判別する）
+			// sap.m.InputBase（サブクラスに sap.m.ComboBoxTextField, 
+			// sap.m.MaskInput, sap.m.TextArea, sap.m.ComboBox, sap.m.MultiComboBox 等がある）
+			if (oControl.getBindingPath("value") || oControl.getValue) {
+				return oControl.getId() + "/value";
+			}
 			return undefined;
 		}
 
@@ -257,28 +255,26 @@ sap.ui.define([
 		 * @returns {boolean}
 		 */
 		_isNullValue(oControl) {
-			// sap.m.InputBase（サブクラスに sap.ca.ui.DatePicker, sap.m.ComboBoxTextField, sap.m.DateTimeField, sap.m.Input,
-			// sap.m.MaskInput, sap.m.TextArea, sap.m.ComboBox, sap.m.MultiComboBox 等がある）
-			if (oControl.getBindingPath("value")) {
-				return !oControl.getValue();
-			}
-			if (oControl.getBindingPath("selectedKey")) {
+			if (oControl.getBindingPath("selectedKey") || oControl.getSelectedKey) {
 				return !oControl.getSelectedKey();
 			}
-			// TODO: sap.m.RadioButton で動作確認必要
-			if (oControl.getBindingPath("selected")) {
+			if (oControl.getBindingPath("selected") || oControl.getSelected) {
 				return !oControl.getSelected();
 			}
-			if (oControl.getBindingPath("selectedIndex")) {
+			if (oControl.getBindingPath("selectedIndex") || oControl.getSelectedIndex) {
 				// TODO: sap.m.RadioButtonGroupでselectedIndex のバインド値が null や undefined の場合 getSelectedIndex() は 0となる。
 				// また、選択肢に存在しない正数値の場合はその値になるので何らかの対応が必要
 				return oControl.getSelectedIndex() === -1 ? true : false;
 			}
-			if (oControl.getBindingPath("selectedDates")) {
+			if (oControl.getBindingPath("selectedDates") || oControl.getSelectedDates) {
 				const aSelectedDates = oControl.getSelectedDates();
 				return aSelectedDates.length === 0 || !aSelectedDates[0].getStartDate();
 			}
-			// TODO: バインディングされていない場合のサポート（メソッドの有無で判別する）
+			// sap.m.InputBase（サブクラスに sap.ca.ui.DatePicker, sap.m.ComboBoxTextField, sap.m.DateTimeField, sap.m.Input,
+			// sap.m.MaskInput, sap.m.TextArea, sap.m.ComboBox, sap.m.MultiComboBox 等がある）
+			if (oControl.getBindingPath("value") || oControl.getValue) {
+				return !oControl.getValue();
+			}
 			return false;
 		}
 
@@ -296,13 +292,13 @@ sap.ui.define([
 
 		/**
 		 * sap.ui.core.LabelEnablement#getReferencingLabels は
-		 * labelFor 属性で紐づく Label や、対象コントロール・エレメント側の ariaLabelledBy 属性で紐づく Label まで取得してくれる。
+		 * labelFor 属性で紐づく Label や、sap.ui.layout.form.SimpleForm 内での対象コントロール・エレメントの直前の Label まで取得してくれる。
+		 * （なお、ariaLabelledBy で参照される Label までは取得してくれない）
 		 * 試した結果は以下の通り。
-		/* - SimpleForm内で、labelForあり											ラベルID取得OK
-		/* - SimpleForm内で、labelForなし、入力コントロール側にariaLabelledByあり		ラベルID取得OK
-		/* - SimpleForm内で、labelForなし、入力コントロール側にariaLabelledByなし		ラベルID取得OK
-		/* - SimpleForm外で、labelForあり											ラベルID取得OK
-		/* - SimpleForm外で、labelForなし、入力コントロール側にariaLabelledByなし		ラベルID取得NG（紐付ける手がかりが一切ないので当たり前）
+		 * - SimpleForm内で、labelForなし											ラベルID取得OK
+		 * - SimpleForm外で、labelForあり											ラベルID取得OK
+		 * - SimpleForm外で、labelForなし、入力コントロール側にariaLabelledByあり		ラベルID取得NG（ariaLabelledByまでは見に行かない）
+		 * - SimpleForm外で、labelForなし、入力コントロール側にariaLabelledByなし		ラベルID取得NG（紐付ける手がかりが一切ないので当たり前）
 		 */
 		_getLabelText(oControl) {
 			const aLabelId = LabelEnablement.getReferencingLabels(oControl);

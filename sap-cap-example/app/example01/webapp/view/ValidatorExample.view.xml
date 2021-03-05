@@ -1,6 +1,7 @@
 <mvc:View
 	controllerName="com.example.example01.controller.ValidatorExample"
 	xmlns="sap.m"
+	xmlns:uxap="sap.uxap"
 	xmlns:l="sap.ui.layout"
 	xmlns:core="sap.ui.core"
 	xmlns:forms="sap.ui.layout.form"
@@ -11,92 +12,151 @@
 		title="Validator Example"
 		showNavButton="true"
 		navButtonPress=".onNavBack">
-		<l:VerticalLayout>
-			<Title text="In the SimpleForm" />
-			<forms:SimpleForm>
-				<Label text="Required label in Form" labelFor="requiredLabelInputInForm" required="true" />
-				<Input id="requiredLabelInputInForm" value="{inForm>/requiredLabelInput}" />
+		<uxap:ObjectPageLayout upperCaseAnchorBar="false">
+			<uxap:ObjectPageSection titleUppercase="false" title="In the SimpleForm">
+				<uxap:ObjectPageSubSection>
+					<forms:SimpleForm layout="ColumnLayout" columnsM="2" columnsL="3" columnsXL="4" editable="true">
+						<!-- SimpleForm 内の場合、labelFor プロパティがない Label でも Label の required により必須チェックが可能 -->
+						<!-- 入力系コントロールには required プロパティがないものもあるので、基本的には SimpleForm を使った方が楽 -->
+						<Label text="Required label in Form" required="true" />
+						<Input value="{inForm>/requiredLabelInput}" />
 
-				<Label text="Required Input in Form" labelFor="requiredInputInForm" />
-				<Input id="requiredInputInForm" value="{inForm>/requiredInput}" required="true" />
+						<Label text="Required Input in Form" />
+						<Input value="{inForm>/requiredInput}" required="true" />
 
-				<Label text="Required Select in Form" labelFor="requiredSelectInForm" />
-				<Select
-					id="requiredSelectInForm"
-					autoAdjustWidth="true"
-					forceSelection="false"
-					selectedKey="{inForm>/selectedKeyOfRequiredSelect}"
-					items="{
-						path: 'inForm>/requiredSelect'
-					}"
-					required="true">
-					<core:Item key="{value}" text="{text}" />
-				</Select>
-				<!-- <Select items="{inForm>/requiredSelect}">
-					<items>
-					<core:Item key="{value}" text="{text}" />
-					</items>
-				</Select> -->
+						<Label text="Required Select in Form" />
+						<Select items="{inForm>/requiredSelect}" selectedKey="{inForm>/selectedKeyOfRequiredSelect}" required="true">
+							<core:Item key="{inForm>value}" text="{inForm>text}" />
+						</Select>
 
-				<Label id="requiredRadioLabelInForm" text="Required RadioButton in Form" required="true" />
-				<RadioButton id="requiredRadio1" groupName="GroupA" text="{inForm>/requiredRadio1}" selected="{inForm>/selectedOfRequiredRadio1}" ariaLabelledBy="requiredRadioLabelInForm" />
-				<RadioButton id="requiredRadio2" groupName="GroupA" text="{inForm>/requiredRadio2}" selected="{inForm>/selectedOfRequiredRadio2}" ariaLabelledBy="requiredRadioLabelInForm" />
+						<Label text="Required RadioButton in Form" required="true" />
+						<RadioButton groupName="requiredRadioInForm" text="{inForm>/requiredRadio1}" selected="{inForm>/selectedOfRequiredRadio1}" />
 
-				<Label text="Required RadioButtonGroup in Form" labelFor="requiredRadioGroupInForm" required="true" />
-				<RadioButtonGroup id="requiredRadioGroupInForm" columns="2" selectedIndex="{inForm>/selectedIndexOfRequiredRadioGroup}">
-					<RadioButton text="{inForm>/requiredRadioGroup1}" />
-					<RadioButton text="{inForm>/requiredRadioGroup2}" />
-				</RadioButtonGroup>
+						<Label text="Required RadioButtonGroup in Form" required="true" />
+						<RadioButtonGroup columns="2" selectedIndex="{inForm>/selectedIndexOfRequiredRadioGroup}">
+							<RadioButton text="{inForm>/requiredRadioGroup1}" />
+							<RadioButton text="{inForm>/requiredRadioGroup2}" />
+						</RadioButtonGroup>
 
-				<Label id="requiredRadioGroup2LabelInForm" text="Required RadioButtonGroup2 in Form" labelFor="requiredRadioGroup2InForm" required="true" />
-				<RadioButtonGroup id="requiredRadioGroup2InForm" columns="2" selectedIndex="{inForm>/selectedIndexOfRequiredRadioGroup2}">
-					<RadioButton text="{inForm>/requiredRadioGroup21}" ariaLabelledBy="requiredRadioGroup2LabelInForm" />
-					<RadioButton text="{inForm>/requiredRadioGroup22}" ariaLabelledBy="requiredRadioGroup2LabelInForm" />
-				</RadioButtonGroup>
+						<Label text="Required DatePicker in Form" />
+						<DatePicker dateValue="{inForm>/requiredDatePicker}" required="true"/>
 
-				<Label text="Required Calendar in Form" labelFor="requiredCalendarInForm" required="true" />
-				<u:Calendar id="requiredCalendarInForm" selectedDates="{inForm>/requiredCalendar}">
-					<u:selectedDates>
-						<u:DateRange startDate="{startDate}" />
-					</u:selectedDates>
-				</u:Calendar>
-			</forms:SimpleForm>
+						<!-- Calendar は sap.ui.core.IFormContent を実装していないので SimpleForm 内に置くのはNG -->
+					</forms:SimpleForm>
+				</uxap:ObjectPageSubSection>
+			</uxap:ObjectPageSection>
 
-			<Title text="Out of the SimpleForm" />
-			<Label text="Required label out Form" labelFor="requiredLabelInputOutForm" required="true" />
-			<Input id="requiredLabelInputOutForm" value="{outForm>/requiredLabelInput}" />
+			<uxap:ObjectPageSection titleUppercase="false" title="Out of the SimpleForm">
+				<uxap:ObjectPageSubSection>
+					<VBox>
+						<Label text="Required label out Form" labelFor="requiredLabelInputOutForm" required="true" />
+						<Input id="requiredLabelInputOutForm" value="{outForm>/requiredLabelInput}" />
+					</VBox>
+					<VBox>
+						<Label text="Required Input out Form" labelFor="requiredInputOutForm" />
+						<Input id="requiredInputOutForm" value="{outForm>/requiredInput}" required="true" />
+					</VBox>
+					<VBox>
+					<Label text="Required Select out Form" labelFor="requiredSelectOutForm" />
+						<Select
+							id="requiredSelectOutForm"
+							selectedKey="{outForm>/selectedKeyOfRequiredSelect}"
+							items="{outForm>/requiredSelect}"
+							required="true">
+							<core:Item key="{outForm>value}" text="{outForm>text}" />
+						</Select>
+					</VBox>
 
-			<Label text="Required Input out Form" labelFor="requiredInputOutForm" />
-			<Input id="requiredInputOutForm" value="{outForm>/requiredInput}" required="true" />
+					<!--
+					SimpleForm 外の場合、このような RadioButton 1つだけの必須チェックには非対応。
+					ただし、RadioButtonGroup を使えば対応できるし、そもそもラジオボタン1つのみに必須チェックすることはあまり想定できない（一般的にはチェックボックスを使う）ので対応しない
+					<Label id="requiredRadioLabelOutForm" text="Required RadioButton out Form" required="true" />
+					<RadioButton id="requiredRadioOutForm1" groupName="requiredRadioOutForm" text="{inForm>/requiredRadio1}" selected="{inForm>/selectedOfRequiredRadio1}" />
+					-->
 
-			<!-- <Label text="Required Select out Form" labelFor="requiredSelectOutForm" />
-			<Select
-				id="requiredSelectOutForm"
-				autoAdjustWidth="true"
-				forceSelection="false"
-				selectedKey="{outForm>/selectedKeyOfRequiredSelect}"
-				items="{
-					path: 'outForm>/requiredSelect'
-				}"
-				required="true">
-				<core:Item key="{value}" text="{text}" />
-			</Select> -->
+					<VBox>
+						<Label text="Required RadioButtonGroup out Form" labelFor="requiredRadioButtonGroupOutForm" required="true" />
+						<RadioButtonGroup id="requiredRadioButtonGroupOutForm" columns="2" selectedIndex="{outForm>/selectedIndexOfRequiredRadioGroup}">
+							<RadioButton text="{outForm>/requiredRadioGroup1}" />
+							<RadioButton text="{outForm>/requiredRadioGroup2}" />
+						</RadioButtonGroup>
+					</VBox>
+					<VBox>
+						<Label text="Required DatePicker out Form" labelFor="requiredDatePickerOutForm" />
+						<DatePicker id="requiredDatePickerOutForm" dateValue="{outForm>/requiredDatePicker}" required="true"/>
+					</VBox>
+					<VBox>
+						<Label text="Required Calendar out Form" labelFor="requiredCalendarOutForm" required="true" />
+						<u:Calendar id="requiredCalendarOutForm" selectedDates="{outForm>/requiredCalendar}">
+							<u:selectedDates>
+								<u:DateRange startDate="{startDate}" />
+							</u:selectedDates>
+						</u:Calendar>
+					</VBox>
+				</uxap:ObjectPageSubSection>
+			</uxap:ObjectPageSection>
 
-			<Title text="No binding" />
-		</l:VerticalLayout>
+			<uxap:ObjectPageSection titleUppercase="false" title="No binding">
+				<uxap:ObjectPageSubSection>
+					<VBox>
+						<Label text="Required label no binding" labelFor="requiredLabelInputNoBinding" required="true" />
+						<Input id="requiredLabelInputNoBinding" />
+					</VBox>
+					<VBox>
+						<Label text="Required Input no binding" labelFor="requiredInputNoBinding" />
+						<Input id="requiredInputNoBinding" required="true" />
+					</VBox>
+					<VBox>
+						<Label text="Required Select no binding" labelFor="requiredSelectNotBinding" />
+						<Select id="requiredSelectNotBinding" required="true">
+							<core:Item key="" text="" />
+							<core:Item key="value1" text="text1" />
+						</Select>
+					</VBox>
+					<VBox>
+						<Label text="Required RadioButtonGroup no binding" labelFor="requiredRadioButtonGroupNoBinding" required="true" />
+						<RadioButtonGroup id="requiredRadioButtonGroupNoBinding" columns="2" selectedIndex="-1">
+							<RadioButton text="text1" />
+							<RadioButton text="text2" />
+						</RadioButtonGroup>
+					</VBox>
+					<VBox>
+						<Label text="Required DatePicker no binding" labelFor="requiredDatePickerNoBinding" />
+						<DatePicker id="requiredDatePickerNoBinding" required="true"/>
+					</VBox>
+					<VBox>
+						<Label text="Required Calendar no binding" labelFor="requiredCalendarNoBinding" required="true" />
+						<u:Calendar id="requiredCalendarNoBinding">
+							<u:selectedDates>
+								<u:DateRange/>
+							</u:selectedDates>
+						</u:Calendar>
+					</VBox>
+				</uxap:ObjectPageSubSection>
+			</uxap:ObjectPageSection>
+
+			<uxap:ObjectPageSection titleUppercase="false" title="With UI5 standard validator">
+				<uxap:ObjectPageSubSection>
+					<VBox>
+						
+					</VBox>
+				</uxap:ObjectPageSubSection>
+			</uxap:ObjectPageSection>
+
+			<uxap:ObjectPageSection titleUppercase="false" title="Correlation controls validation">
+				<uxap:ObjectPageSubSection>
+					<VBox>
+						
+					</VBox>
+				</uxap:ObjectPageSubSection>
+			</uxap:ObjectPageSection>
+		</uxap:ObjectPageLayout>
 		<footer>
             <Toolbar>
 				<fwc:MessagePopoverButton/>
 				<ToolbarSpacer/>
-				<Button
-					id="saveButton"
-					type="Emphasized"
-					text="{i18n>label.save}"
-					press=".onSave"/>
-				<Button
-					id="resetChangesButton"
-					text="{i18n>label.resetChanges}"
-					press=".onResetChanges"/>
+				<Button type="Emphasized" text="Validate" press=".onValidate"/>
+				<Button text="Clear Validator Errors" press=".onClearErrors"/>
             </Toolbar>
         </footer>
 	</Page>
