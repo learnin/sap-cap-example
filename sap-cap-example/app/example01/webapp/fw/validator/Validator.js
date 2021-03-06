@@ -229,6 +229,11 @@ sap.ui.define([
 		}
 
 		_resolveMessageTarget(oControl) {
+			// sap.m.InputBase（サブクラスに sap.m.ComboBoxTextField, 
+			// sap.m.MaskInput, sap.m.TextArea, sap.m.ComboBox, sap.m.MultiComboBox 等がある）
+			if (oControl.getBindingPath("value") || oControl.getValue) {
+				return oControl.getId() + "/value";
+			}
 			if (oControl.getBindingPath("selectedKey") || oControl.getSelectedKey) {
 				return oControl.getId() + "/selectedKey";
 			}
@@ -241,11 +246,6 @@ sap.ui.define([
 			if (oControl.getBindingPath("selectedDates") || oControl.getSelectedDates) {
 				return oControl.getId() + "/selectedDates";
 			}
-			// sap.m.InputBase（サブクラスに sap.m.ComboBoxTextField, 
-			// sap.m.MaskInput, sap.m.TextArea, sap.m.ComboBox, sap.m.MultiComboBox 等がある）
-			if (oControl.getBindingPath("value") || oControl.getValue) {
-				return oControl.getId() + "/value";
-			}
 			return undefined;
 		}
 
@@ -255,6 +255,12 @@ sap.ui.define([
 		 * @returns {boolean}
 		 */
 		_isNullValue(oControl) {
+			// sap.m.InputBase（サブクラスに sap.ca.ui.DatePicker, sap.m.ComboBoxTextField, sap.m.DateTimeField, sap.m.Input,
+			// sap.m.MaskInput, sap.m.TextArea, sap.m.ComboBox, sap.m.MultiComboBox 等がある）
+			// sap.m.Input には getSelectedKey もあり、sap.m.Select には getValue はないので、getValue を先に確認する。
+			if (oControl.getBindingPath("value") || oControl.getValue) {
+				return !oControl.getValue();
+			}
 			if (oControl.getBindingPath("selectedKey") || oControl.getSelectedKey) {
 				return !oControl.getSelectedKey();
 			}
@@ -269,11 +275,6 @@ sap.ui.define([
 			if (oControl.getBindingPath("selectedDates") || oControl.getSelectedDates) {
 				const aSelectedDates = oControl.getSelectedDates();
 				return aSelectedDates.length === 0 || !aSelectedDates[0].getStartDate();
-			}
-			// sap.m.InputBase（サブクラスに sap.ca.ui.DatePicker, sap.m.ComboBoxTextField, sap.m.DateTimeField, sap.m.Input,
-			// sap.m.MaskInput, sap.m.TextArea, sap.m.ComboBox, sap.m.MultiComboBox 等がある）
-			if (oControl.getBindingPath("value") || oControl.getValue) {
-				return !oControl.getValue();
 			}
 			return false;
 		}
