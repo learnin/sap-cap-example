@@ -230,20 +230,20 @@ sap.ui.define([
 
 		_resolveMessageTarget(oControl) {
 			// sap.m.InputBase（サブクラスに sap.m.ComboBoxTextField, 
-			// sap.m.MaskInput, sap.m.TextArea, sap.m.ComboBox, sap.m.MultiComboBox 等がある）
-			if (oControl.getBindingPath("value") || oControl.getValue) {
+			// sap.m.MaskInput, sap.m.TextArea, sap.m.MultiComboBox 等がある）
+			if (oControl.getBinding("value") || oControl.getValue) {
 				return oControl.getId() + "/value";
 			}
-			if (oControl.getBindingPath("selectedKey") || oControl.getSelectedKey) {
+			if (oControl.getBinding("selectedKey") || oControl.getSelectedKey) {
 				return oControl.getId() + "/selectedKey";
 			}
-			if (oControl.getBindingPath("selected") || oControl.getSelected) {
+			if (oControl.getBinding("selected") || oControl.getSelected) {
 				return oControl.getId() + "/selected";
 			}
-			if (oControl.getBindingPath("selectedIndex") || oControl.getSelectedIndex) {
+			if (oControl.getBinding("selectedIndex") || oControl.getSelectedIndex) {
 				return oControl.getId() + "/selectedIndex";
 			}
-			if (oControl.getBindingPath("selectedDates") || oControl.getSelectedDates) {
+			if (oControl.getBinding("selectedDates") || oControl.getSelectedDates) {
 				return oControl.getId() + "/selectedDates";
 			}
 			return undefined;
@@ -255,28 +255,34 @@ sap.ui.define([
 		 * @returns {boolean}
 		 */
 		_isNullValue(oControl) {
-			// sap.m.InputBase（サブクラスに sap.ca.ui.DatePicker, sap.m.ComboBoxTextField, sap.m.DateTimeField, sap.m.Input,
-			// sap.m.MaskInput, sap.m.TextArea, sap.m.ComboBox, sap.m.MultiComboBox 等がある）
-			// sap.m.Input には getSelectedKey もあり、sap.m.Select には getValue はないので、getValue を先に確認する。
-			if (oControl.getBindingPath("value") || oControl.getValue) {
-				return !oControl.getValue();
+			// sap.m.InputBase（サブクラスに sap.m.ComboBoxTextField, sap.m.DateTimeField,
+			// sap.m.MaskInput, sap.m.TextArea, sap.m.MultiComboBox 等がある）
+
+			if (!oControl.getValue && !oControl.getSelectedKey && !oControl.getSelected && !oControl.getSelectedIndex && !oControl.getSelectedDates) {
+				// バリデーション対象外
+				return false;
 			}
-			if (oControl.getBindingPath("selectedKey") || oControl.getSelectedKey) {
-				return !oControl.getSelectedKey();
+			// 例えば sap.m.ComboBox は getValue も getSelectedKey もあるが、選択肢から選ばずに直接値を入力した際は getSelectedKey は空文字になるので getValue で判定する必要がある。
+			// このため、いずれかの値を取得するメソッドの戻り値に値が入っていれば、入力されていると判断する。
+			// ただし、getSelectedIndex もあり、例えば1つ目の選択肢が「選択してください」だったとしてそれを選択していた場合、getSelectedIndex は0を返すため、
+			// プルダウンフィールドは getSelectedIndex では判定できないため getSelectedIndex はみない。
+			if (oControl.getValue || oControl.getSelectedKey || oControl.getSelected) {
+				return !((oControl.getValue && oControl.getValue()) ||
+					(oControl.getSelectedKey && oControl.getSelectedKey()) ||
+					(oControl.getSelected && oControl.getSelected()));
 			}
-			if (oControl.getBindingPath("selected") || oControl.getSelected) {
-				return !oControl.getSelected();
-			}
-			if (oControl.getBindingPath("selectedIndex") || oControl.getSelectedIndex) {
+			if (oControl.getSelectedIndex && oControl.getSelectedIndex() >= 0) {
 				// TODO: sap.m.RadioButtonGroupでselectedIndex のバインド値が null や undefined の場合 getSelectedIndex() は 0となる。
 				// また、選択肢に存在しない正数値の場合はその値になるので何らかの対応が必要
-				return oControl.getSelectedIndex() === -1 ? true : false;
+				return false;
 			}
-			if (oControl.getBindingPath("selectedDates") || oControl.getSelectedDates) {
+			if (oControl.getSelectedDates) {
 				const aSelectedDates = oControl.getSelectedDates();
-				return aSelectedDates.length === 0 || !aSelectedDates[0].getStartDate();
+				if (aSelectedDates.length > 0 && aSelectedDates[0].getStartDate()) {
+					return false;
+				}
 			}
-			return false;
+			return true;
 		}
 
 		_getMessageTextByControl(oControl) {

@@ -41,6 +41,11 @@
 						<Label text="Required DatePicker in Form" />
 						<DatePicker dateValue="{inForm>/requiredDatePicker}" required="true"/>
 
+						<Label text="Required ComboBox in Form" />
+						<ComboBox items="{inForm>/requiredComboBox}" selectedKey="{inForm>/selectedKeyOfRequiredComboBox}" required="true">
+							<core:Item key="{inForm>value}" text="{inForm>text}" />
+						</ComboBox>
+
 						<!-- Calendar は sap.ui.core.IFormContent を実装していないので SimpleForm 内に置くのはNG -->
 					</forms:SimpleForm>
 				</uxap:ObjectPageSubSection>
@@ -86,6 +91,12 @@
 						<DatePicker id="requiredDatePickerOutForm" dateValue="{outForm>/requiredDatePicker}" required="true"/>
 					</VBox>
 					<VBox>
+						<Label text="Required ComboBox out Form" labelFor="requiredComboBoxOutForm" />
+						<ComboBox id="requiredComboBoxOutForm" items="{outForm>/requiredComboBox}" selectedKey="{outForm>/selectedKeyOfRequiredComboBox}" required="true">
+							<core:Item key="{outForm>value}" text="{outForm>text}" />
+						</ComboBox>
+					</VBox>
+					<VBox>
 						<Label text="Required Calendar out Form" labelFor="requiredCalendarOutForm" required="true" />
 						<u:Calendar id="requiredCalendarOutForm" selectedDates="{outForm>/requiredCalendar}">
 							<u:selectedDates>
@@ -125,6 +136,13 @@
 						<DatePicker id="requiredDatePickerNoBinding" required="true"/>
 					</VBox>
 					<VBox>
+						<Label text="Required ComboBox no binding" labelFor="requiredComboBoxNoBinding" />
+						<ComboBox id="requiredComboBoxNoBinding" required="true">
+							<core:Item key="" text="" />
+							<core:Item key="value1" text="text1" />
+						</ComboBox>
+					</VBox>
+					<VBox>
 						<Label text="Required Calendar no binding" labelFor="requiredCalendarNoBinding" required="true" />
 						<u:Calendar id="requiredCalendarNoBinding">
 							<u:selectedDates>
@@ -137,9 +155,16 @@
 
 			<uxap:ObjectPageSection titleUppercase="false" title="With UI5 standard validator">
 				<uxap:ObjectPageSubSection>
-					<VBox>
-						
-					</VBox>
+					<forms:SimpleForm layout="ColumnLayout" columnsM="2" columnsL="3" columnsXL="4" editable="true">
+						<Label text="Required Input MaxLength 5" />
+						<Input value="{
+							path: 'withUI5Validator>/requiredInput',
+							type: 'sap.ui.model.type.String',
+							constraints: {
+								maxLength: 5
+							}}"
+							required="true" />
+					</forms:SimpleForm>
 				</uxap:ObjectPageSubSection>
 			</uxap:ObjectPageSection>
 

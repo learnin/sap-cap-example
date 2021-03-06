@@ -23,7 +23,15 @@ sap.ui.define([
 				requiredRadioGroup1: "text1",
 				requiredRadioGroup2: "text2",
 				selectedIndexOfRequiredRadioGroup: -1,
-				requiredDatePicker: null
+				requiredDatePicker: null,
+				requiredComboBox: [{
+					value: "",
+					text: ""
+				}, {
+					value: "value1",
+					text: "text1"
+				}],
+				selectedKeyOfRequiredComboBox: ""
 			}), "inForm");
 			this.setModel(new JSONModel({
 				requiredLabelInput: "",
@@ -42,18 +50,30 @@ sap.ui.define([
 				requiredDatePicker: null,
 				requiredCalendar: [{
 					startDate: null
-				}]
+				}],
+				requiredComboBox: [{
+					value: "",
+					text: ""
+				}, {
+					value: "value1",
+					text: "text1"
+				}],
+				selectedKeyOfRequiredComboBox: ""
 			}), "outForm");
+			this.setModel(new JSONModel({
+				requiredInput: ""
+			}), "withUI5Validator");
 		},
 		onValidate: function () {
 			const oView = this.getView();
 			// console.log(sap.ui.core.LabelEnablement.getReferencingLabels(oView.byId("requiredLabelInputOutForm")));
-			// console.log(oView.byId("requiredSelectInForm").getSelectedKey());
+			// console.log(oView.byId("x").getBinding());
 			// console.log(oView.byId("requiredRadioGroupInForm").getBindingPath("selectedIndex"));
 			const validator = new Validator();
 			validator.removeErrors(oView);
 
 			if (!validator.validate(oView) || this.hasValidationError()) {
+				// sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/").forEach(m => console.log(m.getTarget()));
 				this.showValidationErrorMessageDialog();
 				return;
 			}

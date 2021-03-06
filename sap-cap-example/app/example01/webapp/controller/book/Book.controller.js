@@ -65,6 +65,8 @@ sap.ui.define([
 			}).catch(oError => this.defaultSubmitChangesErrorHandler(oError, oModel));
 		},
 		_onRouteMatched: function (oEvent) {
+			// TODO: 画面遷移してきた時に、他の画面で登録されたエラーメッセージが残っているかもしれないので全クリアが必要
+
 			const oView = this.getView();
 
 			oView.bindElement({
