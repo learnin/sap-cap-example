@@ -229,13 +229,14 @@ sap.ui.define([
 		}
 
 		_resolveMessageTarget(oControl) {
-			// sap.m.InputBase（サブクラスに sap.m.ComboBoxTextField, 
-			// sap.m.MaskInput, sap.m.TextArea, sap.m.MultiComboBox 等がある）
 			if (oControl.getBinding("value") || oControl.getValue) {
 				return oControl.getId() + "/value";
 			}
 			if (oControl.getBinding("selectedKey") || oControl.getSelectedKey) {
 				return oControl.getId() + "/selectedKey";
+			}
+			if (oControl.getBinding("selectedKeys") || oControl.getSelectedKeys) {
+				return oControl.getId() + "/selectedKeys";
 			}
 			if (oControl.getBinding("selected") || oControl.getSelected) {
 				return oControl.getId() + "/selected";
@@ -255,10 +256,12 @@ sap.ui.define([
 		 * @returns {boolean}
 		 */
 		_isNullValue(oControl) {
-			// sap.m.InputBase（サブクラスに sap.m.ComboBoxTextField, sap.m.DateTimeField,
-			// sap.m.MaskInput, sap.m.TextArea, sap.m.MultiComboBox 等がある）
-
-			if (!oControl.getValue && !oControl.getSelectedKey && !oControl.getSelected && !oControl.getSelectedIndex && !oControl.getSelectedDates) {
+			if (!oControl.getValue &&
+				!oControl.getSelectedKey &&
+				!oControl.getSelectedKeys &&
+				!oControl.getSelected &&
+				!oControl.getSelectedIndex &&
+				!oControl.getSelectedDates) {
 				// バリデーション対象外
 				return false;
 			}
@@ -266,9 +269,11 @@ sap.ui.define([
 			// このため、いずれかの値を取得するメソッドの戻り値に値が入っていれば、入力されていると判断する。
 			// ただし、getSelectedIndex もあり、例えば1つ目の選択肢が「選択してください」だったとしてそれを選択していた場合、getSelectedIndex は0を返すため、
 			// プルダウンフィールドは getSelectedIndex では判定できないため getSelectedIndex はみない。
-			if (oControl.getValue || oControl.getSelectedKey || oControl.getSelected) {
+			// sap.m.MultiComboBox は getValue も getSelectedKeys もあるが、getValue では値は取得できないので getSelectedKeys で判定する必要がある。
+			if (oControl.getValue || oControl.getSelectedKey || oControl.getSelectedKeys || oControl.getSelected) {
 				return !((oControl.getValue && oControl.getValue()) ||
 					(oControl.getSelectedKey && oControl.getSelectedKey()) ||
+					(oControl.getSelectedKeys && oControl.getSelectedKeys().length > 0) ||
 					(oControl.getSelected && oControl.getSelected()));
 			}
 			if (oControl.getSelectedIndex && oControl.getSelectedIndex() >= 0) {

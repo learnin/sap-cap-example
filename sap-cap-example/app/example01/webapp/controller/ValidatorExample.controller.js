@@ -10,6 +10,7 @@ sap.ui.define([
 			this.setModel(new JSONModel({
 				requiredLabelInput: "",
 				requiredInput: "",
+				requiredMaskInput: undefined,
 				requiredSelect: [{
 					value: "",
 					text: ""
@@ -23,42 +24,46 @@ sap.ui.define([
 				requiredRadioGroup1: "text1",
 				requiredRadioGroup2: "text2",
 				selectedIndexOfRequiredRadioGroup: -1,
+				selectedOfRequiredCheckBox: false,
+				requiredCheckBoxWithValue: [{
+					value: "value1",
+					text: "text1"
+				}, {
+					value: "value2",
+					text: "text2"
+				}],
 				requiredDatePicker: null,
 				requiredComboBox: [{
-					value: "",
-					text: ""
-				}, {
 					value: "value1",
 					text: "text1"
+				}, {
+					value: "value2",
+					text: "text2"
 				}],
-				selectedKeyOfRequiredComboBox: ""
+				selectedKeyOfRequiredComboBox: "",
+				requiredMultiComboBox: [{
+					value: "value1",
+					text: "text1"
+				}, {
+					value: "value2",
+					text: "text2"
+				}],
+				selectedKeyOfRequiredMultiComboBox: [],
+				requiredTextArea: ""
 			}), "inForm");
 			this.setModel(new JSONModel({
-				requiredLabelInput: "",
 				requiredInput: "",
-				requiredSelect: [{
-					value: "",
-					text: ""
-				}, {
-					value: "value1",
+				requiredCheckBox: [{
 					text: "text1"
+				}, {
+					text: "text2"
 				}],
-				selectedKeyOfRequiredSelect: "",
-				requiredRadioGroup1: "text1",
-				requiredRadioGroup2: "text2",
-				selectedIndexOfRequiredRadioGroup: -1,
-				requiredDatePicker: null,
 				requiredCalendar: [{
 					startDate: null
 				}],
-				requiredComboBox: [{
-					value: "",
-					text: ""
-				}, {
-					value: "value1",
-					text: "text1"
-				}],
-				selectedKeyOfRequiredComboBox: ""
+				requiredCalendarDateInterval: [{
+					startDate: null
+				}]
 			}), "outForm");
 			this.setModel(new JSONModel({
 				requiredInput: ""
@@ -67,7 +72,7 @@ sap.ui.define([
 		onValidate: function () {
 			const oView = this.getView();
 			// console.log(sap.ui.core.LabelEnablement.getReferencingLabels(oView.byId("requiredLabelInputOutForm")));
-			// console.log(oView.byId("x").getBinding());
+			// console.log(oView.byId("requiredCalendarDateIntervalOutForm").getStartDate());
 			// console.log(oView.byId("requiredRadioGroupInForm").getBindingPath("selectedIndex"));
 			const validator = new Validator();
 			validator.removeErrors(oView);

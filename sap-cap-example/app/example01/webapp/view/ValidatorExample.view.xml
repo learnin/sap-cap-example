@@ -24,12 +24,15 @@
 						<Label text="Required Input in Form" />
 						<Input value="{inForm>/requiredInput}" required="true" />
 
+						<Label text="Required MaskInput in Form (Numeric only)" />
+						<MaskInput mask="999999" value="{inForm>/requiredMaskInput}" required="true" />
+
 						<Label text="Required Select in Form" />
 						<Select items="{inForm>/requiredSelect}" selectedKey="{inForm>/selectedKeyOfRequiredSelect}" required="true">
 							<core:Item key="{inForm>value}" text="{inForm>text}" />
 						</Select>
 
-						<Label text="Required RadioButton in Form" required="true" />
+						<Label text="Required RadioButton in Form. Note: Validator can't support multiple RadioButtons without RadioButtonGroup. " required="true" />
 						<RadioButton groupName="requiredRadioInForm" text="{inForm>/requiredRadio1}" selected="{inForm>/selectedOfRequiredRadio1}" />
 
 						<Label text="Required RadioButtonGroup in Form" required="true" />
@@ -37,6 +40,9 @@
 							<RadioButton text="{inForm>/requiredRadioGroup1}" />
 							<RadioButton text="{inForm>/requiredRadioGroup2}" />
 						</RadioButtonGroup>
+
+						<Label text="Required CheckBox in Form. Note: Validator can't support multiple CheckBoxes. Only one CheckBox is supported." required="true" />
+						<CheckBox text="text1" selected="{inForm>/selectedOfRequiredCheckBox}" />
 
 						<Label text="Required DatePicker in Form" />
 						<DatePicker dateValue="{inForm>/requiredDatePicker}" required="true"/>
@@ -46,6 +52,14 @@
 							<core:Item key="{inForm>value}" text="{inForm>text}" />
 						</ComboBox>
 
+						<Label text="Required MultiComboBox in Form" />
+						<MultiComboBox items="{inForm>/requiredMultiComboBox}" selectedKeys="{inForm>/selectedKeyOfRequiredMultiComboBox}" required="true">
+							<core:Item key="{inForm>value}" text="{inForm>text}" />
+						</MultiComboBox>
+
+						<Label text="Required TextArea in Form" />
+						<TextArea value="{inForm>/requiredTextArea}" required="true" />
+
 						<!-- Calendar は sap.ui.core.IFormContent を実装していないので SimpleForm 内に置くのはNG -->
 					</forms:SimpleForm>
 				</uxap:ObjectPageSubSection>
@@ -54,55 +68,24 @@
 			<uxap:ObjectPageSection titleUppercase="false" title="Out of the SimpleForm">
 				<uxap:ObjectPageSubSection>
 					<VBox>
-						<Label text="Required label out Form" labelFor="requiredLabelInputOutForm" required="true" />
-						<Input id="requiredLabelInputOutForm" value="{outForm>/requiredLabelInput}" />
-					</VBox>
-					<VBox>
 						<Label text="Required Input out Form" labelFor="requiredInputOutForm" />
 						<Input id="requiredInputOutForm" value="{outForm>/requiredInput}" required="true" />
-					</VBox>
-					<VBox>
-					<Label text="Required Select out Form" labelFor="requiredSelectOutForm" />
-						<Select
-							id="requiredSelectOutForm"
-							selectedKey="{outForm>/selectedKeyOfRequiredSelect}"
-							items="{outForm>/requiredSelect}"
-							required="true">
-							<core:Item key="{outForm>value}" text="{outForm>text}" />
-						</Select>
-					</VBox>
-
-					<!--
-					SimpleForm 外の場合、このような RadioButton 1つだけの必須チェックには非対応。
-					ただし、RadioButtonGroup を使えば対応できるし、そもそもラジオボタン1つのみに必須チェックすることはあまり想定できない（一般的にはチェックボックスを使う）ので対応しない
-					<Label id="requiredRadioLabelOutForm" text="Required RadioButton out Form" required="true" />
-					<RadioButton id="requiredRadioOutForm1" groupName="requiredRadioOutForm" text="{inForm>/requiredRadio1}" selected="{inForm>/selectedOfRequiredRadio1}" />
-					-->
-
-					<VBox>
-						<Label text="Required RadioButtonGroup out Form" labelFor="requiredRadioButtonGroupOutForm" required="true" />
-						<RadioButtonGroup id="requiredRadioButtonGroupOutForm" columns="2" selectedIndex="{outForm>/selectedIndexOfRequiredRadioGroup}">
-							<RadioButton text="{outForm>/requiredRadioGroup1}" />
-							<RadioButton text="{outForm>/requiredRadioGroup2}" />
-						</RadioButtonGroup>
-					</VBox>
-					<VBox>
-						<Label text="Required DatePicker out Form" labelFor="requiredDatePickerOutForm" />
-						<DatePicker id="requiredDatePickerOutForm" dateValue="{outForm>/requiredDatePicker}" required="true"/>
-					</VBox>
-					<VBox>
-						<Label text="Required ComboBox out Form" labelFor="requiredComboBoxOutForm" />
-						<ComboBox id="requiredComboBoxOutForm" items="{outForm>/requiredComboBox}" selectedKey="{outForm>/selectedKeyOfRequiredComboBox}" required="true">
-							<core:Item key="{outForm>value}" text="{outForm>text}" />
-						</ComboBox>
 					</VBox>
 					<VBox>
 						<Label text="Required Calendar out Form" labelFor="requiredCalendarOutForm" required="true" />
 						<u:Calendar id="requiredCalendarOutForm" selectedDates="{outForm>/requiredCalendar}">
 							<u:selectedDates>
-								<u:DateRange startDate="{startDate}" />
+								<u:DateRange startDate="{outForm>startDate}" />
 							</u:selectedDates>
 						</u:Calendar>
+					</VBox>
+					<VBox>
+						<Label text="Required CalendarDateInterval out Form" labelFor="requiredCalendarDateIntervalOutForm" required="true" />
+						<u:CalendarDateInterval id="requiredCalendarDateIntervalOutForm" selectedDates="{outForm>/requiredCalendarDateInterval}">
+						<u:selectedDates>
+								<u:DateRange startDate="{outForm>startDate}" />
+							</u:selectedDates>
+						</u:CalendarDateInterval>
 					</VBox>
 				</uxap:ObjectPageSubSection>
 			</uxap:ObjectPageSection>
@@ -116,6 +99,10 @@
 					<VBox>
 						<Label text="Required Input no binding" labelFor="requiredInputNoBinding" />
 						<Input id="requiredInputNoBinding" required="true" />
+					</VBox>
+					<VBox>
+						<Label text="Required MaskInput no binding (Numeric only)" labelFor="requiredMaskInputNoBinding" />
+						<MaskInput id="requiredMaskInputNoBinding" mask="999999" required="true" />
 					</VBox>
 					<VBox>
 						<Label text="Required Select no binding" labelFor="requiredSelectNotBinding" />
@@ -138,17 +125,28 @@
 					<VBox>
 						<Label text="Required ComboBox no binding" labelFor="requiredComboBoxNoBinding" />
 						<ComboBox id="requiredComboBoxNoBinding" required="true">
-							<core:Item key="" text="" />
 							<core:Item key="value1" text="text1" />
+							<core:Item key="value2" text="text2" />
 						</ComboBox>
 					</VBox>
 					<VBox>
+						<Label text="Required MultiComboBox no binding" labelFor="requiredMultiComboBoxNoBinding" />
+						<MultiComboBox id="requiredMultiComboBoxNoBinding" required="true">
+							<core:Item key="value1" text="text1" />
+							<core:Item key="value2" text="text2" />
+						</MultiComboBox>
+					</VBox>
+					<VBox>
+						<Label text="Required TextArea no binding" labelFor="requiredTextAreaNoBinding" />
+						<TextArea id="requiredTextAreaNoBinding" required="true" />
+					</VBox>
+					<VBox>
 						<Label text="Required Calendar no binding" labelFor="requiredCalendarNoBinding" required="true" />
-						<u:Calendar id="requiredCalendarNoBinding">
-							<u:selectedDates>
-								<u:DateRange/>
-							</u:selectedDates>
-						</u:Calendar>
+						<u:Calendar id="requiredCalendarNoBinding" />
+					</VBox>
+					<VBox>
+						<Label text="Required CalendarDateInterval no binding" labelFor="requiredCalendarDateIntervalNoBinding" required="true" />
+						<u:CalendarDateInterval id="requiredCalendarDateIntervalNoBinding" />
 					</VBox>
 				</uxap:ObjectPageSubSection>
 			</uxap:ObjectPageSection>
@@ -165,6 +163,22 @@
 							}}"
 							required="true" />
 					</forms:SimpleForm>
+				</uxap:ObjectPageSubSection>
+			</uxap:ObjectPageSection>
+
+			<uxap:ObjectPageSection titleUppercase="false" title="Custom validation">
+				<uxap:ObjectPageSubSection>
+					<VBox>
+						<!--
+						CheckBox について、複数CheckBoxの必須チェックと、textだけでなくvalueつきのCheckBoxの対応
+						<VBox>
+							<Label text="Required CheckBox out Form (with Value)" required="true" />
+							<HBox items="{outForm>/requiredCheckBox}">
+								<CheckBox text="{outForm>text}" />
+							</HBox>
+						</VBox>
+						-->
+					</VBox>
 				</uxap:ObjectPageSubSection>
 			</uxap:ObjectPageSection>
 
