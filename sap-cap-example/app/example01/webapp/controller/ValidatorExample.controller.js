@@ -53,11 +53,6 @@ sap.ui.define([
 			}), "inForm");
 			this.setModel(new JSONModel({
 				requiredInput: "",
-				requiredCheckBox: [{
-					text: "text1"
-				}, {
-					text: "text2"
-				}],
 				requiredCalendar: [{
 					startDate: null
 				}],
@@ -68,14 +63,29 @@ sap.ui.define([
 			this.setModel(new JSONModel({
 				requiredInput: ""
 			}), "withUI5Validator");
+			this.setModel(new JSONModel({
+				requiredCheckBox: [{
+					text: "text1"
+				}, {
+					text: "text2"
+				}]
+			}), "custom");
 		},
 		onValidate: function () {
 			const oView = this.getView();
 			// console.log(sap.ui.core.LabelEnablement.getReferencingLabels(oView.byId("requiredLabelInputOutForm")));
-			// console.log(oView.byId("requiredCalendarDateIntervalOutForm").getStartDate());
+			// console.log(oView.byId("requiredCheckBoxCustom").getItems());
 			// console.log(oView.byId("requiredRadioGroupInForm").getBindingPath("selectedIndex"));
 			const validator = new Validator();
 			validator.removeErrors(oView);
+
+			validator.attachAfterValidate(oView.byId("requiredCheckBoxCustom").getId(), oControl => {
+				if (oControl.getItems().every(oCheckBox => !oCheckBox.getSelected())) {
+					validator.setRequiredError(oControl.getItems());
+					return false;
+				}
+				return true;
+			});
 
 			if (!validator.validate(oView) || this.hasValidationError()) {
 				// sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/").forEach(m => console.log(m.getTarget()));

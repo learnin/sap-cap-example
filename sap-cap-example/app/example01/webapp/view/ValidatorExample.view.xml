@@ -169,15 +169,12 @@
 			<uxap:ObjectPageSection titleUppercase="false" title="Custom validation">
 				<uxap:ObjectPageSubSection>
 					<VBox>
-						<!--
-						CheckBox について、複数CheckBoxの必須チェックと、textだけでなくvalueつきのCheckBoxの対応
 						<VBox>
-							<Label text="Required CheckBox out Form (with Value)" required="true" />
-							<HBox items="{outForm>/requiredCheckBox}">
-								<CheckBox text="{outForm>text}" />
+							<Label text="Required CheckBox out Form (with Value)" labelFor="requiredCheckBoxCustom" required="true" />
+							<HBox id="requiredCheckBoxCustom" items="{custom>/requiredCheckBox}">
+								<CheckBox text="{custom>text}" />
 							</HBox>
 						</VBox>
-						-->
 					</VBox>
 				</uxap:ObjectPageSubSection>
 			</uxap:ObjectPageSection>

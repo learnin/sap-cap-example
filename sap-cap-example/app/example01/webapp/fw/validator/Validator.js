@@ -1,4 +1,5 @@
 sap.ui.define([
+	"sap/m/Input",
 	"sap/ui/base/Object",
 	"sap/ui/core/message/ControlMessageProcessor",
 	"sap/ui/core/message/Message",
@@ -6,6 +7,7 @@ sap.ui.define([
 	"sap/ui/core/MessageType",
 	"sap/ui/core/ValueState"
 ], function (
+	Input,
 	BaseObject,
 	ControlMessageProcessor,
 	Message,
@@ -43,6 +45,10 @@ sap.ui.define([
 				"cells",
 				"_page"
 			];
+
+			// キーのコントロールIDのコントロールの検証後に実行する関数配列を保持するマップ。型は Map<string, function[]>
+			this._mOnAfterValidate = new Map();
+
 			if (mParameter && mParameter.targetAggregations) {
 				if (Array.isArray(mParameter.targetAggregations)) {
 					mParameter.targetAggregations.forEach(sTargetAggregation => {
@@ -59,10 +65,10 @@ sap.ui.define([
 		}
 
 		/**
-		 * 引数のコントロールもしくはその配下のコントロールやエレメントのバリデーションを行う。
+		 * 引数のオブジェクトもしくはその配下のコントロールのバリデーションを行う。
 		 *
 		 * @public
-		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement} oControl 検証対象のコントロールやエレメント
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oControl 検証対象のコントロールもしくはそれを含むコンテナ
 		 * @returns {boolean} true: valid、false: invalid
 		 */
 		validate(oControl) {
@@ -70,12 +76,12 @@ sap.ui.define([
 		}
 
 		/**
-		 * 引数のコントロールもしくはその配下のコントロールやエレメントについて、本クラスにより追加されたメッセージを
+		 * 引数のオブジェクトもしくはその配下のコントロールについて、本クラスにより追加されたメッセージを
 		 * {@link sap.ui.core.message.MessageManager MessageManager} から除去する。
-		 * その結果、該当コントロールやエレメントにメッセージがなくなった場合は、{@link sap.ui.core.ValueState ValueState} もクリアする。
+		 * その結果、該当コントロールにメッセージがなくなった場合は、{@link sap.ui.core.ValueState ValueState} もクリアする。
 		 *
 		 * @public
-		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement} oControl 検証対象のコントロールやエレメント
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oControl 検証対象のコントロールもしくはそれを含むコンテナ
 		 */
 		removeErrors(oControl) {
 			if (!(oControl instanceof sap.ui.core.Control ||
@@ -88,24 +94,118 @@ sap.ui.define([
 			this._removeMessagesAndValueStateIncludeChildren(oControl);
 		}
 
+		/**
+		 * {@link #attachAfterValidate} の引数のコールバック関数の型
+		 *
+		 * @callback afterValidateHandler
+		 * @param {sap.ui.core.Control} oControl 検証対象のコントロール
+		 */
+		/**
+		 * sControlId の検証後に実行する関数を登録する。
+		 * 
+		 * @param {string} sControlId コントロールID
+		 * @param {afterValidateHandler} fnHandler sControlId の検証後に実行される関数
+		 */
+		attachAfterValidate(sControlId, fnHandler) {
+			if (this._mOnAfterValidate.has(sControlId)) {
+				const aFns = this._mOnAfterValidate.get(sControlId);
+				aFns.push(fnHandler);
+			} else {
+				this._mOnAfterValidate.set(sControlId, [fnHandler]);
+			}
+		}
+
+		/**
+		 * sControlId の検証後に実行するように登録されている関数を登録解除する。
+		 * 
+		 * @param {string} sControlId コントロールID
+		 * @param {afterValidateHandler} fnHandler 登録済の関数
+		 */
+		detachAfterValidate(sControlId, fnHandler) {
+			if (!this._mOnAfterValidate.has(sControlId)) {
+				return;
+			}
+			const aFns = this._mOnAfterValidate.get(sControlId);
+			const aNewFns = aFns.filter(fn => fn !== fnHandler);
+			if (aNewFns.length > 0) {
+				this._mOnAfterValidate.set(sControlId, aNewFns);
+			} else {
+				this._mOnAfterValidate.delete(sControlId);
+			}
+		}
+
+		/**
+		 * 必須チェックエラーステートとメッセージを登録する。
+		 * oControlOrAControls が配列の場合、配列のコントロール全体を1つのグループと見なし、エラーステートの登録は各コントロールに対して行うが、
+		 * メッセージの登録は1つ目のコントロールのみ行う。また、コントロールのいずれかがの値が編集されればすべてのエラーステートを解除する。
+		 * 
+		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oControlOrAControls 必須チェックエラーとなったコントロールまたはコントロール配列
+		 */
+		setRequiredError(oControlOrAControls) {
+			let aControls;
+			if (!Array.isArray(oControlOrAControls)) {
+				aControls = [oControlOrAControls];
+			} else {
+				aControls = oControlOrAControls;
+			}
+			if (aControls.length === 0) {
+				return;
+			}
+			const sMessageText = this._getMessageTextByControl(aControls[0]);
+			this._addMessage(aControls[0], sMessageText);
+
+			aControls.forEach(oControl => {
+				this._setValueState(oControl, ValueState.Error, sMessageText);
+
+				// ValueState とエラーメッセージが残ったままにならないように、対象のコントロールの change イベントで ValueState とエラーメッセージを除去する。
+				if (oControl.attachSelectionFinish) {
+					const fnOnSelectionFinish = oEvent => {
+						oControl.detachSelectionFinish(fnOnSelectionFinish);
+						aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
+					};
+					oControl.attachSelectionFinish(fnOnSelectionFinish);
+				} else if (oControl.attachChange) {
+					const fnOnChange = oEvent => {
+						oControl.detachChange(fnOnChange);
+						aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
+					};
+					oControl.attachChange(fnOnChange);
+				} else if (oControl.attachSelect) {
+					const fnOnSelect = oEvent => {
+						oControl.detachSelect(fnOnSelect);
+						aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
+					};
+					oControl.attachSelect(fnOnSelect);
+				}
+			});
+		}
+
 		// TODO: 相関バリデーションをアプリで実装した際にバリデートエラー時に呼べるaddMessage系のメソッドを用意する
 
 		/**
-		 * 引数のコントロール配下のフィールドのバリデーションを行う。
+		 * 引数のオブジェクトとその配下のコントロールのバリデーションを行う。
 		 *
-		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement} oControl 検証対象のコントロールやエレメント
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oControl 検証対象のコントロールもしくはそれを含むコンテナ
 		 * @returns {boolean}　true: valid、false: invalid
 		 */
 		_validate(oControl) {
+			let isValid = true;
+
 			if (!((oControl instanceof sap.ui.core.Control ||
 				oControl instanceof sap.ui.layout.form.FormContainer ||
 				oControl instanceof sap.ui.layout.form.FormElement ||
 				oControl instanceof sap.m.IconTabFilter) &&
 				oControl.getVisible())) {
-				return true;
+				
+				if (this._mOnAfterValidate.has(oControl.getId())) {
+					this._mOnAfterValidate.get(oControl.getId()).forEach(fnHandler => {
+						if (!fnHandler(oControl)) {
+							isValid = false;
+						}
+					});
+				}
+				return isValid;
 			}
-
-			let isValid = true;
 
 			// sap.ui.core.LabelEnablement#isRequired は対象コントロール・エレメント自体の required 属性だけでなく、
 		    // labelFor 属性で紐づく Label や、sap.ui.layout.form.SimpleForm 内での対象コントロール・エレメントの直前の Label の required 属性まで見て判断してくれる。
@@ -133,31 +233,27 @@ sap.ui.define([
 					}
 				}
 			}
+			if (this._mOnAfterValidate.has(oControl.getId())) {
+				this._mOnAfterValidate.get(oControl.getId()).forEach(fnHandler => {
+					if (!fnHandler(oControl)) {
+						isValid = false;
+					}
+				});
+			}
 			return isValid;
 		}
 
 		/**
-		 * 引数のコントロールやエレメントの必須チェックを行う。
+		 * 引数のコントロールの必須チェックを行う。
 		 *
-		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement} oControl 検証対象のコントロールやエレメント
+		 * @param {sap.ui.core.Control} oControl 検証対象のコントロール
 		 * @returns {boolean}　true: valid、false: invalid
 		 */
 		_validateRequired(oControl) {
 			if (!this._isNullValue(oControl)) {
 				return true;
 			}
-			const sMessageText = this._getMessageTextByControl(oControl);
-			this._setValueState(oControl, ValueState.Error, sMessageText);
-			this._addMessage(oControl, sMessageText);
-
-			if (oControl.attachChange) {
-				// ValueState とエラーメッセージが残ったままにならないように、対象のコントロールの change イベントで ValueState とエラーメッセージを除去する。
-				const fnOnChange = oEvent => {
-					oControl.detachChange(fnOnChange);
-					this._removeMessageAndValueState(oControl);
-				};
-				oControl.attachChange(fnOnChange);
-			}
+			this.setRequiredError(oControl);
 			return false;
 		}
 
@@ -202,8 +298,8 @@ sap.ui.define([
 		 * 不正な値を入力された場合、標準のバリデーションによりエラーステートがセットされている可能性があるため、
 		 * 該当のコントロールにエラーメッセージがまだあるか確認し、ない場合にのみエラーステートをクリアする。
 		 * 
-		 * @param {*} oControl 
-		 * @param {string} sTarget 
+		 * @param {sap.ui.core.Control} oControl 処理対象のコントロール
+		 * @param {string} sTarget セットされているメッセージの中から対象のコントロールのメッセージを判別するための Message の target プロパティ値
 		 */
 		_clearValueStateIfNoErrors(oControl, sTarget) {
 			if (oControl.setValueState &&
@@ -252,7 +348,7 @@ sap.ui.define([
 
 		/**
 		 * 
-		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement} oControl 検証対象のコントロールやエレメント
+		 * @param {sap.ui.core.Control} oControl 検証対象のコントロール
 		 * @returns {boolean}
 		 */
 		_isNullValue(oControl) {
@@ -291,10 +387,16 @@ sap.ui.define([
 		}
 
 		_getMessageTextByControl(oControl) {
-			if (oControl.getBindingPath("selectedKey") ||
-				oControl.getBindingPath("selected") ||
-				oControl.getBindingPath("selectedIndex") ||
-				oControl.getBindingPath("selectedDates")) {
+			if (oControl instanceof Input) {
+				// sap.m.Input には getValue も getSelectedKey もあるので個別に判定する。
+				// TODO: i18n
+				return "Required to input.";
+			}
+			if (oControl.getSelectedKey ||
+				oControl.getSelectedKeys ||
+				oControl.getSelected ||
+				oControl.getSelectedIndex ||
+				oControl.getSelectedDates) {
 				// TODO: i18n
 				return "Required to select.";
 			}
@@ -326,7 +428,7 @@ sap.ui.define([
 		/**
 		 * {@link sap.ui.core.message.MessageManager MessageManager} にメッセージを追加する。
 		 *
-		 * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl 検証対象のコントロールやエレメント
+		 * @param {sap.ui.core.Control} oControl 検証エラーとなったコントロール
 		 * @param {string} sMessageText エラーメッセージ
 		 */
 		_addMessage(oControl, sMessageText) {
@@ -343,7 +445,7 @@ sap.ui.define([
 		/**
 		 * 引数のコントロールに {@link sap.ui.core.ValueState ValueState} と ValueStateText をセットする。
 		 *
-		 * @param {(sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement)} oControl 検証対象のコントロールやエレメント
+		 * @param {sap.ui.core.Control} oControl セット先のコントロール
 		 * @param {sap.ui.core.ValueState} oValueState セットするステート
 		 * @param {string} sText セットするステートテキスト
 		 */
