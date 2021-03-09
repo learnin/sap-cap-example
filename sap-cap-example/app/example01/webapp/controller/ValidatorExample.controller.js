@@ -33,6 +33,7 @@ sap.ui.define([
 					text: "text2"
 				}],
 				requiredDatePicker: null,
+				requiredTimePicker: null,
 				requiredComboBox: [{
 					value: "value1",
 					text: "text1"
@@ -49,7 +50,10 @@ sap.ui.define([
 					text: "text2"
 				}],
 				selectedKeyOfRequiredMultiComboBox: [],
-				requiredTextArea: ""
+				requiredTextArea: "",
+				requiredFileUploader: "",
+				requiredRatingIndicator: 0,
+				requiredSearchField: ""
 			}), "inForm");
 			this.setModel(new JSONModel({
 				requiredInput: "",
@@ -70,6 +74,10 @@ sap.ui.define([
 					text: "text2"
 				}]
 			}), "custom");
+			this.setModel(new JSONModel({
+				fromDate: null,
+				toDate: null
+			}), "correlation");
 		},
 		onValidate: function () {
 			const oView = this.getView();
@@ -77,7 +85,6 @@ sap.ui.define([
 			// console.log(oView.byId("requiredCheckBoxCustom").getItems());
 			// console.log(oView.byId("requiredRadioGroupInForm").getBindingPath("selectedIndex"));
 			const validator = new Validator();
-			validator.removeErrors(oView);
 
 			validator.attachAfterValidate(oView.byId("requiredCheckBoxCustom").getId(), oControl => {
 				if (oControl.getItems().every(oCheckBox => !oCheckBox.getSelected())) {
@@ -85,7 +92,24 @@ sap.ui.define([
 					return false;
 				}
 				return true;
+			}).attachAfterValidate(oView.byId("toDate").getId(), oToDateControl => {
+				const dFromDateValue = oView.byId("fromDate").getDateValue();
+				const dToDateValue = oToDateControl.getDateValue();
+				if (dFromDateValue && dToDateValue && dFromDateValue.getTime() > dToDateValue.getTime()) {
+					validator.setError(oToDateControl, "To date には From date 以降の日付を入力してください。", (oControl, oEvent) => {
+						const dFromDateValue = oView.byId("fromDate").getDateValue();
+						const dToDateValue = oControl.getDateValue();
+						return dFromDateValue && dToDateValue && dFromDateValue.getTime() <= dToDateValue.getTime();
+					});
+					return false;
+				}
+				return true;
 			});
+
+			// validateでエラー発生時にコントロールのイベントにattachする方式をやめ、
+			// validator.attachEventHandlers(oView) で、配下の必須チェック対象とattachAfterValidate対象すべてに事前にattachするようにできないか？
+
+			validator.removeErrors(oView);
 
 			if (!validator.validate(oView) || this.hasValidationError()) {
 				// sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/").forEach(m => console.log(m.getTarget()));

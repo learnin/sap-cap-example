@@ -47,6 +47,9 @@
 						<Label text="Required DatePicker in Form" />
 						<DatePicker dateValue="{inForm>/requiredDatePicker}" required="true"/>
 
+						<Label text="Required TimePicker in Form" />
+						<TimePicker dateValue="{inForm>/requiredTimePicker}" required="true"/>
+
 						<Label text="Required ComboBox in Form" />
 						<ComboBox items="{inForm>/requiredComboBox}" selectedKey="{inForm>/selectedKeyOfRequiredComboBox}" required="true">
 							<core:Item key="{inForm>value}" text="{inForm>text}" />
@@ -59,6 +62,15 @@
 
 						<Label text="Required TextArea in Form" />
 						<TextArea value="{inForm>/requiredTextArea}" required="true" />
+
+						<Label text="Required FileUploader in Form" labelFor="requiredFileUploaderInForm" required="true" />
+						<u:FileUploader id="requiredFileUploaderInForm" value="{inForm>/requiredFileUploader}" sendXHR="true" />
+
+						<Label text="Required RatingIndicator in Form. Note: setValueState がないので赤くはならない。" labelFor="requiredRatingIndicatorInForm" required="true" />
+						<RatingIndicator id="requiredRatingIndicatorInForm" value="{inForm>/requiredRatingIndicator}" />
+
+						<Label text="Required SearchField in Form. Note: setValueState がないので赤くはならない。" labelFor="requiredSearchFieldInForm" required="true" />
+						<SearchField id="requiredSearchFieldInForm" value="{inForm>/requiredSearchField}" />
 
 						<!-- Calendar は sap.ui.core.IFormContent を実装していないので SimpleForm 内に置くのはNG -->
 					</forms:SimpleForm>
@@ -82,7 +94,7 @@
 					<VBox>
 						<Label text="Required CalendarDateInterval out Form" labelFor="requiredCalendarDateIntervalOutForm" required="true" />
 						<u:CalendarDateInterval id="requiredCalendarDateIntervalOutForm" selectedDates="{outForm>/requiredCalendarDateInterval}">
-						<u:selectedDates>
+							<u:selectedDates>
 								<u:DateRange startDate="{outForm>startDate}" />
 							</u:selectedDates>
 						</u:CalendarDateInterval>
@@ -90,68 +102,7 @@
 				</uxap:ObjectPageSubSection>
 			</uxap:ObjectPageSection>
 
-			<uxap:ObjectPageSection titleUppercase="false" title="No binding">
-				<uxap:ObjectPageSubSection>
-					<VBox>
-						<Label text="Required label no binding" labelFor="requiredLabelInputNoBinding" required="true" />
-						<Input id="requiredLabelInputNoBinding" />
-					</VBox>
-					<VBox>
-						<Label text="Required Input no binding" labelFor="requiredInputNoBinding" />
-						<Input id="requiredInputNoBinding" required="true" />
-					</VBox>
-					<VBox>
-						<Label text="Required MaskInput no binding (Numeric only)" labelFor="requiredMaskInputNoBinding" />
-						<MaskInput id="requiredMaskInputNoBinding" mask="999999" required="true" />
-					</VBox>
-					<VBox>
-						<Label text="Required Select no binding" labelFor="requiredSelectNotBinding" />
-						<Select id="requiredSelectNotBinding" required="true">
-							<core:Item key="" text="" />
-							<core:Item key="value1" text="text1" />
-						</Select>
-					</VBox>
-					<VBox>
-						<Label text="Required RadioButtonGroup no binding" labelFor="requiredRadioButtonGroupNoBinding" required="true" />
-						<RadioButtonGroup id="requiredRadioButtonGroupNoBinding" columns="2" selectedIndex="-1">
-							<RadioButton text="text1" />
-							<RadioButton text="text2" />
-						</RadioButtonGroup>
-					</VBox>
-					<VBox>
-						<Label text="Required DatePicker no binding" labelFor="requiredDatePickerNoBinding" />
-						<DatePicker id="requiredDatePickerNoBinding" required="true"/>
-					</VBox>
-					<VBox>
-						<Label text="Required ComboBox no binding" labelFor="requiredComboBoxNoBinding" />
-						<ComboBox id="requiredComboBoxNoBinding" required="true">
-							<core:Item key="value1" text="text1" />
-							<core:Item key="value2" text="text2" />
-						</ComboBox>
-					</VBox>
-					<VBox>
-						<Label text="Required MultiComboBox no binding" labelFor="requiredMultiComboBoxNoBinding" />
-						<MultiComboBox id="requiredMultiComboBoxNoBinding" required="true">
-							<core:Item key="value1" text="text1" />
-							<core:Item key="value2" text="text2" />
-						</MultiComboBox>
-					</VBox>
-					<VBox>
-						<Label text="Required TextArea no binding" labelFor="requiredTextAreaNoBinding" />
-						<TextArea id="requiredTextAreaNoBinding" required="true" />
-					</VBox>
-					<VBox>
-						<Label text="Required Calendar no binding" labelFor="requiredCalendarNoBinding" required="true" />
-						<u:Calendar id="requiredCalendarNoBinding" />
-					</VBox>
-					<VBox>
-						<Label text="Required CalendarDateInterval no binding" labelFor="requiredCalendarDateIntervalNoBinding" required="true" />
-						<u:CalendarDateInterval id="requiredCalendarDateIntervalNoBinding" />
-					</VBox>
-				</uxap:ObjectPageSubSection>
-			</uxap:ObjectPageSection>
-
-			<uxap:ObjectPageSection titleUppercase="false" title="With UI5 standard validator">
+			<uxap:ObjectPageSection titleUppercase="false" title="With UI5 standard constraints">
 				<uxap:ObjectPageSubSection>
 					<forms:SimpleForm layout="ColumnLayout" columnsM="2" columnsL="3" columnsXL="4" editable="true">
 						<Label text="Required Input MaxLength 5" />
@@ -181,9 +132,13 @@
 
 			<uxap:ObjectPageSection titleUppercase="false" title="Correlation controls validation">
 				<uxap:ObjectPageSubSection>
-					<VBox>
-						
-					</VBox>
+					<forms:SimpleForm layout="ColumnLayout" columnsM="2" columnsL="3" columnsXL="4" editable="true">
+						<Label text="From date" />
+						<DatePicker id="fromDate" dateValue="{correlation>/fromDate}" required="true"/>
+
+						<Label text="To date" />
+						<DatePicker id="toDate" dateValue="{correlation>/toDate}" required="true"/>
+					</forms:SimpleForm>
 				</uxap:ObjectPageSubSection>
 			</uxap:ObjectPageSection>
 		</uxap:ObjectPageLayout>

@@ -99,12 +99,14 @@ sap.ui.define([
 		 *
 		 * @callback afterValidateHandler
 		 * @param {sap.ui.core.Control} oControl 検証対象のコントロール
+		 * @returns {boolean} true: valid、false: invalid
 		 */
 		/**
 		 * sControlId の検証後に実行する関数を登録する。
 		 * 
 		 * @param {string} sControlId コントロールID
 		 * @param {afterValidateHandler} fnHandler sControlId の検証後に実行される関数
+		 * @returns {Validator} Reference to this in order to allow method chaining
 		 */
 		attachAfterValidate(sControlId, fnHandler) {
 			if (this._mOnAfterValidate.has(sControlId)) {
@@ -113,6 +115,7 @@ sap.ui.define([
 			} else {
 				this._mOnAfterValidate.set(sControlId, [fnHandler]);
 			}
+			return this;
 		}
 
 		/**
@@ -142,45 +145,79 @@ sap.ui.define([
 		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oControlOrAControls 必須チェックエラーとなったコントロールまたはコントロール配列
 		 */
 		setRequiredError(oControlOrAControls) {
+			let oControl;
+			if (Array.isArray(oControlOrAControls)) {
+				if (oControlOrAControls.length === 0) {
+					return;
+				}
+				oControl = oControlOrAControls[0];
+			} else {
+				oControl = oControlOrAControls;
+			}
+			const sMessageText = this._getMessageTextByControl(oControl);
+			this.setError(oControlOrAControls, sMessageText);
+		}
+
+		/**
+		 * {@link #setError} の引数のコールバック関数の型
+		 *
+		 * @callback judgeRemoveErrorHandler
+		 * @param {sap.ui.core.Control} oControl 検証対象のコントロール
+		 * @param {sap.ui.base.Event} oEvent 対象のコントロールのイベント
+		 * @returns {boolean} true: valid、false: invalid
+		 */
+		/**
+		 * 検証エラーステートとメッセージを登録する。
+		 * oControlOrAControls が配列の場合、配列のコントロール全体を1つのグループと見なし、エラーステートの登録は各コントロールに対して行うが、
+		 * メッセージの登録は1つ目のコントロールのみ行う。
+		 * 
+		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oControlOrAControls 必須チェックエラーとなったコントロールまたはコントロール配列
+		 * @param {string} sMessageText 登録するメッセージ
+		 * @param {judgeRemoveErrorHandler} [fnToJudgeRemoveError] エラーを除去してよいか判断する関数。対象のコントロールの selectionFinish または change または select イベント発火時に実行される。省略時は常に true とみなす。
+		 */
+		setError(oControlOrAControls, sMessageText, fnToJudgeRemoveError) {
 			let aControls;
 			if (!Array.isArray(oControlOrAControls)) {
 				aControls = [oControlOrAControls];
+			} else if (oControlOrAControls.length === 0) {
+				return;
 			} else {
 				aControls = oControlOrAControls;
 			}
-			if (aControls.length === 0) {
-				return;
-			}
-			const sMessageText = this._getMessageTextByControl(aControls[0]);
+
 			this._addMessage(aControls[0], sMessageText);
 
 			aControls.forEach(oControl => {
 				this._setValueState(oControl, ValueState.Error, sMessageText);
 
-				// ValueState とエラーメッセージが残ったままにならないように、対象のコントロールの change イベントで ValueState とエラーメッセージを除去する。
+				// ValueState とエラーメッセージが残ったままにならないように、対象のコントロールのイベントで ValueState とエラーメッセージを除去する。
 				if (oControl.attachSelectionFinish) {
 					const fnOnSelectionFinish = oEvent => {
-						oControl.detachSelectionFinish(fnOnSelectionFinish);
-						aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
+						if (!fnToJudgeRemoveError || fnToJudgeRemoveError(oControl, oEvent)) {
+							oControl.detachSelectionFinish(fnOnSelectionFinish);
+							aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
+						}
 					};
 					oControl.attachSelectionFinish(fnOnSelectionFinish);
 				} else if (oControl.attachChange) {
 					const fnOnChange = oEvent => {
-						oControl.detachChange(fnOnChange);
-						aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
+						if (!fnToJudgeRemoveError || fnToJudgeRemoveError(oControl, oEvent)) {
+							oControl.detachChange(fnOnChange);
+							aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
+						}
 					};
 					oControl.attachChange(fnOnChange);
 				} else if (oControl.attachSelect) {
 					const fnOnSelect = oEvent => {
-						oControl.detachSelect(fnOnSelect);
-						aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
+						if (!fnToJudgeRemoveError || fnToJudgeRemoveError(oControl, oEvent)) {
+							oControl.detachSelect(fnOnSelect);
+							aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
+						}
 					};
 					oControl.attachSelect(fnOnSelect);
 				}
 			});
 		}
-
-		// TODO: 相関バリデーションをアプリで実装した際にバリデートエラー時に呼べるaddMessage系のメソッドを用意する
 
 		/**
 		 * 引数のオブジェクトとその配下のコントロールのバリデーションを行う。
