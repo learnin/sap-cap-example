@@ -108,6 +108,7 @@ sap.ui.define([
 
 			// validateでエラー発生時にコントロールのイベントにattachする方式をやめ、
 			// validator.attachEventHandlers(oView) で、配下の必須チェック対象とattachAfterValidate対象すべてに事前にattachするようにできないか？
+			// attachした際に各コントロールにdata-validatorのような属性データを追加しておき、複数回呼ばれた際はそれで追加済かどうか判断する。
 
 			validator.removeErrors(oView);
 
