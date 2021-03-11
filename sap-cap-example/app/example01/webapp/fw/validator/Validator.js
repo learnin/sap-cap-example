@@ -46,8 +46,10 @@ sap.ui.define([
 				"_page"
 			];
 
-			// キーのコントロールIDのコントロールの検証後に実行する関数配列を保持するマップ。型は Map<string, function[]>
-			this._mOnAfterValidate = new Map();
+			// キーのコントロールIDのコントロールの検証後に実行する関数配列を保持するマップ。型は Map<string, Map<string, function>>
+			this._mValidateFunctionCalledAfterValidate = new Map();
+
+			this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR = "fw.validator.Validator.IS_ADDED_REQUIRED_VALIDATOR";
 
 			if (mParameter && mParameter.targetAggregations) {
 				if (Array.isArray(mParameter.targetAggregations)) {
@@ -62,6 +64,10 @@ sap.ui.define([
 					}
 				}
 			}
+		}
+
+		addValidator2Controls(oControl) {
+			this._addValidator2Controls(oControl);
 		}
 
 		/**
@@ -95,46 +101,54 @@ sap.ui.define([
 		}
 
 		/**
-		 * {@link #attachAfterValidate} の引数のコールバック関数の型
+		 * {@link #registerValidateFunctionCalledAfterValidate} の引数のコールバック関数の型
 		 *
-		 * @callback afterValidateHandler
-		 * @param {sap.ui.core.Control} oControl 検証対象のコントロール
+		 * @callback validateFunction
+		 * @param {sap.ui.core.Control} oControl 本関数が呼び出される直前に検証された（または検証をスキップされた）コントロール
 		 * @returns {boolean} true: valid、false: invalid
 		 */
 		/**
-		 * sControlId の検証後に実行する関数を登録する。
+		 * oControl の検証後に実行する関数を登録する。
+		 * すでに oControl に sValidateFunctionId の関数が登録されている場合は関数を上書きする。
 		 * 
-		 * @param {string} sControlId コントロールID
-		 * @param {afterValidateHandler} fnHandler sControlId の検証後に実行される関数
+		 * @param {string} sValidateFunctionId validateFunction を識別するための任意のID
+		 * @param {validateFunction} validateFunction oControl の検証後に実行される関数
+		 * @param {sap.ui.core.Control} oControl コントロール
 		 * @returns {Validator} Reference to this in order to allow method chaining
 		 */
-		attachAfterValidate(sControlId, fnHandler) {
-			if (this._mOnAfterValidate.has(sControlId)) {
-				const aFns = this._mOnAfterValidate.get(sControlId);
-				aFns.push(fnHandler);
+		registerValidateFunctionCalledAfterValidate(sValidateFunctionId, validateFunction, oControl) {
+			const sControlId = oControl.getId();
+			if (this._mValidateFunctionCalledAfterValidate.has(sControlId)) {
+				const mValidateFunction = this._mValidateFunctionCalledAfterValidate.get(sControlId);
+				mValidateFunction.set(sValidateFunctionId, validateFunction);
 			} else {
-				this._mOnAfterValidate.set(sControlId, [fnHandler]);
+				this._mValidateFunctionCalledAfterValidate.set(sControlId, new Map([
+					[sValidateFunctionId, validateFunction]
+				]));
 			}
 			return this;
 		}
 
 		/**
-		 * sControlId の検証後に実行するように登録されている関数を登録解除する。
+		 * oControl の検証後に実行するように登録されている関数を登録解除する。
 		 * 
-		 * @param {string} sControlId コントロールID
-		 * @param {afterValidateHandler} fnHandler 登録済の関数
+		 * @param {string} sValidateFunctionId validateFunction を識別するための任意のID
+		 * @param {validateFunction} validateFunction 登録済の関数
+		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @returns {Validator} Reference to this in order to allow method chaining
 		 */
-		detachAfterValidate(sControlId, fnHandler) {
-			if (!this._mOnAfterValidate.has(sControlId)) {
-				return;
+		unregisterValidateFunctionCalledAfterValidate(sValidateFunctionId, validateFunction, oControl) {
+			const sControlId = oControl.getId();
+			if (!this._mValidateFunctionCalledAfterValidate.has(sControlId)) {
+				return this;
 			}
-			const aFns = this._mOnAfterValidate.get(sControlId);
-			const aNewFns = aFns.filter(fn => fn !== fnHandler);
-			if (aNewFns.length > 0) {
-				this._mOnAfterValidate.set(sControlId, aNewFns);
-			} else {
-				this._mOnAfterValidate.delete(sControlId);
+			const mValidateFunction = this._mValidateFunctionCalledAfterValidate.get(sControlId);
+			mValidateFunction.delete(sValidateFunctionId);
+			
+			if (mValidateFunction.size === 0) {
+				this._mValidateFunctionCalledAfterValidate.delete(sControlId);
 			}
+			return this;
 		}
 
 		/**
@@ -219,6 +233,39 @@ sap.ui.define([
 			});
 		}
 
+		_addValidator2Controls(oControl) {
+			// 非表示のコントロールも後で表示される可能性が想定されるため、処理対象とする
+			if (!(oControl instanceof sap.ui.core.Control ||
+				oControl instanceof sap.ui.layout.form.FormContainer ||
+				oControl instanceof sap.ui.layout.form.FormElement ||
+				oControl instanceof sap.m.IconTabFilter)) {
+				return;
+			}
+
+			// sap.ui.core.LabelEnablement#isRequired は対象コントロール・エレメント自体の required 属性だけでなく、
+		    // labelFor 属性で紐づく Label や、sap.ui.layout.form.SimpleForm 内での対象コントロール・エレメントの直前の Label の required 属性まで見て判断してくれる。
+			// （なお、ariaLabelledBy で参照される Label までは見てくれない）
+			// disable のコントロールも後で有効化される可能性が想定されるため、処理対象とする
+			if (LabelEnablement.isRequired(oControl)) {
+				this._addRequiredValidator2Control(oControl);
+			} else {
+				// 入力コントロールやエレメントでなかった場合は、aggregation のコントロールやエレメントを再帰的に検証する。
+				for (let i = 0; i < this._aTargetAggregations.length; i++) {
+					const aControlAggregation = oControl.getAggregation(this._aTargetAggregations[i]);
+					if (!aControlAggregation) {
+						continue;
+					}
+					if (Array.isArray(aControlAggregation)) {
+						for (let j = 0; j < aControlAggregation.length; j++) {
+							this._addValidator2Controls(aControlAggregation[j]);
+						}
+					} else {
+						this._addValidator2Controls(aControlAggregation);
+					}
+				}
+			}
+		}
+
 		/**
 		 * 引数のオブジェクトとその配下のコントロールのバリデーションを行う。
 		 *
@@ -234,8 +281,8 @@ sap.ui.define([
 				oControl instanceof sap.m.IconTabFilter) &&
 				oControl.getVisible())) {
 				
-				if (this._mOnAfterValidate.has(oControl.getId())) {
-					this._mOnAfterValidate.get(oControl.getId()).forEach(fnHandler => {
+				if (this._mValidateFunctionCalledAfterValidate.has(oControl.getId())) {
+					this._mValidateFunctionCalledAfterValidate.get(oControl.getId()).forEach(fnHandler => {
 						if (!fnHandler(oControl)) {
 							isValid = false;
 						}
@@ -270,14 +317,47 @@ sap.ui.define([
 					}
 				}
 			}
-			if (this._mOnAfterValidate.has(oControl.getId())) {
-				this._mOnAfterValidate.get(oControl.getId()).forEach(fnHandler => {
+			if (this._mValidateFunctionCalledAfterValidate.has(oControl.getId())) {
+				this._mValidateFunctionCalledAfterValidate.get(oControl.getId()).forEach(fnHandler => {
 					if (!fnHandler(oControl)) {
 						isValid = false;
 					}
 				});
 			}
 			return isValid;
+		}
+
+		_addRequiredValidator2Control(oControl) {
+			if (this._isAddedRequiredValidator2Control(oControl)) {
+				return;
+			}
+			const sMessageText = this._getMessageTextByControl(oControl);
+			const fnRequiredValidator = oEvent => {
+				if (this._isNullValue(oControl)) {
+					this._addMessage(oControl, sMessageText);
+					this._setValueState(oControl, ValueState.Error, sMessageText);
+				} else {
+					this._removeMessageAndValueState(oControl);
+				}
+			};
+			if (oControl.attachSelectionFinish) {
+				oControl.attachSelectionFinish(fnRequiredValidator);
+				this._markedAddedRequiredValidator2Control(oControl);
+			} else if (oControl.attachChange) {
+				oControl.attachChange(fnRequiredValidator);
+				this._markedAddedRequiredValidator2Control(oControl);
+			} else if (oControl.attachSelect) {
+				oControl.attachSelect(fnRequiredValidator);
+				this._markedAddedRequiredValidator2Control(oControl);
+			}
+		}
+
+		_isAddedRequiredValidator2Control(oControl) {
+			return oControl.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR) === "true";
+		}
+
+		_markedAddedRequiredValidator2Control(oControl) {
+			oControl.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR, "true");
 		}
 
 		/**
