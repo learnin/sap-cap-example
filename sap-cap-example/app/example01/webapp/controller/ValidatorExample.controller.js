@@ -102,9 +102,21 @@ sap.ui.define([
 				},
 				oView.byId("toDate")
 			);
+
 			// TODO: フォーカスアウト時の必須入力チェックは保存ボタンを押すまでは仕掛けたくないので、この時点で toDateIsAfterFromDateValidator だけを
 			// フォーカスアウト時のバリデーション対象にできるようなAPIがほしい。
 			// -> registerValidateFunctionCalledAfterValidate の引数にオプションObjectを追加してそれでtrueにすれば同時にattachするようにする
+			// this._validator.registerValidateFunctionCalledAfterValidate(
+			// 	"toDateIsAfterFromDateValidator",
+			// 	oToDateControl => {
+			// 		const dFromDateValue = oView.byId("fromDate").getDateValue();
+			// 		const dToDateValue = oToDateControl.getDateValue();
+			// 		return !(dFromDateValue && dToDateValue && dFromDateValue.getTime() > dToDateValue.getTime());
+			// 	},
+			// 	"To date には From date 以降の日付を入力してください。",
+			// 	oView.byId("toDate"),
+			// 	oView.byId("toDate")
+			// );
 		},
 		onValidate: function () {
 			const oView = this.getView();

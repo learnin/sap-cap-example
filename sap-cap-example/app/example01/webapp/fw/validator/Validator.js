@@ -50,6 +50,7 @@ sap.ui.define([
 			this._mValidateFunctionCalledAfterValidate = new Map();
 
 			this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR = "fw.validator.Validator.IS_ADDED_REQUIRED_VALIDATOR";
+			this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REGISTERED_VALIDATOR = "fw.validator.Validator.IS_ADDED_REGISTERED_VALIDATOR";
 
 			if (mParameter && mParameter.targetAggregations) {
 				if (Array.isArray(mParameter.targetAggregations)) {
