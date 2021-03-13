@@ -85,38 +85,66 @@ sap.ui.define([
 			const oView = this.getView();
 
 			// 必須入力チェック以外のバリデーションは、UI5標準バリデーションと同様にフォーカスアウト時にエラー表示させたい。
-			this._validator.registerValidateFunctionCalledAfterValidate(
-				"toDateIsAfterFromDateValidator",
-				oToDateControl => {
-					const dFromDateValue = oView.byId("fromDate").getDateValue();
-					const dToDateValue = oToDateControl.getDateValue();
-					if (dFromDateValue && dToDateValue && dFromDateValue.getTime() > dToDateValue.getTime()) {
-						this._validator.setError(oToDateControl, "To date には From date 以降の日付を入力してください。", (oControl, oEvent) => {
-							const dFromDateValue = oView.byId("fromDate").getDateValue();
-							const dToDateValue = oControl.getDateValue();
-							return dFromDateValue && dToDateValue && dFromDateValue.getTime() <= dToDateValue.getTime();
-						});
-						return false;
-					}
-					return true;
-				},
-				oView.byId("toDate")
-			);
-
-			// TODO: フォーカスアウト時の必須入力チェックは保存ボタンを押すまでは仕掛けたくないので、この時点で toDateIsAfterFromDateValidator だけを
-			// フォーカスアウト時のバリデーション対象にできるようなAPIがほしい。
-			// -> registerValidateFunctionCalledAfterValidate の引数にオプションObjectを追加してそれでtrueにすれば同時にattachするようにする
 			// this._validator.registerValidateFunctionCalledAfterValidate(
 			// 	"toDateIsAfterFromDateValidator",
 			// 	oToDateControl => {
 			// 		const dFromDateValue = oView.byId("fromDate").getDateValue();
 			// 		const dToDateValue = oToDateControl.getDateValue();
-			// 		return !(dFromDateValue && dToDateValue && dFromDateValue.getTime() > dToDateValue.getTime());
+			// 		if (dFromDateValue && dToDateValue && dFromDateValue.getTime() > dToDateValue.getTime()) {
+			// 			this._validator.setError(oToDateControl, "To date には From date 以降の日付を入力してください。", (oControl, oEvent) => {
+			// 				const dFromDateValue = oView.byId("fromDate").getDateValue();
+			// 				const dToDateValue = oControl.getDateValue();
+			// 				return dFromDateValue && dToDateValue && dFromDateValue.getTime() <= dToDateValue.getTime();
+			// 			});
+			// 			return false;
+			// 		}
+			// 		return true;
 			// 	},
-			// 	"To date には From date 以降の日付を入力してください。",
-			// 	oView.byId("toDate"),
 			// 	oView.byId("toDate")
 			// );
+
+			// TODO: フォーカスアウト時の必須入力チェックは保存ボタンを押すまでは仕掛けたくないので、この時点で toDateIsAfterFromDateValidator だけを
+			// フォーカスアウト時のバリデーション対象にできるようなAPIがほしい。
+			// -> registerValidateFunctionCalledAfterValidate の引数にオプションObjectを追加してそれでtrueにすれば同時にattachするようにする
+			// TODO: toDateだけでなくfromDateのバリデーションも必要というか、fromDateのフォーカスアウトでもtoDateのチェックが必要。
+			// ただし、そこまでやるべきか？相関バリデーションはフォーカスアウト時ではなく保存ボタン等を押した時に実行でいいかも？
+			this._validator.registerValidateFunctionCalledAfterValidate2(
+				"toDateIsAfterFromDateValidator",
+				oToDateControl => {
+					const dFromDateValue = oView.byId("fromDate").getDateValue();
+					const dToDateValue = oToDateControl.getDateValue();
+					return !(dFromDateValue && dToDateValue && dFromDateValue.getTime() > dToDateValue.getTime());
+				},
+				"To date には From date 以降の日付を入力してください。",
+				oView.byId("toDate"),
+				oView.byId("toDate")
+			);
+
+			// TODO: https://github.com/jquense/yup 使えないか？
+			// this._validator.builder()
+			// 	.target(oView.byId("toDate"))
+			// 	.isValid(oToDateControl => {
+			// 		const dFromDateValue = oView.byId("fromDate").getDateValue();
+			// 		const dToDateValue = oToDateControl.getDateValue();
+			// 		return !(dFromDateValue && dToDateValue && dFromDateValue.getTime() > dToDateValue.getTime());
+			// 	})
+			// 	.message("To date には From date 以降の日付を入力してください。")
+			// 	.after(oView.byId("toDate"))
+			// 	.build();
+
+			// // TODO: registerRequiredValidateFunctionCalledAfterValidate はこの時点ではattachしない
+			// this._validator.registerRequiredValidateFunctionCalledAfterValidate(
+			// 	"requiredCheckBoxCustomValidator",
+			// 	oControl => !(oControl.getItems().every(oCheckBox => !oCheckBox.getSelected())),
+			// 	oView.byId("requiredCheckBoxCustom").getItems(),
+			// 	oView.byId("requiredCheckBoxCustom")
+			// );
+			// // TODO: validatorFunctonのidはtargetのid + 連番とかで自動生成できないか？
+			// this._validator.builder()
+			// 	.target(oView.byId("requiredCheckBoxCustom").getItems())
+			// 	.isValid(oControl => !(oControl.getItems().every(oCheckBox => !oCheckBox.getSelected())))
+			// 	.after(oView.byId("requiredCheckBoxCustom"))
+			// 	.required();
 		},
 		onValidate: function () {
 			const oView = this.getView();
@@ -137,7 +165,7 @@ sap.ui.define([
 			// TODO: Validatorのコンストラクタの引数のオプションObjectにパラメータを追加して、validate時に合わせてaddValidator2Controlsも呼ぶか制御可能にする。デフォルトは呼ぶ。
 			// TODO: validate実行時にattachするのは廃止する。挙動としては①1度validateするとフォーカスアウトでバリデーションが効くようになる
 			// （正しい値を入れてフォーカスアウトしてエラーが消えてもまた不正にしてフォーカスアウトするとエラーになる）②1度validateするとremoveErrorsするまでエラーは残りっぱなし
-			// のどちらかとなる。
+			// のどちらかとなる。どちらにするかをValidatorのコンストラクタの引数で選べるようにする。デフォルトは①
 			this._validator.addValidator2Controls(oView);
 
 			// TODO: テーブルのセルのバリデーション

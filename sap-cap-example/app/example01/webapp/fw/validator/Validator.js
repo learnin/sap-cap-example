@@ -130,6 +130,20 @@ sap.ui.define([
 			return this;
 		}
 
+		registerValidateFunctionCalledAfterValidate2(sTestFunctionId, fnTest, sMessageText, oTargetControl, oControl) {
+			const sControlId = oControl.getId();
+			if (this._mValidateFunctionCalledAfterValidate.has(sControlId)) {
+				const mValidateFunction = this._mValidateFunctionCalledAfterValidate.get(sControlId);
+				mValidateFunction.set(sTestFunctionId, fnTest);
+			} else {
+				this._mValidateFunctionCalledAfterValidate.set(sControlId, new Map([
+					[sTestFunctionId, fnTest]
+				]));
+			}
+			this._addValidator2Control(oTargetControl, fnTest, sMessageText);
+			return this;
+		}
+
 		/**
 		 * oControl の検証後に実行するように登録されている関数を登録解除する。
 		 * 
@@ -359,6 +373,38 @@ sap.ui.define([
 
 		_markedAddedRequiredValidator2Control(oControl) {
 			oControl.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR, "true");
+		}
+
+		_addValidator2Control(oControl, fnTest, sMessageText) {
+			if (this._isAddedValidator2Control(oControl)) {
+				return;
+			}
+			const fnValidator = oEvent => {
+				if (fnTest(oControl)) {
+					this._removeMessageAndValueState(oControl);
+				} else {
+					this._addMessage(oControl, sMessageText);
+					this._setValueState(oControl, ValueState.Error, sMessageText);
+				}
+			};
+			if (oControl.attachSelectionFinish) {
+				oControl.attachSelectionFinish(fnValidator);
+				this._markedAddedValidator2Control(oControl);
+			} else if (oControl.attachChange) {
+				oControl.attachChange(fnValidator);
+				this._markedAddedValidator2Control(oControl);
+			} else if (oControl.attachSelect) {
+				oControl.attachSelect(fnValidator);
+				this._markedAddedValidator2Control(oControl);
+			}
+		}
+
+		_isAddedValidator2Control(oControl) {
+			return oControl.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REGISTERED_VALIDATOR) === "true";
+		}
+
+		_markedAddedValidator2Control(oControl) {
+			oControl.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REGISTERED_VALIDATOR, "true");
 		}
 
 		/**
