@@ -130,17 +130,84 @@ sap.ui.define([
 			return this;
 		}
 
-		registerValidateFunctionCalledAfterValidate2(sTestFunctionId, fnTest, sMessageText, oTargetControl, oControl) {
+		// oTargetControlOrAControls が配列で sMessageTextOrAMessageTexts も配列で要素数が同じはOK
+		// oTargetControlOrAControls が配列で sMessageTextOrAMessageTexts がObjectもOK
+		// oTargetControlOrAControls がObjectで sMessageTextOrAMessageTexts もObjectもOK
+		registerValidateFunctionCalledAfterValidate2(sValidateFunctionId, fnTest, sMessageTextOrAMessageTexts, oTargetControlOrAControls, oControl, mParameter) {
+			if (!(
+				(!Array.isArray(oTargetControlOrAControls) && !Array.isArray(sMessageTextOrAMessageTexts)) ||
+				(Array.isArray(oTargetControlOrAControls) && !Array.isArray(sMessageTextOrAMessageTexts)) ||
+				(Array.isArray(oTargetControlOrAControls) && Array.isArray(sMessageTextOrAMessageTexts) && sMessageTextOrAMessageTexts.length == oTargetControlOrAControls.length))) {
+				throw new SyntaxError();
+			}
+			const oDefaultParam = {
+				useFocusoutValidation: true,
+				isAddMessageOnce: false
+			};
+			const oParam = { ...oDefaultParam, ...mParameter };
+
+			const fnValidateFunction = oCtl => {
+				let isAddedMessage = false;
+
+				if (!fnTest(oCtl)) {
+					if (Array.isArray(oTargetControlOrAControls)) {
+						for (let i = 0; i < oTargetControlOrAControls.length; i++) {
+							if (Array.isArray(sMessageTextOrAMessageTexts)) {
+								if (!oParam.isAddMessageOnce || !isAddedMessage) {
+									this._addMessage(oTargetControlOrAControls[i], sMessageTextOrAMessageTexts[i]);
+									isAddedMessage = true;
+								}
+								this._setValueState(oTargetControlOrAControls[i], ValueState.Error, sMessageTextOrAMessageTexts[i]);
+							} else {
+								if (!oParam.isAddMessageOnce || !isAddedMessage) {
+									this._addMessage(oTargetControlOrAControls[i], sMessageTextOrAMessageTexts);
+									isAddedMessage = true;
+								}
+								this._setValueState(oTargetControlOrAControls[i], ValueState.Error, sMessageTextOrAMessageTexts);
+							}
+						}
+					} else {
+						this._addMessage(oTargetControlOrAControls, sMessageTextOrAMessageTexts);
+						this._setValueState(oTargetControlOrAControls, ValueState.Error, sMessageTextOrAMessageTexts);
+					}
+				}
+			};
+
 			const sControlId = oControl.getId();
+
 			if (this._mValidateFunctionCalledAfterValidate.has(sControlId)) {
 				const mValidateFunction = this._mValidateFunctionCalledAfterValidate.get(sControlId);
-				mValidateFunction.set(sTestFunctionId, fnTest);
+				mValidateFunction.set(sValidateFunctionId, fnValidateFunction);
 			} else {
 				this._mValidateFunctionCalledAfterValidate.set(sControlId, new Map([
-					[sTestFunctionId, fnTest]
+					[sValidateFunctionId, fnValidateFunction]
 				]));
 			}
-			this._addValidator2Control(oTargetControl, fnTest, sMessageText);
+			
+			if (oParam.useFocusoutValidation) {
+				this._addValidator2Control(oTargetControlOrAControls, fnTest, sMessageTextOrAMessageTexts);
+			}
+			return this;
+		}
+
+		registerRequiredValidateFunctionCalledAfterValidate2(sValidateFunctionId, fnTest, oTargetControlOrAControls, oControl, mParameter) {
+			const oDefaultParam = {
+				useFocusoutValidation: false,
+				isAddMessageOnce: false
+			};
+			const oParam = { ...oDefaultParam, ...mParameter };
+
+			let sMessageTextOrAMessageTexts;
+			if (Array.isArray(oTargetControlOrAControls)) {
+				if (oParam.isAddMessageOnce) {
+					sMessageTextOrAMessageTexts = this._getMessageTextByControl(oTargetControlOrAControls[0]);
+				} else {
+					sMessageTextOrAMessageTexts = oTargetControlOrAControls.map(oTargetControl => this._getMessageTextByControl(oTargetControl));
+				}
+			} else {
+				sMessageTextOrAMessageTexts = this._getMessageTextByControl(oTargetControlOrAControls);
+			}
+			this.registerValidateFunctionCalledAfterValidate2(sValidateFunctionId, fnTest, sMessageTextOrAMessageTexts, oTargetControlOrAControls, oControl, oParam);
 			return this;
 		}
 
@@ -148,11 +215,10 @@ sap.ui.define([
 		 * oControl の検証後に実行するように登録されている関数を登録解除する。
 		 * 
 		 * @param {string} sValidateFunctionId validateFunction を識別するための任意のID
-		 * @param {validateFunction} validateFunction 登録済の関数
 		 * @param {sap.ui.core.Control} oControl コントロール
 		 * @returns {Validator} Reference to this in order to allow method chaining
 		 */
-		unregisterValidateFunctionCalledAfterValidate(sValidateFunctionId, validateFunction, oControl) {
+		unregisterValidateFunctionCalledAfterValidate(sValidateFunctionId, oControl) {
 			const sControlId = oControl.getId();
 			if (!this._mValidateFunctionCalledAfterValidate.has(sControlId)) {
 				return this;
@@ -219,32 +285,32 @@ sap.ui.define([
 			aControls.forEach(oControl => {
 				this._setValueState(oControl, ValueState.Error, sMessageText);
 
-				// ValueState とエラーメッセージが残ったままにならないように、対象のコントロールのイベントで ValueState とエラーメッセージを除去する。
-				if (oControl.attachSelectionFinish) {
-					const fnOnSelectionFinish = oEvent => {
-						if (!fnToJudgeRemoveError || fnToJudgeRemoveError(oControl, oEvent)) {
-							oControl.detachSelectionFinish(fnOnSelectionFinish);
-							aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
-						}
-					};
-					oControl.attachSelectionFinish(fnOnSelectionFinish);
-				} else if (oControl.attachChange) {
-					const fnOnChange = oEvent => {
-						if (!fnToJudgeRemoveError || fnToJudgeRemoveError(oControl, oEvent)) {
-							oControl.detachChange(fnOnChange);
-							aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
-						}
-					};
-					oControl.attachChange(fnOnChange);
-				} else if (oControl.attachSelect) {
-					const fnOnSelect = oEvent => {
-						if (!fnToJudgeRemoveError || fnToJudgeRemoveError(oControl, oEvent)) {
-							oControl.detachSelect(fnOnSelect);
-							aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
-						}
-					};
-					oControl.attachSelect(fnOnSelect);
-				}
+				// // ValueState とエラーメッセージが残ったままにならないように、対象のコントロールのイベントで ValueState とエラーメッセージを除去する。
+				// if (oControl.attachSelectionFinish) {
+				// 	const fnOnSelectionFinish = oEvent => {
+				// 		if (!fnToJudgeRemoveError || fnToJudgeRemoveError(oControl, oEvent)) {
+				// 			oControl.detachSelectionFinish(fnOnSelectionFinish);
+				// 			aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
+				// 		}
+				// 	};
+				// 	oControl.attachSelectionFinish(fnOnSelectionFinish);
+				// } else if (oControl.attachChange) {
+				// 	const fnOnChange = oEvent => {
+				// 		if (!fnToJudgeRemoveError || fnToJudgeRemoveError(oControl, oEvent)) {
+				// 			oControl.detachChange(fnOnChange);
+				// 			aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
+				// 		}
+				// 	};
+				// 	oControl.attachChange(fnOnChange);
+				// } else if (oControl.attachSelect) {
+				// 	const fnOnSelect = oEvent => {
+				// 		if (!fnToJudgeRemoveError || fnToJudgeRemoveError(oControl, oEvent)) {
+				// 			oControl.detachSelect(fnOnSelect);
+				// 			aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
+				// 		}
+				// 	};
+				// 	oControl.attachSelect(fnOnSelect);
+				// }
 			});
 		}
 
@@ -297,8 +363,8 @@ sap.ui.define([
 				oControl.getVisible())) {
 				
 				if (this._mValidateFunctionCalledAfterValidate.has(oControl.getId())) {
-					this._mValidateFunctionCalledAfterValidate.get(oControl.getId()).forEach(fnHandler => {
-						if (!fnHandler(oControl)) {
+					this._mValidateFunctionCalledAfterValidate.get(oControl.getId()).forEach(fnValidateFunction => {
+						if (!fnValidateFunction(oControl)) {
 							isValid = false;
 						}
 					});
@@ -333,8 +399,8 @@ sap.ui.define([
 				}
 			}
 			if (this._mValidateFunctionCalledAfterValidate.has(oControl.getId())) {
-				this._mValidateFunctionCalledAfterValidate.get(oControl.getId()).forEach(fnHandler => {
-					if (!fnHandler(oControl)) {
+				this._mValidateFunctionCalledAfterValidate.get(oControl.getId()).forEach(fnValidateFunction => {
+					if (!fnValidateFunction(oControl)) {
 						isValid = false;
 					}
 				});
@@ -375,27 +441,48 @@ sap.ui.define([
 			oControl.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR, "true");
 		}
 
-		_addValidator2Control(oControl, fnTest, sMessageText) {
-			if (this._isAddedValidator2Control(oControl)) {
+		_addValidator2Control(oControlOrAControls, fnTest, sMessageTextOrAMessageTexts) {
+			let aControls;
+			if (!Array.isArray(oControlOrAControls)) {
+				aControls = [oControlOrAControls];
+			} else if (oControlOrAControls.length === 0) {
 				return;
+			} else {
+				aControls = oControlOrAControls;
 			}
-			const fnValidator = oEvent => {
-				if (fnTest(oControl)) {
-					this._removeMessageAndValueState(oControl);
-				} else {
-					this._addMessage(oControl, sMessageText);
-					this._setValueState(oControl, ValueState.Error, sMessageText);
+
+			for (let i = 0; i < aControls.length; i++) {
+				const oControl = aControls[i];
+
+				if (this._isAddedValidator2Control(oControl)) {
+					continue;
 				}
-			};
-			if (oControl.attachSelectionFinish) {
-				oControl.attachSelectionFinish(fnValidator);
-				this._markedAddedValidator2Control(oControl);
-			} else if (oControl.attachChange) {
-				oControl.attachChange(fnValidator);
-				this._markedAddedValidator2Control(oControl);
-			} else if (oControl.attachSelect) {
-				oControl.attachSelect(fnValidator);
-				this._markedAddedValidator2Control(oControl);
+				const fnValidator = oEvent => {
+					if (fnTest(oControl)) {
+						aControls.forEach(oCtl => {
+							// TODO: functionIdか何かも指定して削除対象の判定が必要
+							this._removeMessageAndValueState(oCtl);
+						});
+					} else {
+						if (Array.isArray(sMessageTextOrAMessageTexts)) {
+							this._addMessage(oControl, sMessageTextOrAMessageTexts[i]);
+							this._setValueState(oControl, ValueState.Error, sMessageTextOrAMessageTexts[i]);
+						} else {
+							this._addMessage(oControl, sMessageTextOrAMessageTexts);
+							this._setValueState(oControl, ValueState.Error, sMessageTextOrAMessageTexts);
+						}
+					}
+				};
+				if (oControl.attachSelectionFinish) {
+					oControl.attachSelectionFinish(fnValidator);
+					this._markedAddedValidator2Control(oControl);
+				} else if (oControl.attachChange) {
+					oControl.attachChange(fnValidator);
+					this._markedAddedValidator2Control(oControl);
+				} else if (oControl.attachSelect) {
+					oControl.attachSelect(fnValidator);
+					this._markedAddedValidator2Control(oControl);
+				}
 			}
 		}
 
@@ -579,6 +666,7 @@ sap.ui.define([
 		 * - SimpleForm外で、labelForなし、入力コントロール側にariaLabelledByなし		ラベルID取得NG（紐付ける手がかりが一切ないので当たり前）
 		 */
 		_getLabelText(oControl) {
+			// TODO: sap.m.CheckBox の場合、LabelEnablement.getReferencingLabels では各チェックボックスのラベルが取得されるので、親のコントロールのラベルを探す。
 			const aLabelId = LabelEnablement.getReferencingLabels(oControl);
 			if (aLabelId && aLabelId.length > 0) {
 				const oLabel = sap.ui.getCore().byId(aLabelId[0]);

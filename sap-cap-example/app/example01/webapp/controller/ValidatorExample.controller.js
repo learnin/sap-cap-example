@@ -84,39 +84,16 @@ sap.ui.define([
 		onAfterRendering: function () {
 			const oView = this.getView();
 
-			// 必須入力チェック以外のバリデーションは、UI5標準バリデーションと同様にフォーカスアウト時にエラー表示させたい。
-			// this._validator.registerValidateFunctionCalledAfterValidate(
-			// 	"toDateIsAfterFromDateValidator",
-			// 	oToDateControl => {
-			// 		const dFromDateValue = oView.byId("fromDate").getDateValue();
-			// 		const dToDateValue = oToDateControl.getDateValue();
-			// 		if (dFromDateValue && dToDateValue && dFromDateValue.getTime() > dToDateValue.getTime()) {
-			// 			this._validator.setError(oToDateControl, "To date には From date 以降の日付を入力してください。", (oControl, oEvent) => {
-			// 				const dFromDateValue = oView.byId("fromDate").getDateValue();
-			// 				const dToDateValue = oControl.getDateValue();
-			// 				return dFromDateValue && dToDateValue && dFromDateValue.getTime() <= dToDateValue.getTime();
-			// 			});
-			// 			return false;
-			// 		}
-			// 		return true;
-			// 	},
-			// 	oView.byId("toDate")
-			// );
-
-			// TODO: フォーカスアウト時の必須入力チェックは保存ボタンを押すまでは仕掛けたくないので、この時点で toDateIsAfterFromDateValidator だけを
-			// フォーカスアウト時のバリデーション対象にできるようなAPIがほしい。
-			// -> registerValidateFunctionCalledAfterValidate の引数にオプションObjectを追加してそれでtrueにすれば同時にattachするようにする
-			// TODO: toDateだけでなくfromDateのバリデーションも必要というか、fromDateのフォーカスアウトでもtoDateのチェックが必要。
-			// ただし、そこまでやるべきか？相関バリデーションはフォーカスアウト時ではなく保存ボタン等を押した時に実行でいいかも？
+			// 必須入力チェック以外のバリデーションは、UI5標準バリデーションと同様にフォーカスアウト時にエラー表示させる。
 			this._validator.registerValidateFunctionCalledAfterValidate2(
 				"toDateIsAfterFromDateValidator",
-				oToDateControl => {
+				oControl => {
 					const dFromDateValue = oView.byId("fromDate").getDateValue();
-					const dToDateValue = oToDateControl.getDateValue();
+					const dToDateValue = oView.byId("toDate").getDateValue();
 					return !(dFromDateValue && dToDateValue && dFromDateValue.getTime() > dToDateValue.getTime());
 				},
-				"To date には From date 以降の日付を入力してください。",
-				oView.byId("toDate"),
+				["From date には To date 以前の日付を入力してください。", "To date には From date 以降の日付を入力してください。"],	// "From date と To dare の大小関係を正しく入力してください" も可能
+				[oView.byId("fromDate"), oView.byId("toDate")],
 				oView.byId("toDate")
 			);
 
@@ -149,16 +126,25 @@ sap.ui.define([
 		onValidate: function () {
 			const oView = this.getView();
 			
-			this._validator.registerValidateFunctionCalledAfterValidate(
+			// this._validator.registerValidateFunctionCalledAfterValidate(
+			// 	"requiredCheckBoxCustomValidator",
+			// 	oControl => {
+			// 		if (oControl.getItems().every(oCheckBox => !oCheckBox.getSelected())) {
+			// 			this._validator.setRequiredError(oControl.getItems());
+			// 			return false;
+			// 		}
+			// 		return true;
+			// 	},
+			// 	oView.byId("requiredCheckBoxCustom")
+			// );
+			this._validator.registerRequiredValidateFunctionCalledAfterValidate2(
 				"requiredCheckBoxCustomValidator",
-				oControl => {
-					if (oControl.getItems().every(oCheckBox => !oCheckBox.getSelected())) {
-						this._validator.setRequiredError(oControl.getItems());
-						return false;
-					}
-					return true;
-				},
-				oView.byId("requiredCheckBoxCustom")
+				oControl => oControl.getItems().some(oCheckBox => oCheckBox.getSelected()),
+				oView.byId("requiredCheckBoxCustom").getItems(),
+				oView.byId("requiredCheckBoxCustom"),
+				{
+					isAddMessageOnce: true
+				}
 			);
 
 			// TODO: registerValidateFunctionCalledAfterValidate で追加された関数によるフォーカスアウト時のバリデーションの追加
