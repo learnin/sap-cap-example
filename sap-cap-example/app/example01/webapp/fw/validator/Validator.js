@@ -46,7 +46,7 @@ sap.ui.define([
 				"_page"
 			];
 
-			// キーのコントロールIDのコントロールの検証後に実行する関数配列を保持するマップ。型は Map<string, Map<string, function>>
+			// キーのコントロールIDのコントロールの検証後に実行する関数配列を保持するマップ。型は Map<string, Object[]>
 			this._mValidateFunctionCalledAfterValidate = new Map();
 
 			this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR = "fw.validator.Validator.IS_ADDED_REQUIRED_VALIDATOR";
@@ -102,9 +102,9 @@ sap.ui.define([
 		}
 
 		/**
-		 * {@link #registerValidateFunctionCalledAfterValidate} の引数のコールバック関数の型
+		 * {@link #registerValidateFunctionCalledAfterValidate registerValidateFunctionCalledAfterValidate} の引数のコールバック関数の型
 		 *
-		 * @callback validateFunction
+		 * @callback testFunction
 		 * @param {sap.ui.core.Control} oControl 本関数が呼び出される直前に検証された（または検証をスキップされた）コントロール
 		 * @returns {boolean} true: valid、false: invalid
 		 */
@@ -112,28 +112,18 @@ sap.ui.define([
 		 * oControl の検証後に実行する関数を登録する。
 		 * すでに oControl に sValidateFunctionId の関数が登録されている場合は関数を上書きする。
 		 * 
-		 * @param {string} sValidateFunctionId validateFunction を識別するための任意のID
-		 * @param {validateFunction} validateFunction oControl の検証後に実行される関数
-		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @param {string} sValidateFunctionId fnTest を識別するための任意のID
+		 * @param {testFunction} fnTest oControl の検証後に実行される検証用の関数
+		 * @param {string|string[]} sMessageTextOrAMessageTexts 検証エラーメッセージまたはその配列
+		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oTargetControlOrAControls 検証対象のコントロールまたはその配列
+		 * @param {sap.ui.core.Control} oControl {@link #validate validate} 実行時に oControl の検証後に fnTest を使って検証を行う
+		 * @param {Object} [mParameter] オプションパラメータ
 		 * @returns {Validator} Reference to this in order to allow method chaining
 		 */
-		registerValidateFunctionCalledAfterValidate(sValidateFunctionId, validateFunction, oControl) {
-			const sControlId = oControl.getId();
-			if (this._mValidateFunctionCalledAfterValidate.has(sControlId)) {
-				const mValidateFunction = this._mValidateFunctionCalledAfterValidate.get(sControlId);
-				mValidateFunction.set(sValidateFunctionId, validateFunction);
-			} else {
-				this._mValidateFunctionCalledAfterValidate.set(sControlId, new Map([
-					[sValidateFunctionId, validateFunction]
-				]));
-			}
-			return this;
-		}
-
 		// oTargetControlOrAControls が配列で sMessageTextOrAMessageTexts も配列で要素数が同じはOK
 		// oTargetControlOrAControls が配列で sMessageTextOrAMessageTexts がObjectもOK
 		// oTargetControlOrAControls がObjectで sMessageTextOrAMessageTexts もObjectもOK
-		registerValidateFunctionCalledAfterValidate2(sValidateFunctionId, fnTest, sMessageTextOrAMessageTexts, oTargetControlOrAControls, oControl, mParameter) {
+		registerValidateFunctionCalledAfterValidate(sValidateFunctionId, fnTest, sMessageTextOrAMessageTexts, oTargetControlOrAControls, oControl, mParameter) {
 			if (!(
 				(!Array.isArray(oTargetControlOrAControls) && !Array.isArray(sMessageTextOrAMessageTexts)) ||
 				(Array.isArray(oTargetControlOrAControls) && !Array.isArray(sMessageTextOrAMessageTexts)) ||
@@ -149,39 +139,59 @@ sap.ui.define([
 			const fnValidateFunction = oCtl => {
 				let isAddedMessage = false;
 
-				if (!fnTest(oCtl)) {
-					if (Array.isArray(oTargetControlOrAControls)) {
-						for (let i = 0; i < oTargetControlOrAControls.length; i++) {
-							if (Array.isArray(sMessageTextOrAMessageTexts)) {
-								if (!oParam.isAddMessageOnce || !isAddedMessage) {
-									this._addMessage(oTargetControlOrAControls[i], sMessageTextOrAMessageTexts[i]);
-									isAddedMessage = true;
-								}
-								this._setValueState(oTargetControlOrAControls[i], ValueState.Error, sMessageTextOrAMessageTexts[i]);
-							} else {
-								if (!oParam.isAddMessageOnce || !isAddedMessage) {
-									this._addMessage(oTargetControlOrAControls[i], sMessageTextOrAMessageTexts);
-									isAddedMessage = true;
-								}
-								this._setValueState(oTargetControlOrAControls[i], ValueState.Error, sMessageTextOrAMessageTexts);
-							}
-						}
-					} else {
-						this._addMessage(oTargetControlOrAControls, sMessageTextOrAMessageTexts);
-						this._setValueState(oTargetControlOrAControls, ValueState.Error, sMessageTextOrAMessageTexts);
-					}
+				if (fnTest(oCtl)) {
+					return true;
 				}
+				if (Array.isArray(oTargetControlOrAControls)) {
+					for (let i = 0; i < oTargetControlOrAControls.length; i++) {
+						if (Array.isArray(sMessageTextOrAMessageTexts)) {
+							if (!oParam.isAddMessageOnce || !isAddedMessage) {
+								this._addMessage(oTargetControlOrAControls[i], sMessageTextOrAMessageTexts[i]);
+								isAddedMessage = true;
+							}
+							this._setValueState(oTargetControlOrAControls[i], ValueState.Error, sMessageTextOrAMessageTexts[i]);
+						} else {
+							if (!oParam.isAddMessageOnce || !isAddedMessage) {
+								this._addMessage(oTargetControlOrAControls[i], sMessageTextOrAMessageTexts);
+								isAddedMessage = true;
+							}
+							this._setValueState(oTargetControlOrAControls[i], ValueState.Error, sMessageTextOrAMessageTexts);
+						}
+					}
+				} else {
+					this._addMessage(oTargetControlOrAControls, sMessageTextOrAMessageTexts);
+					this._setValueState(oTargetControlOrAControls, ValueState.Error, sMessageTextOrAMessageTexts);
+				}
+				return false;
 			};
 
 			const sControlId = oControl.getId();
 
 			if (this._mValidateFunctionCalledAfterValidate.has(sControlId)) {
-				const mValidateFunction = this._mValidateFunctionCalledAfterValidate.get(sControlId);
-				mValidateFunction.set(sValidateFunctionId, fnValidateFunction);
+				const aValidateFunctions = this._mValidateFunctionCalledAfterValidate.get(sControlId);
+				const oValidateFunction = aValidateFunctions.find(oValidateFunction => oValidateFunction.validateFunctionId === sValidateFunctionId);
+				if (oValidateFunction) {
+					oValidateFunction.testFunction = fnTest;
+					oValidateFunction.messageTextOrMessageTexts = sMessageTextOrAMessageTexts;
+					oValidateFunction.targetControlOrControls = oTargetControlOrAControls;
+					oValidateFunction.validateFunction = fnValidateFunction;
+				} else {
+					aValidateFunctions.push({
+						validateFunctionId: sValidateFunctionId,
+						testFunction: fnTest,
+						messageTextOrMessageTexts: sMessageTextOrAMessageTexts,
+						targetControlOrControls: oTargetControlOrAControls,
+						validateFunction: fnValidateFunction
+					});
+				}
 			} else {
-				this._mValidateFunctionCalledAfterValidate.set(sControlId, new Map([
-					[sValidateFunctionId, fnValidateFunction]
-				]));
+				this._mValidateFunctionCalledAfterValidate.set(sControlId, [{
+					validateFunctionId: sValidateFunctionId,
+					testFunction: fnTest,
+					messageTextOrMessageTexts: sMessageTextOrAMessageTexts,
+					targetControlOrControls: oTargetControlOrAControls,
+					validateFunction: fnValidateFunction
+				}]);
 			}
 			
 			if (oParam.useFocusoutValidation) {
@@ -190,7 +200,7 @@ sap.ui.define([
 			return this;
 		}
 
-		registerRequiredValidateFunctionCalledAfterValidate2(sValidateFunctionId, fnTest, oTargetControlOrAControls, oControl, mParameter) {
+		registerRequiredValidateFunctionCalledAfterValidate(sValidateFunctionId, fnTest, oTargetControlOrAControls, oControl, mParameter) {
 			const oDefaultParam = {
 				useFocusoutValidation: false,
 				isAddMessageOnce: false
@@ -207,7 +217,7 @@ sap.ui.define([
 			} else {
 				sMessageTextOrAMessageTexts = this._getMessageTextByControl(oTargetControlOrAControls);
 			}
-			this.registerValidateFunctionCalledAfterValidate2(sValidateFunctionId, fnTest, sMessageTextOrAMessageTexts, oTargetControlOrAControls, oControl, oParam);
+			this.registerValidateFunctionCalledAfterValidate(sValidateFunctionId, fnTest, sMessageTextOrAMessageTexts, oTargetControlOrAControls, oControl, oParam);
 			return this;
 		}
 
@@ -223,10 +233,12 @@ sap.ui.define([
 			if (!this._mValidateFunctionCalledAfterValidate.has(sControlId)) {
 				return this;
 			}
-			const mValidateFunction = this._mValidateFunctionCalledAfterValidate.get(sControlId);
-			mValidateFunction.delete(sValidateFunctionId);
-			
-			if (mValidateFunction.size === 0) {
+			const aValidateFunctions = this._mValidateFunctionCalledAfterValidate.get(sControlId);
+			const iIndex = aValidateFunctions.findIndex(oValidateFunction => oValidateFunction.validateFunctionId === sValidateFunctionId);
+			if (iIndex >= 0) {
+				aValidateFunctions.splice(iIndex, 1);
+			}
+			if (aValidateFunctions.length === 0) {
 				this._mValidateFunctionCalledAfterValidate.delete(sControlId);
 			}
 			return this;
@@ -329,20 +341,27 @@ sap.ui.define([
 			// disable のコントロールも後で有効化される可能性が想定されるため、処理対象とする
 			if (LabelEnablement.isRequired(oControl)) {
 				this._addRequiredValidator2Control(oControl);
-			} else {
-				// 入力コントロールやエレメントでなかった場合は、aggregation のコントロールやエレメントを再帰的に検証する。
-				for (let i = 0; i < this._aTargetAggregations.length; i++) {
-					const aControlAggregation = oControl.getAggregation(this._aTargetAggregations[i]);
-					if (!aControlAggregation) {
-						continue;
+			}
+			if (this._mValidateFunctionCalledAfterValidate.has(oControl.getId())) {
+				this._mValidateFunctionCalledAfterValidate.get(oControl.getId()).forEach(oValidateFunction => {
+					this._addValidator2Control(
+						oValidateFunction.targetControlOrControls,
+						oValidateFunction.testFunction,
+						oValidateFunction.messageTextOrMessageTexts);
+				});
+			}
+			// 入力コントロールやエレメントでなかった場合は、aggregation のコントロールやエレメントを再帰的に検証する。
+			for (let i = 0; i < this._aTargetAggregations.length; i++) {
+				const aControlAggregation = oControl.getAggregation(this._aTargetAggregations[i]);
+				if (!aControlAggregation) {
+					continue;
+				}
+				if (Array.isArray(aControlAggregation)) {
+					for (let j = 0; j < aControlAggregation.length; j++) {
+						this._addValidator2Controls(aControlAggregation[j]);
 					}
-					if (Array.isArray(aControlAggregation)) {
-						for (let j = 0; j < aControlAggregation.length; j++) {
-							this._addValidator2Controls(aControlAggregation[j]);
-						}
-					} else {
-						this._addValidator2Controls(aControlAggregation);
-					}
+				} else {
+					this._addValidator2Controls(aControlAggregation);
 				}
 			}
 		}
@@ -363,8 +382,8 @@ sap.ui.define([
 				oControl.getVisible())) {
 				
 				if (this._mValidateFunctionCalledAfterValidate.has(oControl.getId())) {
-					this._mValidateFunctionCalledAfterValidate.get(oControl.getId()).forEach(fnValidateFunction => {
-						if (!fnValidateFunction(oControl)) {
+					this._mValidateFunctionCalledAfterValidate.get(oControl.getId()).forEach(oValidateFunction => {
+						if (!oValidateFunction.validateFunction(oControl)) {
 							isValid = false;
 						}
 					});
@@ -378,29 +397,28 @@ sap.ui.define([
 			if (((oControl.getEnabled && oControl.getEnabled()) || !oControl.getEnabled) &&
 				LabelEnablement.isRequired(oControl)) {
 				isValid = this._validateRequired(oControl);
-			} else {
-				// 入力コントロールやエレメントでなかった場合は、aggregation のコントロールやエレメントを再帰的に検証する。
-				for (let i = 0; i < this._aTargetAggregations.length; i++) {
-					const aControlAggregation = oControl.getAggregation(this._aTargetAggregations[i]);
-					if (!aControlAggregation) {
-						continue;
-					}
-					if (Array.isArray(aControlAggregation)) {
-						for (let j = 0; j < aControlAggregation.length; j++) {
-							if (!this._validate(aControlAggregation[j])) {
-								isValid = false;
-							}
-						}
-					} else {
-						if (!this._validate(aControlAggregation)) {
+			}
+			// 入力コントロールやエレメントでなかった場合は、aggregation のコントロールやエレメントを再帰的に検証する。
+			for (let i = 0; i < this._aTargetAggregations.length; i++) {
+				const aControlAggregation = oControl.getAggregation(this._aTargetAggregations[i]);
+				if (!aControlAggregation) {
+					continue;
+				}
+				if (Array.isArray(aControlAggregation)) {
+					for (let j = 0; j < aControlAggregation.length; j++) {
+						if (!this._validate(aControlAggregation[j])) {
 							isValid = false;
 						}
+					}
+				} else {
+					if (!this._validate(aControlAggregation)) {
+						isValid = false;
 					}
 				}
 			}
 			if (this._mValidateFunctionCalledAfterValidate.has(oControl.getId())) {
-				this._mValidateFunctionCalledAfterValidate.get(oControl.getId()).forEach(fnValidateFunction => {
-					if (!fnValidateFunction(oControl)) {
+				this._mValidateFunctionCalledAfterValidate.get(oControl.getId()).forEach(oValidateFunction => {
+					if (!oValidateFunction.validateFunction(oControl)) {
 						isValid = false;
 					}
 				});
@@ -409,6 +427,10 @@ sap.ui.define([
 		}
 
 		_addRequiredValidator2Control(oControl) {
+			if (!oControl.attachSelectionFinish && !oControl.attachChange && !oControl.attachSelect) {
+				// 対象外
+				return;
+			}
 			if (this._isAddedRequiredValidator2Control(oControl)) {
 				return;
 			}

@@ -84,8 +84,21 @@ sap.ui.define([
 		onAfterRendering: function () {
 			const oView = this.getView();
 
+			// TODO: requiredCheckBoxCustom も fromDare/toDate も validate 後に一度エラーを解除した後、空にしても必須エラーの赤にならない。おそらく、エラー解除時のfunctionId等での判別が必要。
+			// requiredCheckBoxCustom の方はおそらくそれだけではなくて、複数のコントロールのフォーカスアウトで複数のコントロールを赤くしないといけないので、
+			// _addValidator2Control の共有ではなく、required用の処理がいりそう。
+			this._validator.registerRequiredValidateFunctionCalledAfterValidate(
+				"requiredCheckBoxCustomValidator",
+				() => oView.byId("requiredCheckBoxCustom").getItems().some(oCheckBox => oCheckBox.getSelected()),
+				oView.byId("requiredCheckBoxCustom").getItems(),
+				oView.byId("requiredCheckBoxCustom"),
+				{
+					isAddMessageOnce: true
+				}
+			);
+
 			// 必須入力チェック以外のバリデーションは、UI5標準バリデーションと同様にフォーカスアウト時にエラー表示させる。
-			this._validator.registerValidateFunctionCalledAfterValidate2(
+			this._validator.registerValidateFunctionCalledAfterValidate(
 				"toDateIsAfterFromDateValidator",
 				oControl => {
 					const dFromDateValue = oView.byId("fromDate").getDateValue();
@@ -109,13 +122,6 @@ sap.ui.define([
 			// 	.after(oView.byId("toDate"))
 			// 	.build();
 
-			// // TODO: registerRequiredValidateFunctionCalledAfterValidate はこの時点ではattachしない
-			// this._validator.registerRequiredValidateFunctionCalledAfterValidate(
-			// 	"requiredCheckBoxCustomValidator",
-			// 	oControl => !(oControl.getItems().every(oCheckBox => !oCheckBox.getSelected())),
-			// 	oView.byId("requiredCheckBoxCustom").getItems(),
-			// 	oView.byId("requiredCheckBoxCustom")
-			// );
 			// // TODO: validatorFunctonのidはtargetのid + 連番とかで自動生成できないか？
 			// this._validator.builder()
 			// 	.target(oView.byId("requiredCheckBoxCustom").getItems())
@@ -126,28 +132,6 @@ sap.ui.define([
 		onValidate: function () {
 			const oView = this.getView();
 			
-			// this._validator.registerValidateFunctionCalledAfterValidate(
-			// 	"requiredCheckBoxCustomValidator",
-			// 	oControl => {
-			// 		if (oControl.getItems().every(oCheckBox => !oCheckBox.getSelected())) {
-			// 			this._validator.setRequiredError(oControl.getItems());
-			// 			return false;
-			// 		}
-			// 		return true;
-			// 	},
-			// 	oView.byId("requiredCheckBoxCustom")
-			// );
-			this._validator.registerRequiredValidateFunctionCalledAfterValidate2(
-				"requiredCheckBoxCustomValidator",
-				oControl => oControl.getItems().some(oCheckBox => oCheckBox.getSelected()),
-				oView.byId("requiredCheckBoxCustom").getItems(),
-				oView.byId("requiredCheckBoxCustom"),
-				{
-					isAddMessageOnce: true
-				}
-			);
-
-			// TODO: registerValidateFunctionCalledAfterValidate で追加された関数によるフォーカスアウト時のバリデーションの追加
 			// TODO: Validatorのコンストラクタの引数のオプションObjectにパラメータを追加して、validate時に合わせてaddValidator2Controlsも呼ぶか制御可能にする。デフォルトは呼ぶ。
 			// TODO: validate実行時にattachするのは廃止する。挙動としては①1度validateするとフォーカスアウトでバリデーションが効くようになる
 			// （正しい値を入れてフォーカスアウトしてエラーが消えてもまた不正にしてフォーカスアウトするとエラーになる）②1度validateするとremoveErrorsするまでエラーは残りっぱなし
