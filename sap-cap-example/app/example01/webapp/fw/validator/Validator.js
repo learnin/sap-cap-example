@@ -688,7 +688,17 @@ sap.ui.define([
 		 * - SimpleForm外で、labelForなし、入力コントロール側にariaLabelledByなし		ラベルID取得NG（紐付ける手がかりが一切ないので当たり前）
 		 */
 		_getLabelText(oControl) {
-			// TODO: sap.m.CheckBox の場合、LabelEnablement.getReferencingLabels では各チェックボックスのラベルが取得されるので、親のコントロールのラベルを探す。
+			// sap.m.CheckBox の場合、そのまま LabelEnablement.getReferencingLabels を取得すると各チェックボックスのラベルが取得されるので、
+			// 親のコントロールのラベルを探してみる。（親のラベルが見つかるかはビューの構造による。例えば、SimpleForm 内では見つからない）
+			if (oControl instanceof sap.m.CheckBox && oControl.getParent()) {
+				const aLabelId = LabelEnablement.getReferencingLabels(oControl.getParent());
+				if (aLabelId && aLabelId.length > 0) {
+					const oLabel = sap.ui.getCore().byId(aLabelId[0]);
+					if (oLabel && oLabel.getText) {
+						return oLabel.getText();
+					}
+				}
+			}
 			const aLabelId = LabelEnablement.getReferencingLabels(oControl);
 			if (aLabelId && aLabelId.length > 0) {
 				const oLabel = sap.ui.getCore().byId(aLabelId[0]);
