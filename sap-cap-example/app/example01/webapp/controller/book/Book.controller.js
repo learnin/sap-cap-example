@@ -103,7 +103,6 @@ sap.ui.define([
 			if (!pFragment) {
 				// 戻り値は Promise
 				pFragment = Fragment.load({
-					id: this.getView().getId(),
 					name: "com.example.example01.view.book." + sFragmentName,
 					controller: this
 				});
