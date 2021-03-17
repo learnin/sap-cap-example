@@ -84,9 +84,8 @@ sap.ui.define([
 		onAfterRendering: function () {
 			const oView = this.getView();
 
-			// TODO: requiredCheckBoxCustom も fromDare/toDate も validate 後に一度エラーを解除した後、空にしても必須エラーの赤にならない。おそらく、エラー解除時のfunctionId等での判別が必要。
-			// requiredCheckBoxCustom の方はおそらくそれだけではなくて、複数のコントロールのフォーカスアウトで複数のコントロールを赤くしないといけないので、
-			// _addValidator2Control の共有ではなく、required用の処理がいりそう。
+			// TODO: requiredCheckBoxCustom は validate 後に一度エラーを解除した後、空にしても必須エラーの赤にならない。
+			// 複数のコントロールのフォーカスアウトで複数のコントロールを赤くしないといけない。Validator にTODO記載済み。
 			this._validator.registerRequiredValidateFunctionCalledAfterValidate(
 				"requiredCheckBoxCustomValidator",
 				() => oView.byId("requiredCheckBoxCustom").getItems().some(oCheckBox => oCheckBox.getSelected()),
@@ -97,12 +96,16 @@ sap.ui.define([
 				}
 			);
 
+			// TODO: もう1例追加する。ラジオボタンでどれか1つを選択必須でかつ「その他」を選んだ場合はInputも必須というチェック。
+			// もしかすると、独自バリデーションにしなくても、isRequireをバインド式にしてやればできるかも？できたとしても、それと独自バリデーション版と両方をサンプルに載せる。
+
 			// 必須入力チェック以外のバリデーションは、UI5標準バリデーションと同様にフォーカスアウト時にエラー表示させる。
 			this._validator.registerValidateFunctionCalledAfterValidate(
 				"toDateIsAfterFromDateValidator",
-				oControl => {
+				() => {
 					const dFromDateValue = oView.byId("fromDate").getDateValue();
 					const dToDateValue = oView.byId("toDate").getDateValue();
+					// 必須チェックは別でやっているのでここでエラーにするのは両方入力されていて値が不正な場合のみ
 					return !(dFromDateValue && dToDateValue && dFromDateValue.getTime() > dToDateValue.getTime());
 				},
 				["From date には To date 以前の日付を入力してください。", "To date には From date 以降の日付を入力してください。"],	// "From date と To dare の大小関係を正しく入力してください" も可能
@@ -133,7 +136,7 @@ sap.ui.define([
 			const oView = this.getView();
 			
 			// TODO: Validatorのコンストラクタの引数のオプションObjectにパラメータを追加して、validate時に合わせてaddValidator2Controlsも呼ぶか制御可能にする。デフォルトは呼ぶ。
-			// TODO: validate実行時にattachするのは廃止する。挙動としては①1度validateするとフォーカスアウトでバリデーションが効くようになる
+			// TODO: 挙動としては①1度validateするとフォーカスアウトでバリデーションが効くようになる
 			// （正しい値を入れてフォーカスアウトしてエラーが消えてもまた不正にしてフォーカスアウトするとエラーになる）②1度validateするとremoveErrorsするまでエラーは残りっぱなし
 			// のどちらかとなる。どちらにするかをValidatorのコンストラクタの引数で選べるようにする。デフォルトは①
 			this._validator.addValidator2Controls(oView);

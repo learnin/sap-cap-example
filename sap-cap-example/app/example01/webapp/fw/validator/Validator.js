@@ -131,7 +131,7 @@ sap.ui.define([
 				throw new SyntaxError();
 			}
 			const oDefaultParam = {
-				useFocusoutValidation: true,
+				isAttachFocusoutValidationImmediately: true,
 				isAddMessageOnce: false
 			};
 			const oParam = { ...oDefaultParam, ...mParameter };
@@ -146,20 +146,20 @@ sap.ui.define([
 					for (let i = 0; i < oTargetControlOrAControls.length; i++) {
 						if (Array.isArray(sMessageTextOrAMessageTexts)) {
 							if (!oParam.isAddMessageOnce || !isAddedMessage) {
-								this._addMessage(oTargetControlOrAControls[i], sMessageTextOrAMessageTexts[i]);
+								this._addMessage(oTargetControlOrAControls[i], sMessageTextOrAMessageTexts[i], sValidateFunctionId);
 								isAddedMessage = true;
 							}
 							this._setValueState(oTargetControlOrAControls[i], ValueState.Error, sMessageTextOrAMessageTexts[i]);
 						} else {
 							if (!oParam.isAddMessageOnce || !isAddedMessage) {
-								this._addMessage(oTargetControlOrAControls[i], sMessageTextOrAMessageTexts);
+								this._addMessage(oTargetControlOrAControls[i], sMessageTextOrAMessageTexts, sValidateFunctionId);
 								isAddedMessage = true;
 							}
 							this._setValueState(oTargetControlOrAControls[i], ValueState.Error, sMessageTextOrAMessageTexts);
 						}
 					}
 				} else {
-					this._addMessage(oTargetControlOrAControls, sMessageTextOrAMessageTexts);
+					this._addMessage(oTargetControlOrAControls, sMessageTextOrAMessageTexts, sValidateFunctionId);
 					this._setValueState(oTargetControlOrAControls, ValueState.Error, sMessageTextOrAMessageTexts);
 				}
 				return false;
@@ -194,15 +194,17 @@ sap.ui.define([
 				}]);
 			}
 			
-			if (oParam.useFocusoutValidation) {
-				this._addValidator2Control(oTargetControlOrAControls, fnTest, sMessageTextOrAMessageTexts);
+			if (oParam.isAttachFocusoutValidationImmediately) {
+				this._addValidator2Control(oTargetControlOrAControls, fnTest, sMessageTextOrAMessageTexts, sValidateFunctionId);
 			}
 			return this;
 		}
 
 		registerRequiredValidateFunctionCalledAfterValidate(sValidateFunctionId, fnTest, oTargetControlOrAControls, oControl, mParameter) {
 			const oDefaultParam = {
-				useFocusoutValidation: false,
+				isAttachFocusoutValidationImmediately: false,
+				// TODO: isAddMessageOnce -> isGrouping に変えて、true ならメッセージだけではなく、oTargetControlOrAControls を1つのグループとみなして
+				// メッセージは1つで、エラーステートは全要素のコントロールにつけるようにする
 				isAddMessageOnce: false
 			};
 			const oParam = { ...oDefaultParam, ...mParameter };
@@ -251,7 +253,7 @@ sap.ui.define([
 		 * 
 		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oControlOrAControls 必須チェックエラーとなったコントロールまたはコントロール配列
 		 */
-		setRequiredError(oControlOrAControls) {
+		_setRequiredError(oControlOrAControls) {
 			let oControl;
 			if (Array.isArray(oControlOrAControls)) {
 				if (oControlOrAControls.length === 0) {
@@ -262,11 +264,11 @@ sap.ui.define([
 				oControl = oControlOrAControls;
 			}
 			const sMessageText = this._getMessageTextByControl(oControl);
-			this.setError(oControlOrAControls, sMessageText);
+			this._setError(oControlOrAControls, sMessageText);
 		}
 
 		/**
-		 * {@link #setError} の引数のコールバック関数の型
+		 * {@link #_setError} の引数のコールバック関数の型
 		 *
 		 * @callback judgeRemoveErrorHandler
 		 * @param {sap.ui.core.Control} oControl 検証対象のコントロール
@@ -282,7 +284,7 @@ sap.ui.define([
 		 * @param {string} sMessageText 登録するメッセージ
 		 * @param {judgeRemoveErrorHandler} [fnToJudgeRemoveError] エラーを除去してよいか判断する関数。対象のコントロールの selectionFinish または change または select イベント発火時に実行される。省略時は常に true とみなす。
 		 */
-		setError(oControlOrAControls, sMessageText, fnToJudgeRemoveError) {
+		_setError(oControlOrAControls, sMessageText, fnToJudgeRemoveError) {
 			let aControls;
 			if (!Array.isArray(oControlOrAControls)) {
 				aControls = [oControlOrAControls];
@@ -347,7 +349,8 @@ sap.ui.define([
 					this._addValidator2Control(
 						oValidateFunction.targetControlOrControls,
 						oValidateFunction.testFunction,
-						oValidateFunction.messageTextOrMessageTexts);
+						oValidateFunction.messageTextOrMessageTexts,
+						oValidateFunction.validateFunctionId);
 				});
 			}
 			// 入力コントロールやエレメントでなかった場合は、aggregation のコントロールやエレメントを再帰的に検証する。
@@ -463,7 +466,7 @@ sap.ui.define([
 			oControl.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR, "true");
 		}
 
-		_addValidator2Control(oControlOrAControls, fnTest, sMessageTextOrAMessageTexts) {
+		_addValidator2Control(oControlOrAControls, fnTest, sMessageTextOrAMessageTexts, sValidateFunctionId) {
 			let aControls;
 			if (!Array.isArray(oControlOrAControls)) {
 				aControls = [oControlOrAControls];
@@ -482,15 +485,14 @@ sap.ui.define([
 				const fnValidator = oEvent => {
 					if (fnTest(oControl)) {
 						aControls.forEach(oCtl => {
-							// TODO: functionIdか何かも指定して削除対象の判定が必要
-							this._removeMessageAndValueState(oCtl);
+							this._removeMessageAndValueState(oCtl, sValidateFunctionId);
 						});
 					} else {
 						if (Array.isArray(sMessageTextOrAMessageTexts)) {
-							this._addMessage(oControl, sMessageTextOrAMessageTexts[i]);
+							this._addMessage(oControl, sMessageTextOrAMessageTexts[i], sValidateFunctionId);
 							this._setValueState(oControl, ValueState.Error, sMessageTextOrAMessageTexts[i]);
 						} else {
-							this._addMessage(oControl, sMessageTextOrAMessageTexts);
+							this._addMessage(oControl, sMessageTextOrAMessageTexts, sValidateFunctionId);
 							this._setValueState(oControl, ValueState.Error, sMessageTextOrAMessageTexts);
 						}
 					}
@@ -526,7 +528,7 @@ sap.ui.define([
 			if (!this._isNullValue(oControl)) {
 				return true;
 			}
-			this.setRequiredError(oControl);
+			this._setRequiredError(oControl);
 			return false;
 		}
 
@@ -554,13 +556,16 @@ sap.ui.define([
 			}
 		}
 
-		_removeMessageAndValueState(oControl) {
+		_removeMessageAndValueState(oControl, sValidateFunctionId) {
 			const oMessageManager = sap.ui.getCore().getMessageManager();
 			const oMessageModel = oMessageManager.getMessageModel();
 			const sValidatorMessageName = _ValidatorMessage.getMetadata().getName();
 			const sControlId = oControl.getId();
 
-			const oMessage = oMessageModel.getProperty("/").find(oMsg => BaseObject.isA(oMsg, sValidatorMessageName) && oMsg.getValidationErrorControlId() === sControlId);
+			const oMessage = oMessageModel.getProperty("/").find(oMsg =>
+				BaseObject.isA(oMsg, sValidatorMessageName) &&
+				oMsg.getValidationErrorControlId() === sControlId &&
+				oMsg.getValidateFunctionId() === sValidateFunctionId);
 			if (oMessage) {
 				oMessageManager.removeMessages(oMessage);
 			}
@@ -714,15 +719,17 @@ sap.ui.define([
 		 *
 		 * @param {sap.ui.core.Control} oControl 検証エラーとなったコントロール
 		 * @param {string} sMessageText エラーメッセージ
+		 * @param {string} [sValidateFunctionId] 検証を行った関数のID。this._mValidateFunctionCalledAfterValidate に含まれる関数で検証した場合にのみ必要
 		 */
-		_addMessage(oControl, sMessageText) {
+		_addMessage(oControl, sMessageText, sValidateFunctionId) {
 			sap.ui.getCore().getMessageManager().addMessages(new _ValidatorMessage({
 				message: sMessageText,
 				type: MessageType.Error,
 				additionalText: this._getLabelText(oControl),
 				processor: new ControlMessageProcessor(),
 				target: this._resolveMessageTarget(oControl),
-				validationErrorControlId: oControl.getId()
+				validationErrorControlId: oControl.getId(),
+				validateFunctionId: sValidateFunctionId
 			}));
 		}
 
@@ -756,15 +763,22 @@ sap.ui.define([
 			
 			if (mParameters && mParameters.validationErrorControlId) {
 				this.validationErrorControlId = mParameters.validationErrorControlId;
+
 				// https://sapui5.hana.ondemand.com/#/api/sap.ui.core.message.Message/methods/getControlId に InputBase のコントロールにしか
 				// controlIdはセットされないと書かれている。実際に、例えば RadioButton ではセットされない。なぜ、こういう仕様にしているのかは不明。
 				// 本メッセージクラスではコントロールに関わらずセットする（ただし、何らかの問題が見つかった場合はセットするのをやめる可能性あり）。
 				this.addControlId(mParameters.validationErrorControlId);
 			}
+			if (mParameters && mParameters.validateFunctionId) {
+				this.validateFunctionId = mParameters.validateFunctionId;
+			}
 		}
 	});
 	_ValidatorMessage.prototype.getValidationErrorControlId = function() {
 		return this.validationErrorControlId;
+	};
+	_ValidatorMessage.prototype.getValidateFunctionId = function() {
+		return this.validateFunctionId;
 	};
 
 	return Validator;
