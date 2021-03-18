@@ -84,20 +84,20 @@ sap.ui.define([
 		onAfterRendering: function () {
 			const oView = this.getView();
 
-			// TODO: requiredCheckBoxCustom は validate 後に一度エラーを解除した後、空にしても必須エラーの赤にならない。
-			// 複数のコントロールのフォーカスアウトで複数のコントロールを赤くしないといけない。Validator にTODO記載済み。
 			this._validator.registerRequiredValidateFunctionCalledAfterValidate(
 				"requiredCheckBoxCustomValidator",
 				() => oView.byId("requiredCheckBoxCustom").getItems().some(oCheckBox => oCheckBox.getSelected()),
 				oView.byId("requiredCheckBoxCustom").getItems(),
 				oView.byId("requiredCheckBoxCustom"),
 				{
-					isAddMessageOnce: true
+					isGroupedTargetControls: true
 				}
 			);
 
 			// TODO: もう1例追加する。ラジオボタンでどれか1つを選択必須でかつ「その他」を選んだ場合はInputも必須というチェック。
 			// もしかすると、独自バリデーションにしなくても、isRequireをバインド式にしてやればできるかも？できたとしても、それと独自バリデーション版と両方をサンプルに載せる。
+
+			// TODO: もう1例追加する。チェックボックスで1つ以上3つ以下で選ばないといけないというチェック。
 
 			// 必須入力チェック以外のバリデーションは、UI5標準バリデーションと同様にフォーカスアウト時にエラー表示させる。
 			this._validator.registerValidateFunctionCalledAfterValidate(

@@ -132,31 +132,31 @@ sap.ui.define([
 			}
 			const oDefaultParam = {
 				isAttachFocusoutValidationImmediately: true,
-				isAddMessageOnce: false
+				isGroupedTargetControls: false
 			};
 			const oParam = { ...oDefaultParam, ...mParameter };
 
 			const fnValidateFunction = oCtl => {
-				let isAddedMessage = false;
-
 				if (fnTest(oCtl)) {
+					// このバリデータ関数は validate メソッド実行時に呼ばれるものとなるので、エラーメッセージの除去やエラーステートの解除は不要。
+					// （フォーカスアウト時のバリデータでは必要だが、それらは別途、_addValidator2Control 内でバリデータ関数が作成されて attach される）
 					return true;
 				}
 				if (Array.isArray(oTargetControlOrAControls)) {
-					for (let i = 0; i < oTargetControlOrAControls.length; i++) {
-						if (Array.isArray(sMessageTextOrAMessageTexts)) {
-							if (!oParam.isAddMessageOnce || !isAddedMessage) {
-								this._addMessage(oTargetControlOrAControls[i], sMessageTextOrAMessageTexts[i], sValidateFunctionId);
-								isAddedMessage = true;
-							}
-							this._setValueState(oTargetControlOrAControls[i], ValueState.Error, sMessageTextOrAMessageTexts[i]);
-						} else {
-							if (!oParam.isAddMessageOnce || !isAddedMessage) {
-								this._addMessage(oTargetControlOrAControls[i], sMessageTextOrAMessageTexts, sValidateFunctionId);
-								isAddedMessage = true;
-							}
-							this._setValueState(oTargetControlOrAControls[i], ValueState.Error, sMessageTextOrAMessageTexts);
+					if (oParam.isGroupedTargetControls) {
+						const sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[0] : sMessageTextOrAMessageTexts;
+						this._addMessage(oTargetControlOrAControls[0], sMessageText, sValidateFunctionId);
+						
+						for (let i = 0; i < oTargetControlOrAControls.length; i++) {
+							this._setValueState(oTargetControlOrAControls[i], ValueState.Error, sMessageText);
 						}
+						return false;
+					}
+
+					for (let i = 0; i < oTargetControlOrAControls.length; i++) {
+						const sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[i] : sMessageTextOrAMessageTexts;
+						this._addMessage(oTargetControlOrAControls[i], sMessageText, sValidateFunctionId);
+						this._setValueState(oTargetControlOrAControls[i], ValueState.Error, sMessageText);
 					}
 				} else {
 					this._addMessage(oTargetControlOrAControls, sMessageTextOrAMessageTexts, sValidateFunctionId);
@@ -175,13 +175,15 @@ sap.ui.define([
 					oValidateFunction.messageTextOrMessageTexts = sMessageTextOrAMessageTexts;
 					oValidateFunction.targetControlOrControls = oTargetControlOrAControls;
 					oValidateFunction.validateFunction = fnValidateFunction;
+					oValidateFunction.isGroupedTargetControls = oParam.isGroupedTargetControls;
 				} else {
 					aValidateFunctions.push({
 						validateFunctionId: sValidateFunctionId,
 						testFunction: fnTest,
 						messageTextOrMessageTexts: sMessageTextOrAMessageTexts,
 						targetControlOrControls: oTargetControlOrAControls,
-						validateFunction: fnValidateFunction
+						validateFunction: fnValidateFunction,
+						isGroupedTargetControls: oParam.isGroupedTargetControls
 					});
 				}
 			} else {
@@ -190,12 +192,13 @@ sap.ui.define([
 					testFunction: fnTest,
 					messageTextOrMessageTexts: sMessageTextOrAMessageTexts,
 					targetControlOrControls: oTargetControlOrAControls,
-					validateFunction: fnValidateFunction
+					validateFunction: fnValidateFunction,
+					isGroupedTargetControls: oParam.isGroupedTargetControls
 				}]);
 			}
 			
 			if (oParam.isAttachFocusoutValidationImmediately) {
-				this._addValidator2Control(oTargetControlOrAControls, fnTest, sMessageTextOrAMessageTexts, sValidateFunctionId);
+				this._addValidator2Control(oTargetControlOrAControls, fnTest, sMessageTextOrAMessageTexts, sValidateFunctionId, oParam.isGroupedTargetControls);
 			}
 			return this;
 		}
@@ -203,15 +206,15 @@ sap.ui.define([
 		registerRequiredValidateFunctionCalledAfterValidate(sValidateFunctionId, fnTest, oTargetControlOrAControls, oControl, mParameter) {
 			const oDefaultParam = {
 				isAttachFocusoutValidationImmediately: false,
-				// TODO: isAddMessageOnce -> isGrouping に変えて、true ならメッセージだけではなく、oTargetControlOrAControls を1つのグループとみなして
-				// メッセージは1つで、エラーステートは全要素のコントロールにつけるようにする
-				isAddMessageOnce: false
+				// isGroupedTargetControls: true の場合、oTargetControlOrAControls を1つのグループとみなして検証は1回だけ（コントロール数分ではない）で、エラーメッセージも1つだけで、
+				// エラーステートは全部のコントロールにつくかつかないか（一部だけつくことはない）
+				isGroupedTargetControls: false
 			};
 			const oParam = { ...oDefaultParam, ...mParameter };
 
 			let sMessageTextOrAMessageTexts;
 			if (Array.isArray(oTargetControlOrAControls)) {
-				if (oParam.isAddMessageOnce) {
+				if (oParam.isGroupedTargetControls) {
 					sMessageTextOrAMessageTexts = this._getMessageTextByControl(oTargetControlOrAControls[0]);
 				} else {
 					sMessageTextOrAMessageTexts = oTargetControlOrAControls.map(oTargetControl => this._getMessageTextByControl(oTargetControl));
@@ -350,7 +353,8 @@ sap.ui.define([
 						oValidateFunction.targetControlOrControls,
 						oValidateFunction.testFunction,
 						oValidateFunction.messageTextOrMessageTexts,
-						oValidateFunction.validateFunctionId);
+						oValidateFunction.validateFunctionId,
+						oValidateFunction.isGroupedTargetControls);
 				});
 			}
 			// 入力コントロールやエレメントでなかった場合は、aggregation のコントロールやエレメントを再帰的に検証する。
@@ -466,7 +470,7 @@ sap.ui.define([
 			oControl.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR, "true");
 		}
 
-		_addValidator2Control(oControlOrAControls, fnTest, sMessageTextOrAMessageTexts, sValidateFunctionId) {
+		_addValidator2Control(oControlOrAControls, fnTest, sMessageTextOrAMessageTexts, sValidateFunctionId, isGroupedTargetControls) {
 			let aControls;
 			if (!Array.isArray(oControlOrAControls)) {
 				aControls = [oControlOrAControls];
@@ -485,15 +489,21 @@ sap.ui.define([
 				const fnValidator = oEvent => {
 					if (fnTest(oControl)) {
 						aControls.forEach(oCtl => {
+							// 例えば、日付の大小関係チェックのように、自身以外のコントロールの値が修正されてフォーカスアウトしたことで、自身も正常となるので対象コントロール達のエラーは解除する。
 							this._removeMessageAndValueState(oCtl, sValidateFunctionId);
 						});
 					} else {
-						if (Array.isArray(sMessageTextOrAMessageTexts)) {
-							this._addMessage(oControl, sMessageTextOrAMessageTexts[i], sValidateFunctionId);
-							this._setValueState(oControl, ValueState.Error, sMessageTextOrAMessageTexts[i]);
+						if (isGroupedTargetControls) {
+							const sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[0] : sMessageTextOrAMessageTexts;
+							this._addMessage(oControl, sMessageText, sValidateFunctionId);
+							
+							aControls.forEach(oCtl => {
+								this._setValueState(oCtl, ValueState.Error, sMessageText);
+							});
 						} else {
-							this._addMessage(oControl, sMessageTextOrAMessageTexts, sValidateFunctionId);
-							this._setValueState(oControl, ValueState.Error, sMessageTextOrAMessageTexts);
+							const sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[i] : sMessageTextOrAMessageTexts;
+							this._addMessage(oControl, sMessageText, sValidateFunctionId);
+							this._setValueState(oControl, ValueState.Error, sMessageText);
 						}
 					}
 				};
