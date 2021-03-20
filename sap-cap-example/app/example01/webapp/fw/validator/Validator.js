@@ -45,13 +45,6 @@ sap.ui.define([
 				"cells",
 				"_page"
 			];
-
-			// キーのコントロールIDのコントロールの検証後に実行する関数配列を保持するマップ。型は Map<string, Object[]>
-			this._mValidateFunctionCalledAfterValidate = new Map();
-
-			this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR = "fw.validator.Validator.IS_ADDED_REQUIRED_VALIDATOR";
-			this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REGISTERED_VALIDATOR = "fw.validator.Validator.IS_ADDED_REGISTERED_VALIDATOR";
-
 			if (mParameter && mParameter.targetAggregations) {
 				if (Array.isArray(mParameter.targetAggregations)) {
 					mParameter.targetAggregations.forEach(sTargetAggregation => {
@@ -64,6 +57,27 @@ sap.ui.define([
 						this._aTargetAggregations.push(mParameter.targetAggregations);
 					}
 				}
+			}
+
+			// キーのコントロールIDのコントロールの検証後に実行する関数配列を保持するマップ。型は Map<string, Object[]>
+			this._mValidateFunctionCalledAfterValidate = new Map();
+
+			/**
+			 * フォーカスアウト時のバリデーションのためのバリデータ関数の attach を重複して行わないように、コントロールに customData として追加するフラグのキー
+			 **/
+			// isRequired が true のコントロールに対して追加するキー
+			this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR = "fw.validator.Validator.IS_ADDED_REQUIRED_VALIDATOR";
+			// registerValidateFunctionCalledAfterValidate, registerRequiredValidateFunctionCalledAfterValidate の対象コントロールに対して追加するキー
+			this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REGISTERED_VALIDATOR = "fw.validator.Validator.IS_ADDED_REGISTERED_VALIDATOR";
+
+			/**
+			 * validate メソッド実行時に isRequired が true のコントロールおよび、
+			 * registerValidateFunctionCalledAfterValidate, registerRequiredValidateFunctionCalledAfterValidate の対象コントロールに
+			 * フォーカスアウト時のバリデーション関数を attach するか
+			 */
+			this._useFocusoutValidation = true;
+			if (mParameter && mParameter.useFocusoutValidation === false) {
+				this._useFocusoutValidation = false;
 			}
 		}
 
@@ -215,12 +229,12 @@ sap.ui.define([
 			let sMessageTextOrAMessageTexts;
 			if (Array.isArray(oTargetControlOrAControls)) {
 				if (oParam.isGroupedTargetControls) {
-					sMessageTextOrAMessageTexts = this._getMessageTextByControl(oTargetControlOrAControls[0]);
+					sMessageTextOrAMessageTexts = this._getRequiredErrorMessageTextByControl(oTargetControlOrAControls[0]);
 				} else {
-					sMessageTextOrAMessageTexts = oTargetControlOrAControls.map(oTargetControl => this._getMessageTextByControl(oTargetControl));
+					sMessageTextOrAMessageTexts = oTargetControlOrAControls.map(oTargetControl => this._getRequiredErrorMessageTextByControl(oTargetControl));
 				}
 			} else {
-				sMessageTextOrAMessageTexts = this._getMessageTextByControl(oTargetControlOrAControls);
+				sMessageTextOrAMessageTexts = this._getRequiredErrorMessageTextByControl(oTargetControlOrAControls);
 			}
 			this.registerValidateFunctionCalledAfterValidate(sValidateFunctionId, fnTest, sMessageTextOrAMessageTexts, oTargetControlOrAControls, oControl, oParam);
 			return this;
@@ -247,88 +261,6 @@ sap.ui.define([
 				this._mValidateFunctionCalledAfterValidate.delete(sControlId);
 			}
 			return this;
-		}
-
-		/**
-		 * 必須チェックエラーステートとメッセージを登録する。
-		 * oControlOrAControls が配列の場合、配列のコントロール全体を1つのグループと見なし、エラーステートの登録は各コントロールに対して行うが、
-		 * メッセージの登録は1つ目のコントロールのみ行う。また、コントロールのいずれかがの値が編集されればすべてのエラーステートを解除する。
-		 * 
-		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oControlOrAControls 必須チェックエラーとなったコントロールまたはコントロール配列
-		 */
-		_setRequiredError(oControlOrAControls) {
-			let oControl;
-			if (Array.isArray(oControlOrAControls)) {
-				if (oControlOrAControls.length === 0) {
-					return;
-				}
-				oControl = oControlOrAControls[0];
-			} else {
-				oControl = oControlOrAControls;
-			}
-			const sMessageText = this._getMessageTextByControl(oControl);
-			this._setError(oControlOrAControls, sMessageText);
-		}
-
-		/**
-		 * {@link #_setError} の引数のコールバック関数の型
-		 *
-		 * @callback judgeRemoveErrorHandler
-		 * @param {sap.ui.core.Control} oControl 検証対象のコントロール
-		 * @param {sap.ui.base.Event} oEvent 対象のコントロールのイベント
-		 * @returns {boolean} true: valid、false: invalid
-		 */
-		/**
-		 * 検証エラーステートとメッセージを登録する。
-		 * oControlOrAControls が配列の場合、配列のコントロール全体を1つのグループと見なし、エラーステートの登録は各コントロールに対して行うが、
-		 * メッセージの登録は1つ目のコントロールのみ行う。
-		 * 
-		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oControlOrAControls 必須チェックエラーとなったコントロールまたはコントロール配列
-		 * @param {string} sMessageText 登録するメッセージ
-		 * @param {judgeRemoveErrorHandler} [fnToJudgeRemoveError] エラーを除去してよいか判断する関数。対象のコントロールの selectionFinish または change または select イベント発火時に実行される。省略時は常に true とみなす。
-		 */
-		_setError(oControlOrAControls, sMessageText, fnToJudgeRemoveError) {
-			let aControls;
-			if (!Array.isArray(oControlOrAControls)) {
-				aControls = [oControlOrAControls];
-			} else if (oControlOrAControls.length === 0) {
-				return;
-			} else {
-				aControls = oControlOrAControls;
-			}
-
-			this._addMessage(aControls[0], sMessageText);
-
-			aControls.forEach(oControl => {
-				this._setValueState(oControl, ValueState.Error, sMessageText);
-
-				// // ValueState とエラーメッセージが残ったままにならないように、対象のコントロールのイベントで ValueState とエラーメッセージを除去する。
-				// if (oControl.attachSelectionFinish) {
-				// 	const fnOnSelectionFinish = oEvent => {
-				// 		if (!fnToJudgeRemoveError || fnToJudgeRemoveError(oControl, oEvent)) {
-				// 			oControl.detachSelectionFinish(fnOnSelectionFinish);
-				// 			aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
-				// 		}
-				// 	};
-				// 	oControl.attachSelectionFinish(fnOnSelectionFinish);
-				// } else if (oControl.attachChange) {
-				// 	const fnOnChange = oEvent => {
-				// 		if (!fnToJudgeRemoveError || fnToJudgeRemoveError(oControl, oEvent)) {
-				// 			oControl.detachChange(fnOnChange);
-				// 			aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
-				// 		}
-				// 	};
-				// 	oControl.attachChange(fnOnChange);
-				// } else if (oControl.attachSelect) {
-				// 	const fnOnSelect = oEvent => {
-				// 		if (!fnToJudgeRemoveError || fnToJudgeRemoveError(oControl, oEvent)) {
-				// 			oControl.detachSelect(fnOnSelect);
-				// 			aControls.forEach(oCtl => this._removeMessageAndValueState(oCtl));
-				// 		}
-				// 	};
-				// 	oControl.attachSelect(fnOnSelect);
-				// }
-			});
 		}
 
 		_addValidator2Controls(oControl) {
@@ -441,7 +373,7 @@ sap.ui.define([
 			if (this._isAddedRequiredValidator2Control(oControl)) {
 				return;
 			}
-			const sMessageText = this._getMessageTextByControl(oControl);
+			const sMessageText = this._getRequiredErrorMessageTextByControl(oControl);
 			const fnRequiredValidator = oEvent => {
 				if (this._isNullValue(oControl)) {
 					this._addMessage(oControl, sMessageText);
@@ -538,7 +470,9 @@ sap.ui.define([
 			if (!this._isNullValue(oControl)) {
 				return true;
 			}
-			this._setRequiredError(oControl);
+			const sMessageText = this._getRequiredErrorMessageTextByControl(oControl);
+			this._addMessage(oControl, sMessageText);
+			this._setValueState(oControl, ValueState.Error, sMessageText);
 			return false;
 		}
 
@@ -674,7 +608,7 @@ sap.ui.define([
 			return true;
 		}
 
-		_getMessageTextByControl(oControl) {
+		_getRequiredErrorMessageTextByControl(oControl) {
 			if (oControl instanceof Input) {
 				// sap.m.Input には getValue も getSelectedKey もあるので個別に判定する。
 				// TODO: i18n

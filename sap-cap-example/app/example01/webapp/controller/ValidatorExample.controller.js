@@ -139,6 +139,7 @@ sap.ui.define([
 			// TODO: 挙動としては①1度validateするとフォーカスアウトでバリデーションが効くようになる
 			// （正しい値を入れてフォーカスアウトしてエラーが消えてもまた不正にしてフォーカスアウトするとエラーになる）②1度validateするとremoveErrorsするまでエラーは残りっぱなし
 			// のどちらかとなる。どちらにするかをValidatorのコンストラクタの引数で選べるようにする。デフォルトは①
+			// -> useFocusoutValidation
 			this._validator.addValidator2Controls(oView);
 
 			// TODO: テーブルのセルのバリデーション
