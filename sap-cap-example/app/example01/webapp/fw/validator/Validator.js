@@ -73,16 +73,16 @@ sap.ui.define([
 			/**
 			 * validate メソッド実行時に isRequired が true のコントロールおよび、
 			 * registerValidateFunctionCalledAfterValidate, registerRequiredValidateFunctionCalledAfterValidate の対象コントロールに
-			 * フォーカスアウト時のバリデーション関数を attach するか
+			 * フォーカスアウト時のバリデーション関数を attach するか。
+			 * 挙動としては以下のいずれかとなる。
+			 * true （デフォルト）の場合：1度 validate するとフォーカスアウトでバリデーションが効くようになる
+			 *                        （正しい値を入れてフォーカスアウトしてエラーが消えてもまた不正にしてフォーカスアウトするとエラーになる）
+			 * false の場合：1度 validate すると removeErrors するまでエラーは残りっぱなしとなる
 			 */
 			this._useFocusoutValidation = true;
 			if (mParameter && mParameter.useFocusoutValidation === false) {
 				this._useFocusoutValidation = false;
 			}
-		}
-
-		addValidator2Controls(oControl) {
-			this._addValidator2Controls(oControl);
 		}
 
 		/**
@@ -93,6 +93,9 @@ sap.ui.define([
 		 * @returns {boolean} true: valid、false: invalid
 		 */
 		validate(oControl) {
+			if (this._useFocusoutValidation) {
+				this._addValidator2Controls(oControl);
+			}
 			return this._validate(oControl);
 		}
 
@@ -487,12 +490,10 @@ sap.ui.define([
 				const oMessage = aMessagesAddedByThisValidator[i];
 				const oControl = sap.ui.getCore().byId(oMessage.getValidationErrorControlId());
 				if (!oControl) {
-					if (!oTargetRootControl) {
-						oMessageManager.removeMessages(oMessage);
-					}
+					// 対象のコントロールがない場合はメッセージも削除する。
+					oMessageManager.removeMessages(oMessage);
 					continue;
 				}
-
 				if (!oTargetRootControl || this._isChildOrEqualControlId(oControl, oTargetRootControl)) {
 					oMessageManager.removeMessages(oMessage);
 					this._clearValueStateIfNoErrors(oControl, oMessage.getTarget())
@@ -665,6 +666,7 @@ sap.ui.define([
 		 * @param {string} sMessageText エラーメッセージ
 		 * @param {string} [sValidateFunctionId] 検証を行った関数のID。this._mValidateFunctionCalledAfterValidate に含まれる関数で検証した場合にのみ必要
 		 */
+		// TODO: 引数に oTargetControlOrTargetControls を追加する
 		_addMessage(oControl, sMessageText, sValidateFunctionId) {
 			sap.ui.getCore().getMessageManager().addMessages(new _ValidatorMessage({
 				message: sMessageText,
@@ -703,7 +705,22 @@ sap.ui.define([
 	 */
 	const _ValidatorMessage = Message.extend("fw.validator.Validator._ValidatorMessage", {
 		constructor: function (mParameters) {
-			Message.apply(this, arguments);
+			if (mParameters && Array.isArray(mParameters.target)) {
+				if (!Message.prototype.getTargets) {
+					// Message の target の配列サポートは UI5 1.79からなので、getTargets メソッドがない場合は、独自に配列を保持する。
+					this.targets = mParameters.target;
+					if (mParameters.target.length > 0) {
+						mParameters.target = mParameters.target[0];
+					} else {
+						delete mParameters.target;
+					}
+					Message.call(this, mParameters);
+				} else {
+					Message.call(this, mParameters);
+				}
+			} else {
+				Message.call(this, mParameters);
+			}
 			
 			if (mParameters && mParameters.validationErrorControlId) {
 				this.validationErrorControlId = mParameters.validationErrorControlId;
@@ -718,6 +735,12 @@ sap.ui.define([
 			}
 		}
 	});
+	_ValidatorMessage.prototype.getTargets = function() {
+		if (Message.prototype.getTargets) {
+			return Message.prototype.getTargets.call(this);
+		}
+		return this.targets;
+	};
 	_ValidatorMessage.prototype.getValidationErrorControlId = function() {
 		return this.validationErrorControlId;
 	};

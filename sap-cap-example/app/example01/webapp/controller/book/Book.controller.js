@@ -20,9 +20,6 @@ sap.ui.define([
 
 			this._oFragmentsCache = {};
 
-			const oMessageManager = sap.ui.getCore().getMessageManager();
-			oMessageManager.removeAllMessages();
-
 			// manifest.json で sap.ui5.handleValidation を true にしている場合は不要 cf. https://sapui5.hana.ondemand.com/#/topic/a90d93df5a024e8bb18826b699c9aaa7.html
 			// oMessageManager.registerObject(this.getView(), true);
 		},

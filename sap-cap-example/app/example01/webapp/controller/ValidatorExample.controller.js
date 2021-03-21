@@ -80,6 +80,7 @@ sap.ui.define([
 			}), "correlation");
 
 			this._validator = new Validator();
+			// this._validator = new Validator({useFocusoutValidation: false});
 		},
 		onAfterRendering: function () {
 			const oView = this.getView();
@@ -134,13 +135,6 @@ sap.ui.define([
 		},
 		onValidate: function () {
 			const oView = this.getView();
-			
-			// TODO: Validatorのコンストラクタの引数のオプションObjectにパラメータを追加して、validate時に合わせてaddValidator2Controlsも呼ぶか制御可能にする。デフォルトは呼ぶ。
-			// TODO: 挙動としては①1度validateするとフォーカスアウトでバリデーションが効くようになる
-			// （正しい値を入れてフォーカスアウトしてエラーが消えてもまた不正にしてフォーカスアウトするとエラーになる）②1度validateするとremoveErrorsするまでエラーは残りっぱなし
-			// のどちらかとなる。どちらにするかをValidatorのコンストラクタの引数で選べるようにする。デフォルトは①
-			// -> useFocusoutValidation
-			this._validator.addValidator2Controls(oView);
 
 			// TODO: テーブルのセルのバリデーション
 
@@ -153,6 +147,7 @@ sap.ui.define([
 			}
 		},
 		onClearErrors: function () {
+			// TODO: 残っているエラーステートがある。Message.targetで配列を扱うようにする。UI5 1.79から配列に対応しているが1909では無理。_ValidatorMessageで吸収する。
 			new Validator().removeErrors(this.getView());
 		}
 	});
