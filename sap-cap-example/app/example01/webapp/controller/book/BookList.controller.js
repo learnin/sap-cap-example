@@ -122,6 +122,20 @@ sap.ui.define([
 			// TODO: バリデーション
 			this.getModel().setProperty(`/Books(${id})/stock`, parseInt(oEvent.getParameters().value, 10));
 		},
+		onMessageBindingChange: function (oEvent) {
+			const aContexts = oEvent.getSource().getContexts();
+
+			if (!aContexts.length) {
+				return;
+			}
+			// Extract and remove the technical messages
+			const aMessages = aContexts.map(oContext => oContext.getObject());
+			sap.ui.getCore().getMessageManager().removeMessages(aMessages);
+
+			this._setUIChanges(true);
+			this._bTechnicalErrors = true;
+			MessageBox.error(aMessages[0].message);
+		},
 		/**
 		 * Set hasUIChanges flag in View Model
 		 * @param {boolean} [bHasUIChanges] - set or clear hasUIChanges
