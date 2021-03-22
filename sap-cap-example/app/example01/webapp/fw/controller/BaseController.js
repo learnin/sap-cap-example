@@ -386,6 +386,11 @@ sap.ui.define([
 			const iBatchResponsesLength = aBatchResponses.length;
 			for (let i = 0; i < iBatchResponsesLength; i++) {
 				if (!aBatchResponses[i].__changeResponses) {
+					if (aBatchResponses[i].response && aBatchResponses[i].response.statusCode) {
+						aResults.push(aBatchResponses[i].response.statusCode);
+					} else if (aBatchResponses[i].statusCode) {
+						aResults.push(aBatchResponses[i].statusCode);
+					}
 					continue;
 				}
 				let aChangeResponses = aBatchResponses[i].__changeResponses;
