@@ -1,7 +1,7 @@
 sap.ui.define([
 	"sap/ui/model/json/JSONModel",
 	"./BaseController",
-	"../validator/Validator",
+	"../validator/Validator"
 ], function (JSONModel, BaseController, Validator) {
 	"use strict";
 

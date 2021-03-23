@@ -162,7 +162,7 @@ sap.ui.define([
 				if (Array.isArray(oTargetControlOrAControls)) {
 					if (oParam.isGroupedTargetControls) {
 						const sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[0] : sMessageTextOrAMessageTexts;
-						this._addMessage(oTargetControlOrAControls[0], sMessageText, sValidateFunctionId);
+						this._addMessage(oTargetControlOrAControls, sMessageText, sValidateFunctionId);
 						
 						for (let i = 0; i < oTargetControlOrAControls.length; i++) {
 							this._setValueState(oTargetControlOrAControls[i], ValueState.Error, sMessageText);
@@ -430,6 +430,7 @@ sap.ui.define([
 					} else {
 						if (isGroupedTargetControls) {
 							const sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[0] : sMessageTextOrAMessageTexts;
+							// TODO: この oControl は aControls にすべきか？
 							this._addMessage(oControl, sMessageText, sValidateFunctionId);
 							
 							aControls.forEach(oCtl => {
@@ -525,6 +526,8 @@ sap.ui.define([
 		 * @param {string} sTarget セットされているメッセージの中から対象のコントロールのメッセージを判別するための Message の target プロパティ値
 		 */
 		_clearValueStateIfNoErrors(oControl, sTarget) {
+			// TODO: getTarget を getTargets にすべき箇所を検討して変更する。
+			// ここのgetTargetは変更せず、呼び出し元を変更し、sTargetが配列の場合はその1つ１つについて判定してsetValueStateするのをループさせるのが正しそう。
 			if (oControl.setValueState &&
 				!sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/").find(oMsg => oMsg.getTarget() === sTarget)) {
 				this._setValueState(oControl, ValueState.None, null);
@@ -547,26 +550,38 @@ sap.ui.define([
 			return false;
 		}
 
-		_resolveMessageTarget(oControl) {
-			if (oControl.getBinding("value") || oControl.getValue) {
-				return oControl.getId() + "/value";
+		_resolveMessageTarget(oControlOrAControls) {
+			let aControls = [];
+			if (Array.isArray(oControlOrAControls)) {
+				aControls = oControlOrAControls;
+			} else {
+				aControls.push(oControlOrAControls);
 			}
-			if (oControl.getBinding("selectedKey") || oControl.getSelectedKey) {
-				return oControl.getId() + "/selectedKey";
+			const aTargets = aControls.map(oControl => {
+				if (oControl.getBinding("value") || oControl.getValue) {
+					return oControl.getId() + "/value";
+				}
+				if (oControl.getBinding("selectedKey") || oControl.getSelectedKey) {
+					return oControl.getId() + "/selectedKey";
+				}
+				if (oControl.getBinding("selectedKeys") || oControl.getSelectedKeys) {
+					return oControl.getId() + "/selectedKeys";
+				}
+				if (oControl.getBinding("selected") || oControl.getSelected) {
+					return oControl.getId() + "/selected";
+				}
+				if (oControl.getBinding("selectedIndex") || oControl.getSelectedIndex) {
+					return oControl.getId() + "/selectedIndex";
+				}
+				if (oControl.getBinding("selectedDates") || oControl.getSelectedDates) {
+					return oControl.getId() + "/selectedDates";
+				}
+				return undefined;
+			});
+			if (aTargets.length > 0) {
+				return aTargets;
 			}
-			if (oControl.getBinding("selectedKeys") || oControl.getSelectedKeys) {
-				return oControl.getId() + "/selectedKeys";
-			}
-			if (oControl.getBinding("selected") || oControl.getSelected) {
-				return oControl.getId() + "/selected";
-			}
-			if (oControl.getBinding("selectedIndex") || oControl.getSelectedIndex) {
-				return oControl.getId() + "/selectedIndex";
-			}
-			if (oControl.getBinding("selectedDates") || oControl.getSelectedDates) {
-				return oControl.getId() + "/selectedDates";
-			}
-			return undefined;
+			return aTargets[0];
 		}
 
 		/**
@@ -662,18 +677,21 @@ sap.ui.define([
 		/**
 		 * {@link sap.ui.core.message.MessageManager MessageManager} にメッセージを追加する。
 		 *
-		 * @param {sap.ui.core.Control} oControl 検証エラーとなったコントロール
+		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oControlOrAControls 検証エラーとなったコントロール
 		 * @param {string} sMessageText エラーメッセージ
 		 * @param {string} [sValidateFunctionId] 検証を行った関数のID。this._mValidateFunctionCalledAfterValidate に含まれる関数で検証した場合にのみ必要
 		 */
-		// TODO: 引数に oTargetControlOrTargetControls を追加する
-		_addMessage(oControl, sMessageText, sValidateFunctionId) {
+		_addMessage(oControlOrAControls, sMessageText, sValidateFunctionId) {
+			let oControl = oControlOrAControls;
+			if (Array.isArray(oControlOrAControls)) {
+				oControl = oControlOrAControls[0];
+			}
 			sap.ui.getCore().getMessageManager().addMessages(new _ValidatorMessage({
 				message: sMessageText,
 				type: MessageType.Error,
 				additionalText: this._getLabelText(oControl),
 				processor: new ControlMessageProcessor(),
-				target: this._resolveMessageTarget(oControl),
+				target: this._resolveMessageTarget(oControlOrAControls),
 				validationErrorControlId: oControl.getId(),
 				validateFunctionId: sValidateFunctionId
 			}));
