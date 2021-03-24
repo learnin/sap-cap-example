@@ -43,6 +43,7 @@ sap.ui.define([
 			validator.removeErrors(oView);
 
 			if (!validator.validate(oView) || this.hasValidationError()) {
+				// TODO: OData エラーで technical error がセットされた場合、自分でメッセージを削除しない限り、次にODataリクエストを投げるまで残ったままなのでずっとここにひっかかってしまう。
 				this.showValidationErrorMessageDialog();
 				return;
 			}
