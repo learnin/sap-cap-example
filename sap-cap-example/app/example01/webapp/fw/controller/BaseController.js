@@ -203,12 +203,12 @@ sap.ui.define([
 		 * 
 		 * @public
 		 * @param {Object} oError 例外またはエラー
-		 * @param {sap.ui.model.odata.v2.ODataModel} oODataV2Model サブミット対象のモデル
+		 * @param {sap.ui.model.Model} oModel モデル
 		 * @param {Object} [mParameter] パラメータ。排他制御エラー以外のエラーの場合 mParameter.error(sMessage, sap.ui.core.message.Message[]?) が呼ばれる
 		 */
-		defaultSubmitChangesErrorHandler: function (oError, oODataV2Model, mParameter) {
+		defaultSubmitChangesErrorHandler: function (oError, oModel, mParameter) {
 			if (oError instanceof ConcurrentModificationException) {
-				this.showConcurrentModificationErrorMessageDialog(oODataV2Model);
+				this.showConcurrentModificationErrorMessageDialog(oModel);
 				return;
 			}
 			let sMessage = oError.message;
@@ -233,10 +233,10 @@ sap.ui.define([
 		 * 排他制御エラー時のメッセージダイアログを表示する。
 		 * 
 		 * @public
-		 * @param {sap.ui.model.odata.v2.ODataModel} oODataV2Model サブミット対象のモデル
+		 * @param {sap.ui.model.Model} oModel モデル
 		 * @param {Object} [mDialogParameter] sap.m.Dialog のパラメータ
 		 */
-		showConcurrentModificationErrorMessageDialog: function (oODataV2Model, mDialogParameter) {
+		showConcurrentModificationErrorMessageDialog: function (oModel, mDialogParameter) {
 			const oMessageView = new MessageView({
 				showDetailsPageHeader: false,
 				itemSelect: function () {
@@ -262,7 +262,7 @@ sap.ui.define([
 					text: this.getResourceBundle("fwI18n").getText("fw.label.refresh"),
 					type: ButtonType.Emphasized,
 					press: function () {
-						oODataV2Model.refresh();
+						oModel.refresh();
 						this.getParent().close();
 					},
 				}),
