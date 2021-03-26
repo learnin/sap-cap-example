@@ -430,8 +430,7 @@ sap.ui.define([
 					} else {
 						if (isGroupedTargetControls) {
 							const sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[0] : sMessageTextOrAMessageTexts;
-							// TODO: この oControl は aControls にすべきか？
-							this._addMessage(oControl, sMessageText, sValidateFunctionId);
+							this._addMessage(aControls, sMessageText, sValidateFunctionId);
 							
 							aControls.forEach(oCtl => {
 								this._setValueState(oCtl, ValueState.Error, sMessageText);
@@ -481,24 +480,31 @@ sap.ui.define([
 		}
 
 		_removeMessagesAndValueStateIncludeChildren(oTargetRootControl) {
+			// TODO: 画面遷移によりエラーメッセージは消えているがエラーステートは残っていることがあるため、エラーステートのクリア対象はメッセージから探すのではなく
+			// 配下の全コントロールのcustomData属性から探すように修正する
 			const oMessageManager = sap.ui.getCore().getMessageManager();
 			const oMessageModel = oMessageManager.getMessageModel();
 			const sValidatorMessageName = _ValidatorMessage.getMetadata().getName();
 			const aMessagesAddedByThisValidator = oMessageModel.getProperty("/")
 				.filter(oMessage => BaseObject.isA(oMessage, sValidatorMessageName));
+			const oCore = sap.ui.getCore();
 
 			for (let i = 0, n = aMessagesAddedByThisValidator.length; i < n; i++) {
 				const oMessage = aMessagesAddedByThisValidator[i];
-				const oControl = sap.ui.getCore().byId(oMessage.getValidationErrorControlId());
-				if (!oControl) {
-					// 対象のコントロールがない場合はメッセージも削除する。
+				const aControlIds = oMessage.getValidationErrorControlIds();
+
+				if (!aControlIds.some(sControlId => oCore.byId(sControlId))) {
+					// 対象のコントロールが1つもない場合はメッセージも削除する。
 					oMessageManager.removeMessages(oMessage);
 					continue;
 				}
-				if (!oTargetRootControl || this._isChildOrEqualControlId(oControl, oTargetRootControl)) {
-					oMessageManager.removeMessages(oMessage);
-					this._clearValueStateIfNoErrors(oControl, oMessage.getTarget())
-				}
+				aControlIds.forEach(sControlId => {
+					const oControl = oCore.byId(sControlId);
+					if (!oTargetRootControl || this._isChildOrEqualControlId(oControl, oTargetRootControl)) {
+						oMessageManager.removeMessages(oMessage);
+						this._clearValueStateIfNoErrors(oControl, oMessage.getTargets())
+					}
+				});
 			}
 		}
 
@@ -510,7 +516,7 @@ sap.ui.define([
 
 			const oMessage = oMessageModel.getProperty("/").find(oMsg =>
 				BaseObject.isA(oMsg, sValidatorMessageName) &&
-				oMsg.getValidationErrorControlId() === sControlId &&
+				oMsg.getValidationErrorControlIds().includes(sControlId) &&
 				oMsg.getValidateFunctionId() === sValidateFunctionId);
 			if (oMessage) {
 				oMessageManager.removeMessages(oMessage);
@@ -523,15 +529,32 @@ sap.ui.define([
 		 * 該当のコントロールにエラーメッセージがまだあるか確認し、ない場合にのみエラーステートをクリアする。
 		 * 
 		 * @param {sap.ui.core.Control} oControl 処理対象のコントロール
-		 * @param {string} sTarget セットされているメッセージの中から対象のコントロールのメッセージを判別するための Message の target プロパティ値
+		 * @param {string|string[]} sTargetOrATargets セットされているメッセージの中から対象のコントロールのメッセージを判別するための Message の target/targets プロパティ値
 		 */
-		_clearValueStateIfNoErrors(oControl, sTarget) {
-			// TODO: getTarget を getTargets にすべき箇所を検討して変更する。
-			// ここのgetTargetは変更せず、呼び出し元を変更し、sTargetが配列の場合はその1つ１つについて判定してsetValueStateするのをループさせるのが正しそう。
-			if (oControl.setValueState &&
-				!sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/").find(oMsg => oMsg.getTarget() === sTarget)) {
-				this._setValueState(oControl, ValueState.None, null);
+		_clearValueStateIfNoErrors(oControl, sTargetOrATargets) {
+			if (!oControl.setValueState) {
+				return;
 			}
+			let aTargets;
+			if (!Array.isArray(sTargetOrATargets)) {
+				aTargets = [sTargetOrATargets];
+			} else if (sTargetOrATargets.length === 0) {
+				return;
+			} else {
+				aTargets = sTargetOrATargets;
+			}
+
+			const aMessages = sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/");
+			aTargets.forEach(sTarget => {
+				if (!aMessages.find(oMessage => {
+					if (oMessage.getTargets) {
+						return oMessage.getTargets().includes(sTarget);
+					}
+					return oMessage.getTarget() === sTarget;
+				})) {
+					this._setValueState(oControl, ValueState.None, null);
+				}
+			});
 		}
 
 		_isChildOrEqualControlId(oControl, oParentControl) {
@@ -682,9 +705,14 @@ sap.ui.define([
 		 * @param {string} [sValidateFunctionId] 検証を行った関数のID。this._mValidateFunctionCalledAfterValidate に含まれる関数で検証した場合にのみ必要
 		 */
 		_addMessage(oControlOrAControls, sMessageText, sValidateFunctionId) {
-			let oControl = oControlOrAControls;
+			let oControl;
+			let aControls;
 			if (Array.isArray(oControlOrAControls)) {
 				oControl = oControlOrAControls[0];
+				aControls = oControlOrAControls;
+			} else {
+				oControl = oControlOrAControls;
+				aControls = [oControlOrAControls];
 			}
 			sap.ui.getCore().getMessageManager().addMessages(new _ValidatorMessage({
 				message: sMessageText,
@@ -692,7 +720,7 @@ sap.ui.define([
 				additionalText: this._getLabelText(oControl),
 				processor: new ControlMessageProcessor(),
 				target: this._resolveMessageTarget(oControlOrAControls),
-				validationErrorControlId: oControl.getId(),
+				validationErrorControlIds: aControls.map(oControl => oControl.getId()),
 				validateFunctionId: sValidateFunctionId
 			}));
 		}
@@ -740,13 +768,14 @@ sap.ui.define([
 				Message.call(this, mParameters);
 			}
 			
-			if (mParameters && mParameters.validationErrorControlId) {
-				this.validationErrorControlId = mParameters.validationErrorControlId;
+			this.validationErrorControlIds = [];
+			if (mParameters && mParameters.validationErrorControlIds && Array.isArray(mParameters.validationErrorControlIds) && mParameters.validationErrorControlIds.length > 0) {
+				this.validationErrorControlIds = mParameters.validationErrorControlIds;
 
 				// https://sapui5.hana.ondemand.com/#/api/sap.ui.core.message.Message/methods/getControlId に InputBase のコントロールにしか
 				// controlIdはセットされないと書かれている。実際に、例えば RadioButton ではセットされない。なぜ、こういう仕様にしているのかは不明。
 				// 本メッセージクラスではコントロールに関わらずセットする（ただし、何らかの問題が見つかった場合はセットするのをやめる可能性あり）。
-				this.addControlId(mParameters.validationErrorControlId);
+				this.addControlId(mParameters.validationErrorControlIds[0]);
 			}
 			if (mParameters && mParameters.validateFunctionId) {
 				this.validateFunctionId = mParameters.validateFunctionId;
@@ -759,8 +788,8 @@ sap.ui.define([
 		}
 		return this.targets;
 	};
-	_ValidatorMessage.prototype.getValidationErrorControlId = function() {
-		return this.validationErrorControlId;
+	_ValidatorMessage.prototype.getValidationErrorControlIds = function() {
+		return this.validationErrorControlIds;
 	};
 	_ValidatorMessage.prototype.getValidateFunctionId = function() {
 		return this.validateFunctionId;

@@ -141,13 +141,12 @@ sap.ui.define([
 			this._validator.removeErrors(oView);
 
 			if (!this._validator.validate(oView) || this.hasValidationError()) {
-				// sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/").forEach(m => console.log(m.getTarget()));
 				this.showValidationErrorMessageDialog();
 				return;
 			}
 		},
 		onClearErrors: function () {
-			// TODO: 残っているエラーステートがある。Message.targetで配列を扱うようにする。UI5 1.79から配列に対応しているが1909では無理。_ValidatorMessageで吸収する。
+			// TODO: sap.ui.getCore().getMessageManager().removeAllMessages(); を入れるとエラーステートが残る。ステートはメッセージからではなくcustomDataから削除対象を探すようにする。
 			new Validator().removeErrors(this.getView());
 		}
 	});
