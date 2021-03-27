@@ -7,6 +7,7 @@
 	xmlns:forms="sap.ui.layout.form"
 	xmlns:mvc="sap.ui.core.mvc"
 	xmlns:u="sap.ui.unified"
+	xmlns:table="sap.ui.table"
 	xmlns:fwc="fw.control">
 	<Page
 		title="Validator Example"
@@ -114,6 +115,19 @@
 							}}"
 							required="true" />
 					</forms:SimpleForm>
+				</uxap:ObjectPageSubSection>
+			</uxap:ObjectPageSection>
+
+			<uxap:ObjectPageSection titleUppercase="false" title="In the Table">
+				<uxap:ObjectPageSubSection>
+					<table:Table rows="{inGridTable>/rows}">
+						<table:Column>
+							<Label text="Required Input in GridTable" labelFor="requiredInputInGridTable" />
+							<table:template>
+								<Input id="requiredInputInGridTable" value="{inGridTable>requiredInput}" required="true" />
+							</table:template>
+						</table:Column>
+					</table:Table>
 				</uxap:ObjectPageSubSection>
 			</uxap:ObjectPageSection>
 

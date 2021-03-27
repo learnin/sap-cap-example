@@ -68,6 +68,12 @@ sap.ui.define([
 				requiredInput: ""
 			}), "withUI5Validator");
 			this.setModel(new JSONModel({
+				rows: [{
+					requiredInput: ""
+				}],
+				requiredInput: ""
+			}), "inGridTable");
+			this.setModel(new JSONModel({
 				requiredCheckBox: [{
 					text: "text1"
 				}, {
@@ -136,7 +142,7 @@ sap.ui.define([
 		onValidate: function () {
 			const oView = this.getView();
 
-			// TODO: テーブルのセルのバリデーション
+			// TODO: テーブルのセルのバリデーション。必須バリデーションはできるが赤くならないし、フォーカスアウトバリデーションも効かない
 
 			this._validator.removeErrors(oView);
 
@@ -146,7 +152,6 @@ sap.ui.define([
 			}
 		},
 		onClearErrors: function () {
-			// TODO: sap.ui.getCore().getMessageManager().removeAllMessages(); を入れるとエラーステートが残る。ステートはメッセージからではなくcustomDataから削除対象を探すようにする。
 			new Validator().removeErrors(this.getView());
 		}
 	});

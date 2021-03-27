@@ -1,6 +1,7 @@
 sap.ui.define([
 	"sap/m/Input",
 	"sap/ui/base/Object",
+	"sap/ui/core/Element",
 	"sap/ui/core/message/ControlMessageProcessor",
 	"sap/ui/core/message/Message",
 	"sap/ui/core/LabelEnablement",
@@ -9,6 +10,7 @@ sap.ui.define([
 ], function (
 	Input,
 	BaseObject,
+	Element,
 	ControlMessageProcessor,
 	Message,
 	LabelEnablement,
@@ -43,7 +45,9 @@ sap.ui.define([
 				"subSections",
 				"_grid",
 				"cells",
-				"_page"
+				"_page",
+				"columns",		// sap.ui.table.Table の columns
+				"template"		// sap.ui.table.Column の template
 			];
 			if (mParameter && mParameter.targetAggregations) {
 				if (Array.isArray(mParameter.targetAggregations)) {
@@ -89,7 +93,7 @@ sap.ui.define([
 		 * 引数のオブジェクトもしくはその配下のコントロールのバリデーションを行う。
 		 *
 		 * @public
-		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oControl 検証対象のコントロールもしくはそれを含むコンテナ
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter|sap.ui.table.Column} oControl 検証対象のコントロールもしくはそれを含むコンテナ
 		 * @returns {boolean} true: valid、false: invalid
 		 */
 		validate(oControl) {
@@ -105,13 +109,14 @@ sap.ui.define([
 		 * その結果、該当コントロールにメッセージがなくなった場合は、{@link sap.ui.core.ValueState ValueState} もクリアする。
 		 *
 		 * @public
-		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oControl 検証対象のコントロールもしくはそれを含むコンテナ
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter|sap.ui.table.Column} oControl 検証対象のコントロールもしくはそれを含むコンテナ
 		 */
 		removeErrors(oControl) {
 			if (!(oControl instanceof sap.ui.core.Control ||
 				oControl instanceof sap.ui.layout.form.FormContainer ||
 				oControl instanceof sap.ui.layout.form.FormElement ||
-				oControl instanceof sap.m.IconTabFilter)) {
+				oControl instanceof sap.m.IconTabFilter ||
+				oControl instanceof sap.ui.table.Column)) {
 				// バリデート時には isVisible() も条件としているが、remove 時には変わっている可能性もなくはないため、あえて条件に入れない。
 				return;
 			}
@@ -271,7 +276,8 @@ sap.ui.define([
 			if (!(oControl instanceof sap.ui.core.Control ||
 				oControl instanceof sap.ui.layout.form.FormContainer ||
 				oControl instanceof sap.ui.layout.form.FormElement ||
-				oControl instanceof sap.m.IconTabFilter)) {
+				oControl instanceof sap.m.IconTabFilter ||
+				oControl instanceof sap.ui.table.Column)) {
 				return;
 			}
 
@@ -311,7 +317,7 @@ sap.ui.define([
 		/**
 		 * 引数のオブジェクトとその配下のコントロールのバリデーションを行う。
 		 *
-		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oControl 検証対象のコントロールもしくはそれを含むコンテナ
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter|sap.ui.table.Column} oControl 検証対象のコントロールもしくはそれを含むコンテナ
 		 * @returns {boolean}　true: valid、false: invalid
 		 */
 		_validate(oControl) {
@@ -320,7 +326,8 @@ sap.ui.define([
 			if (!((oControl instanceof sap.ui.core.Control ||
 				oControl instanceof sap.ui.layout.form.FormContainer ||
 				oControl instanceof sap.ui.layout.form.FormElement ||
-				oControl instanceof sap.m.IconTabFilter) &&
+				oControl instanceof sap.m.IconTabFilter ||
+				oControl instanceof sap.ui.table.Column) &&
 				oControl.getVisible())) {
 				
 				if (this._mValidateFunctionCalledAfterValidate.has(oControl.getId())) {
@@ -397,12 +404,23 @@ sap.ui.define([
 			}
 		}
 
-		_isAddedRequiredValidator2Control(oControl) {
-			return oControl.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR) === "true";
+		/**
+		 * oElement に必須チェック用フォーカスアウトバリデータを attach 済みかどうかを返す。
+		 * 
+		 * @param {sap.ui.core.Element} oElement エレメント
+		 * @returns {boolean} true: 必須チェック用フォーカスアウトバリデータを attach 済み false: 必須チェック用フォーカスアウトバリデータを attach 済みでない
+		 */
+		_isAddedRequiredValidator2Control(oElement) {
+			return oElement.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR) === "true";
 		}
 
-		_markedAddedRequiredValidator2Control(oControl) {
-			oControl.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR, "true");
+		/**
+		 * oElement に必須チェック用フォーカスアウトバリデータを attach 済みとマークする。
+		 * 
+		 * @param {sap.ui.core.Element} oElement エレメント
+		 */
+		_markedAddedRequiredValidator2Control(oElement) {
+			oElement.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR, "true");
 		}
 
 		_addValidator2Control(oControlOrAControls, fnTest, sMessageTextOrAMessageTexts, sValidateFunctionId, isGroupedTargetControls) {
@@ -455,12 +473,23 @@ sap.ui.define([
 			}
 		}
 
-		_isAddedValidator2Control(oControl) {
-			return oControl.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REGISTERED_VALIDATOR) === "true";
+		/**
+		 * oElement に独自の検証用フォーカスアウトバリデータを attach 済みかどうかを返す。
+		 * 
+		 * @param {sap.ui.core.Element} oElement エレメント
+		 * @returns {boolean} true: 独自の検証用フォーカスアウトバリデータを attach 済み false: 独自の検証用フォーカスアウトバリデータを attach 済みでない
+		 */
+		_isAddedValidator2Control(oElement) {
+			return oElement.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REGISTERED_VALIDATOR) === "true";
 		}
 
-		_markedAddedValidator2Control(oControl) {
-			oControl.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REGISTERED_VALIDATOR, "true");
+		/**
+		 * oElement に独自の検証用フォーカスアウトバリデータを attach 済みとマークする。
+		 * 
+		 * @param {sap.ui.core.Element} oElement エレメント
+		 */
+		_markedAddedValidator2Control(oElement) {
+			oElement.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REGISTERED_VALIDATOR, "true");
 		}
 
 		/**
@@ -480,8 +509,6 @@ sap.ui.define([
 		}
 
 		_removeMessagesAndValueStateIncludeChildren(oTargetRootControl) {
-			// TODO: 画面遷移によりエラーメッセージは消えているがエラーステートは残っていることがあるため、エラーステートのクリア対象はメッセージから探すのではなく
-			// 配下の全コントロールのcustomData属性から探すように修正する
 			const oMessageManager = sap.ui.getCore().getMessageManager();
 			const oMessageModel = oMessageManager.getMessageModel();
 			const sValidatorMessageName = _ValidatorMessage.getMetadata().getName();
@@ -502,9 +529,28 @@ sap.ui.define([
 					const oControl = oCore.byId(sControlId);
 					if (!oTargetRootControl || this._isChildOrEqualControlId(oControl, oTargetRootControl)) {
 						oMessageManager.removeMessages(oMessage);
-						this._clearValueStateIfNoErrors(oControl, oMessage.getTargets())
+						if (!this._useFocusoutValidation) {
+							// _useFocusoutValidation が false の場合は、エラーステートをクリアする対象コントロール（本バリデータでエラーステートをセットしたコントロール）の情報が
+							// メッセージにしかないので、メッセージの targets のコントロールを対象に処理する。
+							this._clearValueStateIfNoErrors(oControl, oMessage.getTargets());
+						}
 					}
 				});
+			}
+
+			if (this._useFocusoutValidation) {
+				// _useFocusoutValidation が true の場合は、エラーステートをクリアする対象コントロール（本バリデータでエラーステートをセットしたコントロール）には
+				// customData を付加しているので、そこからクリア対象のコントロールを探す。
+				// （画面遷移等によりエラーメッセージは消えているがエラーステートは残っていることがあるため、この方法の方が確実。）
+				const aElementsSettedErrorStateByThisValidator = Element.registry.filter((oElement, sId) => 
+					this._isAddedRequiredValidator2Control(oElement) || this._isAddedValidator2Control(oElement)
+				);
+				for (let i = 0, n = aElementsSettedErrorStateByThisValidator.length; i < n; i++) {
+					const oControl = aElementsSettedErrorStateByThisValidator[i];
+					if (!oTargetRootControl || this._isChildOrEqualControlId(oControl, oTargetRootControl)) {
+						this._clearValueStateIfNoErrors(oControl, this._resolveMessageTarget(oControl));
+					}
+				}
 			}
 		}
 
@@ -521,7 +567,7 @@ sap.ui.define([
 			if (oMessage) {
 				oMessageManager.removeMessages(oMessage);
 			}
-			this._clearValueStateIfNoErrors(oControl, this._resolveMessageTarget(oControl))
+			this._clearValueStateIfNoErrors(oControl, this._resolveMessageTarget(oControl));
 		}
 
 		/**
