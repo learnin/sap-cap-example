@@ -44,10 +44,8 @@ sap.ui.define([
 				"sections",
 				"subSections",
 				"_grid",
-				"cells",
 				"_page",
-				"columns",		// sap.ui.table.Table の columns
-				"template"		// sap.ui.table.Column の template
+				"cells"		// sap.m.Table -> items -> cells
 			];
 			if (mParameter && mParameter.targetAggregations) {
 				if (Array.isArray(mParameter.targetAggregations)) {
@@ -93,7 +91,7 @@ sap.ui.define([
 		 * 引数のオブジェクトもしくはその配下のコントロールのバリデーションを行う。
 		 *
 		 * @public
-		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter|sap.ui.table.Column} oControl 検証対象のコントロールもしくはそれを含むコンテナ
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oControl 検証対象のコントロールもしくはそれを含むコンテナ
 		 * @returns {boolean} true: valid、false: invalid
 		 */
 		validate(oControl) {
@@ -109,14 +107,13 @@ sap.ui.define([
 		 * その結果、該当コントロールにメッセージがなくなった場合は、{@link sap.ui.core.ValueState ValueState} もクリアする。
 		 *
 		 * @public
-		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter|sap.ui.table.Column} oControl 検証対象のコントロールもしくはそれを含むコンテナ
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oControl 検証対象のコントロールもしくはそれを含むコンテナ
 		 */
 		removeErrors(oControl) {
 			if (!(oControl instanceof sap.ui.core.Control ||
 				oControl instanceof sap.ui.layout.form.FormContainer ||
 				oControl instanceof sap.ui.layout.form.FormElement ||
-				oControl instanceof sap.m.IconTabFilter ||
-				oControl instanceof sap.ui.table.Column)) {
+				oControl instanceof sap.m.IconTabFilter)) {
 				// バリデート時には isVisible() も条件としているが、remove 時には変わっている可能性もなくはないため、あえて条件に入れない。
 				return;
 			}
@@ -276,8 +273,7 @@ sap.ui.define([
 			if (!(oControl instanceof sap.ui.core.Control ||
 				oControl instanceof sap.ui.layout.form.FormContainer ||
 				oControl instanceof sap.ui.layout.form.FormElement ||
-				oControl instanceof sap.m.IconTabFilter ||
-				oControl instanceof sap.ui.table.Column)) {
+				oControl instanceof sap.m.IconTabFilter)) {
 				return;
 			}
 
@@ -298,18 +294,32 @@ sap.ui.define([
 						oValidateFunction.isGroupedTargetControls);
 				});
 			}
-			// 入力コントロールやエレメントでなかった場合は、aggregation のコントロールやエレメントを再帰的に検証する。
-			for (let i = 0; i < this._aTargetAggregations.length; i++) {
-				const aControlAggregation = oControl.getAggregation(this._aTargetAggregations[i]);
-				if (!aControlAggregation) {
-					continue;
-				}
-				if (Array.isArray(aControlAggregation)) {
-					for (let j = 0; j < aControlAggregation.length; j++) {
-						this._addValidator2Controls(aControlAggregation[j]);
+			// sap.ui.table.Table の場合は普通にaggregationを再帰的に処理すると存在しない行も処理対象になってしまうため、
+			// Table.getBinding().getLength() してその行までの getRows() の getCells() のコントロールを処理する。
+			if (oControl instanceof sap.ui.table.Table && oControl.getBinding()) {
+				const aRows = oControl.getRows();
+				for (let i = 0, iTableRowCount = oControl.getBinding().getLength(); i < iTableRowCount; i++) {
+					const aCellControls = aRows[i].getCells();
+					if (aCellControls) {
+						for (let j = 0; j < aCellControls.length; j++) {
+							this._addValidator2Controls(aCellControls[j]);
+						}
 					}
-				} else {
-					this._addValidator2Controls(aControlAggregation);
+				}
+			} else {
+				// sap.ui.table.Table や入力コントロールでなかった場合は、aggregation のコントロールを再帰的に処理する。
+				for (let i = 0; i < this._aTargetAggregations.length; i++) {
+					const aControlAggregation = oControl.getAggregation(this._aTargetAggregations[i]);
+					if (!aControlAggregation) {
+						continue;
+					}
+					if (Array.isArray(aControlAggregation)) {
+						for (let j = 0; j < aControlAggregation.length; j++) {
+							this._addValidator2Controls(aControlAggregation[j]);
+						}
+					} else {
+						this._addValidator2Controls(aControlAggregation);
+					}
 				}
 			}
 		}
@@ -317,7 +327,7 @@ sap.ui.define([
 		/**
 		 * 引数のオブジェクトとその配下のコントロールのバリデーションを行う。
 		 *
-		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter|sap.ui.table.Column} oControl 検証対象のコントロールもしくはそれを含むコンテナ
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oControl 検証対象のコントロールもしくはそれを含むコンテナ
 		 * @returns {boolean}　true: valid、false: invalid
 		 */
 		_validate(oControl) {
@@ -326,8 +336,7 @@ sap.ui.define([
 			if (!((oControl instanceof sap.ui.core.Control ||
 				oControl instanceof sap.ui.layout.form.FormContainer ||
 				oControl instanceof sap.ui.layout.form.FormElement ||
-				oControl instanceof sap.m.IconTabFilter ||
-				oControl instanceof sap.ui.table.Column) &&
+				oControl instanceof sap.m.IconTabFilter) &&
 				oControl.getVisible())) {
 				
 				if (this._mValidateFunctionCalledAfterValidate.has(oControl.getId())) {
@@ -340,28 +349,44 @@ sap.ui.define([
 				return isValid;
 			}
 
-			// sap.ui.core.LabelEnablement#isRequired は対象コントロール・エレメント自体の required 属性だけでなく、
-		    // labelFor 属性で紐づく Label や、sap.ui.layout.form.SimpleForm 内での対象コントロール・エレメントの直前の Label の required 属性まで見て判断してくれる。
-			// （なお、ariaLabelledBy で参照される Label までは見てくれない）
-			if (((oControl.getEnabled && oControl.getEnabled()) || !oControl.getEnabled) &&
-				LabelEnablement.isRequired(oControl)) {
-				isValid = this._validateRequired(oControl);
-			}
-			// 入力コントロールやエレメントでなかった場合は、aggregation のコントロールやエレメントを再帰的に検証する。
-			for (let i = 0; i < this._aTargetAggregations.length; i++) {
-				const aControlAggregation = oControl.getAggregation(this._aTargetAggregations[i]);
-				if (!aControlAggregation) {
-					continue;
-				}
-				if (Array.isArray(aControlAggregation)) {
-					for (let j = 0; j < aControlAggregation.length; j++) {
-						if (!this._validate(aControlAggregation[j])) {
-							isValid = false;
+			// sap.ui.table.Table の場合は普通にaggregationを再帰的に処理すると存在しない行も処理対象になってしまうため、
+			// Table.getBinding().getLength() してその行までの getRows() の getCells() のコントロールを検証する。
+			if (oControl instanceof sap.ui.table.Table && oControl.getBinding()) {
+				const aRows = oControl.getRows();
+				for (let i = 0, iTableRowCount = oControl.getBinding().getLength(); i < iTableRowCount; i++) {
+					const aCellControls = aRows[i].getCells();
+					if (aCellControls) {
+						for (let j = 0; j < aCellControls.length; j++) {
+							if (!this._validate(aCellControls[j])) {
+								isValid = false;
+							}
 						}
 					}
-				} else {
-					if (!this._validate(aControlAggregation)) {
-						isValid = false;
+				}
+			} else {
+				// sap.ui.core.LabelEnablement#isRequired は対象コントロール・エレメント自体の required 属性だけでなく、
+				// labelFor 属性で紐づく Label や、sap.ui.layout.form.SimpleForm 内での対象コントロール・エレメントの直前の Label の required 属性まで見て判断してくれる。
+				// （なお、ariaLabelledBy で参照される Label までは見てくれない）
+				if (((oControl.getEnabled && oControl.getEnabled()) || !oControl.getEnabled) &&
+					LabelEnablement.isRequired(oControl)) {
+					isValid = this._validateRequired(oControl);
+				}
+				// sap.ui.table.Table や入力コントロールでなかった場合は、aggregation のコントロールを再帰的に検証する。
+				for (let i = 0; i < this._aTargetAggregations.length; i++) {
+					const aControlAggregation = oControl.getAggregation(this._aTargetAggregations[i]);
+					if (!aControlAggregation) {
+						continue;
+					}
+					if (Array.isArray(aControlAggregation)) {
+						for (let j = 0; j < aControlAggregation.length; j++) {
+							if (!this._validate(aControlAggregation[j])) {
+								isValid = false;
+							}
+						}
+					} else {
+						if (!this._validate(aControlAggregation)) {
+							isValid = false;
+						}
 					}
 				}
 			}

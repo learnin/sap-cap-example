@@ -70,9 +70,13 @@ sap.ui.define([
 			this.setModel(new JSONModel({
 				rows: [{
 					requiredInput: ""
-				}],
-				requiredInput: ""
+				}]
 			}), "inGridTable");
+			this.setModel(new JSONModel({
+				items: [{
+					requiredInput: ""
+				}]
+			}), "inResponsiveTable");
 			this.setModel(new JSONModel({
 				requiredCheckBox: [{
 					text: "text1"
@@ -142,7 +146,7 @@ sap.ui.define([
 		onValidate: function () {
 			const oView = this.getView();
 
-			// TODO: テーブルのセルのバリデーション。必須バリデーションはできるが赤くならないし、フォーカスアウトバリデーションも効かない
+			// TODO: sap.ui.table.Table/sap.m.Table 内のバリデーション時のエラーメッセージにLabelを出す
 
 			this._validator.removeErrors(oView);
 
