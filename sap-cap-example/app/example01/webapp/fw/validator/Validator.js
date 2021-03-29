@@ -1,21 +1,31 @@
 sap.ui.define([
+	"sap/m/IconTabFilter",
 	"sap/m/Input",
 	"sap/ui/base/Object",
+	"sap/ui/core/Control",
 	"sap/ui/core/Element",
 	"sap/ui/core/message/ControlMessageProcessor",
 	"sap/ui/core/message/Message",
 	"sap/ui/core/LabelEnablement",
 	"sap/ui/core/MessageType",
-	"sap/ui/core/ValueState"
+	"sap/ui/core/ValueState",
+	"sap/ui/layout/form/FormContainer",
+	"sap/ui/layout/form/FormElement",
+	"sap/ui/table/Table"
 ], function (
+	IconTabFilter,
 	Input,
 	BaseObject,
+	Control,
 	Element,
 	ControlMessageProcessor,
 	Message,
 	LabelEnablement,
 	MessageType,
-	ValueState) {
+	ValueState,
+	FormContainer,
+	FormElement,
+	sapUiTableTable) {
 	"use strict";
 
 	/**
@@ -110,10 +120,10 @@ sap.ui.define([
 		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oControl 検証対象のコントロールもしくはそれを含むコンテナ
 		 */
 		removeErrors(oControl) {
-			if (!(oControl instanceof sap.ui.core.Control ||
-				oControl instanceof sap.ui.layout.form.FormContainer ||
-				oControl instanceof sap.ui.layout.form.FormElement ||
-				oControl instanceof sap.m.IconTabFilter)) {
+			if (!(oControl instanceof Control ||
+				oControl instanceof FormContainer ||
+				oControl instanceof FormElement ||
+				oControl instanceof IconTabFilter)) {
 				// バリデート時には isVisible() も条件としているが、remove 時には変わっている可能性もなくはないため、あえて条件に入れない。
 				return;
 			}
@@ -270,10 +280,10 @@ sap.ui.define([
 
 		_addValidator2Controls(oControl) {
 			// 非表示のコントロールも後で表示される可能性が想定されるため、処理対象とする
-			if (!(oControl instanceof sap.ui.core.Control ||
-				oControl instanceof sap.ui.layout.form.FormContainer ||
-				oControl instanceof sap.ui.layout.form.FormElement ||
-				oControl instanceof sap.m.IconTabFilter)) {
+			if (!(oControl instanceof Control ||
+				oControl instanceof FormContainer ||
+				oControl instanceof FormElement ||
+				oControl instanceof IconTabFilter)) {
 				return;
 			}
 
@@ -296,7 +306,7 @@ sap.ui.define([
 			}
 			// sap.ui.table.Table の場合は普通にaggregationを再帰的に処理すると存在しない行も処理対象になってしまうため、
 			// Table.getBinding().getLength() してその行までの getRows() の getCells() のコントロールを処理する。
-			if (oControl instanceof sap.ui.table.Table && oControl.getBinding()) {
+			if (oControl instanceof sapUiTableTable && oControl.getBinding()) {
 				const aRows = oControl.getRows();
 				for (let i = 0, iTableRowCount = oControl.getBinding().getLength(); i < iTableRowCount; i++) {
 					const aCellControls = aRows[i].getCells();
@@ -333,10 +343,10 @@ sap.ui.define([
 		_validate(oControl) {
 			let isValid = true;
 
-			if (!((oControl instanceof sap.ui.core.Control ||
-				oControl instanceof sap.ui.layout.form.FormContainer ||
-				oControl instanceof sap.ui.layout.form.FormElement ||
-				oControl instanceof sap.m.IconTabFilter) &&
+			if (!((oControl instanceof Control ||
+				oControl instanceof FormContainer ||
+				oControl instanceof FormElement ||
+				oControl instanceof IconTabFilter) &&
 				oControl.getVisible())) {
 				
 				if (this._mValidateFunctionCalledAfterValidate.has(oControl.getId())) {
@@ -351,7 +361,7 @@ sap.ui.define([
 
 			// sap.ui.table.Table の場合は普通にaggregationを再帰的に処理すると存在しない行も処理対象になってしまうため、
 			// Table.getBinding().getLength() してその行までの getRows() の getCells() のコントロールを検証する。
-			if (oControl instanceof sap.ui.table.Table && oControl.getBinding()) {
+			if (oControl instanceof sapUiTableTable && oControl.getBinding()) {
 				const aRows = oControl.getRows();
 				for (let i = 0, iTableRowCount = oControl.getBinding().getLength(); i < iTableRowCount; i++) {
 					const aCellControls = aRows[i].getCells();
