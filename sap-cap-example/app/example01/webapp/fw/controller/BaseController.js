@@ -304,6 +304,17 @@ sap.ui.define([
 		},
 
 		/**
+		 * {@link sap.ui.core.message.MessageManager MessageManager} からすべての technical メッセージを削除する。
+		 * 
+		 * @public
+		 */
+		removeAllTechnicalMessages: function () {
+			const oMessageManager = sap.ui.getCore().getMessageManager();
+			const aTechnicalMessages = oMessageManager.getMessageModel().getProperty("/").filter(oMessage => oMessage.getTechnical());
+			oMessageManager.removeMessages(aTechnicalMessages);
+		},
+
+		/**
 		 * バリデーションエラー時のメッセージダイアログを表示する。
 		 * 
 		 * @public
