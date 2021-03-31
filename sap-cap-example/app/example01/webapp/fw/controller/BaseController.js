@@ -8,6 +8,7 @@ sap.ui.define([
 	"sap/m/MessageView",
 	"sap/m/Text",
 	"sap/ui/base/Object",
+	"sap/ui/core/MessageType",
 	"sap/ui/core/message/Message",
 	"sap/ui/core/mvc/Controller",
 	"sap/ui/core/routing/History",
@@ -27,6 +28,7 @@ sap.ui.define([
 	MessageView,
 	Text,
 	BaseObject,
+	MessageType,
 	Message,
 	Controller,
 	History,
@@ -287,12 +289,12 @@ sap.ui.define([
 		},
 
 		/**
-		 * バリデーションエラーの有無を返す。
+		 * エラーメッセージの有無を返す。
 		 * 
 		 * @public
-		 * @returns {boolean} true: バリデーションエラーがある場合 false: ない場合
+		 * @returns {boolean} true: エラーメッセージがある場合 false: ない場合
 		 */
-		hasValidationError: function () {
+		hasErrorMessages: function () {
 			// https://sapui5.hana.ondemand.com/1.36.6/docs/guide/62b1481d3e084cb49dd30956d183c6a0.html に記載されている通り
 			// MessageManager は Singleton であり、そのことと
 			// https://github.com/SAP/openui5/blob/0f35245b74ac8eee554292500dfb68af365f1e42/src/sap.ui.core/src/sap/ui/core/message/MessageManager.js
@@ -300,7 +302,7 @@ sap.ui.define([
 			// MessageModel をビューにセットしなくても、同じインスタンスを取得可能。
 			// ただし、XMLビュー等から参照させる場合はモデルにセットした方が実装しやすい。
 			// この BaseController としてはビューへの MessageModel のセットは前提としない（継承先のアプリ側で必要に応じてセットすればよい）。
-			return sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/").length > 0;
+			return sap.ui.getCore().getMessageManager().getMessageModel().getProperty("/").filter(oMessage => oMessage.getType() === MessageType.Error).length > 0;
 		},
 
 		/**
@@ -321,7 +323,7 @@ sap.ui.define([
 		 * @param {Object} [mDialogParameter] sap.m.Dialog のパラメータ
 		 */
 		showValidationErrorMessageDialog: function (mDialogParameter) {
-			if (!this.hasValidationError()) {
+			if (!this.hasErrorMessages()) {
 				return;
 			}
 

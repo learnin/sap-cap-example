@@ -151,7 +151,7 @@ sap.ui.define([
 			this._validator.removeErrors(oView);
 			this.removeAllTechnicalMessages();
 
-			if (!this._validator.validate(oView) || this.hasValidationError()) {
+			if (!this._validator.validate(oView) || this.hasErrorMessages()) {
 				this.showValidationErrorMessageDialog();
 				return;
 			}
