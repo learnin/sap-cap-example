@@ -1,4 +1,5 @@
 sap.ui.define([
+	"sap/m/CheckBox",
 	"sap/m/IconTabFilter",
 	"sap/m/Input",
 	"sap/ui/base/Object",
@@ -11,8 +12,10 @@ sap.ui.define([
 	"sap/ui/core/ValueState",
 	"sap/ui/layout/form/FormContainer",
 	"sap/ui/layout/form/FormElement",
+	"sap/ui/table/Row",
 	"sap/ui/table/Table"
 ], function (
+	CheckBox,
 	IconTabFilter,
 	Input,
 	BaseObject,
@@ -25,6 +28,7 @@ sap.ui.define([
 	ValueState,
 	FormContainer,
 	FormElement,
+	sapUiTableRow,
 	sapUiTableTable) {
 	"use strict";
 
@@ -759,7 +763,7 @@ sap.ui.define([
 		_getLabelText(oControl) {
 			// sap.m.CheckBox の場合、そのまま LabelEnablement.getReferencingLabels を取得すると各チェックボックスのラベルが取得されるので、
 			// 親のコントロールのラベルを探してみる。（親のラベルが見つかるかはビューの構造による。例えば、SimpleForm 内では見つからない）
-			if (oControl instanceof sap.m.CheckBox && oControl.getParent()) {
+			if (oControl instanceof CheckBox && oControl.getParent()) {
 				const aLabelId = LabelEnablement.getReferencingLabels(oControl.getParent());
 				if (aLabelId && aLabelId.length > 0) {
 					const oLabel = sap.ui.getCore().byId(aLabelId[0]);
@@ -767,6 +771,23 @@ sap.ui.define([
 						return oLabel.getText();
 					}
 				}
+			}
+			if (oControl.getParent && oControl.getParent() instanceof sapUiTableRow) {
+				const oRow = oControl.getParent();
+				if (oRow.getParent() instanceof sapUiTableTable) {
+					const oTable = oRow.getParent();
+					const iColumnIndex = oRow.indexOfCell(oControl);
+					if (iColumnIndex !== -1) {
+						const oLabelOrSLabel = oTable.getColumns()[iColumnIndex].getLabel();
+						if (typeof oLabelOrSLabel === "string") {
+							return oLabelOrSLabel;
+						} else if (oLabelOrSLabel.getText) {
+							return oLabelOrSLabel.getText();
+						}
+					}
+					
+				}
+				return undefined;
 			}
 			const aLabelId = LabelEnablement.getReferencingLabels(oControl);
 			if (aLabelId && aLabelId.length > 0) {

@@ -69,7 +69,8 @@ sap.ui.define([
 			}), "withUI5Validator");
 			this.setModel(new JSONModel({
 				rows: [{
-					requiredInput: ""
+					requiredInputStringLabel: "",
+					requiredInputLabel: ""
 				}]
 			}), "inGridTable");
 			this.setModel(new JSONModel({
@@ -146,7 +147,7 @@ sap.ui.define([
 		onValidate: function () {
 			const oView = this.getView();
 
-			// TODO: sap.ui.table.Table/sap.m.Table 内のバリデーション時のエラーメッセージにLabelを出す
+			// TODO: sap.m.Table 内のバリデーション時のエラーメッセージにLabelを出す
 
 			this._validator.removeErrors(oView);
 			this.removeAllTechnicalMessages();

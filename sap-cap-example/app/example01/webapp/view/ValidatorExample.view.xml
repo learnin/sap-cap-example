@@ -121,10 +121,15 @@
 			<uxap:ObjectPageSection titleUppercase="false" title="In the Table">
 				<uxap:ObjectPageSubSection>
 					<table:Table rows="{inGridTable>/rows}">
-						<table:Column>
-							<Label text="Required Input in GridTable" labelFor="requiredInputInGridTable" />
+						<table:Column label="Required Input string label in GridTable">
 							<table:template>
-								<Input id="requiredInputInGridTable" value="{inGridTable>requiredInput}" required="true" />
+								<Input id="requiredInputStringLabelInGridTable" value="{inGridTable>requiredInputStringLabel}" required="true" />
+							</table:template>
+						</table:Column>
+						<table:Column>
+							<Label text="Required Input Label in GridTable" labelFor="requiredInputLabelInGridTable" />
+							<table:template>
+								<Input id="requiredInputLabelInGridTable" value="{inGridTable>requiredInputLabel}" required="true" />
 							</table:template>
 						</table:Column>
 					</table:Table>
