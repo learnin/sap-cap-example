@@ -48,6 +48,16 @@ sap.ui.define([
 		 * @param {Object} mParameter
 		 */
 		constructor(mParameter) {
+			
+			/**
+			 * 入力コントロールの必須バリデーションエラーメッセージのリソースバンドルキー
+			 */
+			this.RESOURCE_BUNDLE_KEY_REQUIRED_INPUT = "fw.validator.Validator.message.requiredInput";
+			/**
+			 * 選択コントロールの必須バリデーションエラーメッセージのリソースバンドルキー
+			 */
+			this.RESOURCE_BUNDLE_KEY_REQUIRED_SELECT = "fw.validator.Validator.message.requiredSelect";
+
 			this._aTargetAggregations = [
 				"items",
 				"content",
@@ -98,6 +108,10 @@ sap.ui.define([
 			this._useFocusoutValidation = true;
 			if (mParameter && mParameter.useFocusoutValidation === false) {
 				this._useFocusoutValidation = false;
+			}
+
+			if (mParameter && mParameter.resourceBundle) {
+				this._resourceBundle = mParameter.resourceBundle;
 			}
 		}
 
@@ -733,21 +747,25 @@ sap.ui.define([
 		}
 
 		_getRequiredErrorMessageTextByControl(oControl) {
+			// sap.m.Input には getValue も getSelectedKey もあるので個別に判定する。
 			if (oControl instanceof Input) {
-				// sap.m.Input には getValue も getSelectedKey もあるので個別に判定する。
-				// TODO: i18n
-				return "Required to input.";
+				return this._getResourceText(this.RESOURCE_BUNDLE_KEY_REQUIRED_INPUT, "Required to input.");
 			}
 			if (oControl.getSelectedKey ||
 				oControl.getSelectedKeys ||
 				oControl.getSelected ||
 				oControl.getSelectedIndex ||
 				oControl.getSelectedDates) {
-				// TODO: i18n
-				return "Required to select.";
+				return this._getResourceText(this.RESOURCE_BUNDLE_KEY_REQUIRED_SELECT, "Required to select.");
 			}
-			// TODO: i18n
-			return "Required to input.";
+			return this._getResourceText(this.RESOURCE_BUNDLE_KEY_REQUIRED_INPUT, "Required to input.");
+		}
+
+		_getResourceText(sKey, sDefaultText) {
+			if (this._resourceBundle) {
+				return this._resourceBundle.getText(sKey);
+			}
+			return sDefaultText;
 		}
 
 		/**
