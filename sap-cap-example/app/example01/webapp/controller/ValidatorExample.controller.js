@@ -93,6 +93,9 @@ sap.ui.define([
 			this._validator = new Validator();
 			// this._validator = new Validator({useFocusoutValidation: false});
 		},
+		onExit: function () {
+			this._validator.removeAttachedValidators(this.getView());
+		},
 		onAfterRendering: function () {
 			const oView = this.getView();
 
@@ -158,7 +161,8 @@ sap.ui.define([
 			}
 		},
 		onClearErrors: function () {
-			new Validator().removeErrors(this.getView());
+			this._validator.removeErrors(this.getView());
+			sap.ui.getCore().getMessageManager().removeAllMessages();
 		}
 	});
 });

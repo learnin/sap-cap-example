@@ -104,6 +104,8 @@ sap.ui.define([
 			 * true （デフォルト）の場合：1度 validate するとフォーカスアウトでバリデーションが効くようになる
 			 *                        （正しい値を入れてフォーカスアウトしてエラーが消えてもまた不正にしてフォーカスアウトするとエラーになる）
 			 * false の場合：1度 validate すると removeErrors するまでエラーは残りっぱなしとなる
+			 * ただし、registerValidateFunctionCalledAfterValidate, registerRequiredValidateFunctionCalledAfterValidate が
+			 * isAttachFocusoutValidationImmediately: true で実行された場合にはそのバリデーション関数は useFocusoutValidation の値には関係なく attach される。
 			 */
 			this._useFocusoutValidation = true;
 			if (mParameter && mParameter.useFocusoutValidation === false) {
@@ -135,17 +137,95 @@ sap.ui.define([
 		 * その結果、該当コントロールにメッセージがなくなった場合は、{@link sap.ui.core.ValueState ValueState} もクリアする。
 		 *
 		 * @public
-		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oControl 検証対象のコントロールもしくはそれを含むコンテナ
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oControl 検証対象のコントロールもしくはそれを含むコンテナ。
 		 */
-		removeErrors(oControl) {
-			if (!(oControl instanceof Control ||
-				oControl instanceof FormContainer ||
-				oControl instanceof FormElement ||
-				oControl instanceof IconTabFilter)) {
+		removeErrors(oTargetRootControl) {
+			if (!oTargetRootControl) {
+				throw new SyntaxError();
+			}
+			if (!oTargetRootControl instanceof Control &&
+				!oTargetRootControl instanceof FormContainer &&
+				!oTargetRootControl instanceof FormElement &&
+				!oTargetRootControl instanceof IconTabFilter) {
 				// バリデート時には isVisible() も条件としているが、remove 時には変わっている可能性もなくはないため、あえて条件に入れない。
 				return;
 			}
-			this._removeMessagesAndValueStateIncludeChildren(oControl);
+			const oMessageManager = sap.ui.getCore().getMessageManager();
+			const oMessageModel = oMessageManager.getMessageModel();
+			const sValidatorMessageName = _ValidatorMessage.getMetadata().getName();
+			const aMessagesAddedByThisValidator = oMessageModel.getProperty("/")
+				.filter(oMessage => BaseObject.isA(oMessage, sValidatorMessageName));
+			const oCore = sap.ui.getCore();
+
+			for (let i = 0, n = aMessagesAddedByThisValidator.length; i < n; i++) {
+				const oMessage = aMessagesAddedByThisValidator[i];
+				const aControlIds = oMessage.getValidationErrorControlIds();
+
+				if (!aControlIds.some(sControlId => oCore.byId(sControlId))) {
+					// 対象のコントロールが1つもない場合はメッセージも削除する。
+					oMessageManager.removeMessages(oMessage);
+					continue;
+				}
+				aControlIds.forEach(sControlId => {
+					const oControl = oCore.byId(sControlId);
+					if (this._isChildOrEqualControlId(oControl, oTargetRootControl)) {
+						oMessageManager.removeMessages(oMessage);
+						
+						// TODO: この条件を外すべきか要検討。_useFocusoutValidation = false であってもregisterValidateFunctionCalledAfterValidateによってattachされた関数はあるが関係ない？
+						if (!this._useFocusoutValidation) {
+							// _useFocusoutValidation が false の場合は、エラーステートをクリアする対象コントロール（本バリデータでエラーステートをセットしたコントロール）の情報が
+							// メッセージにしかないので、メッセージの targets のコントロールを対象に処理する。
+							this._clearValueStateIfNoErrors(oControl, oMessage.getTargets());
+						}
+					}
+				});
+			}
+			// フォーカスアウトバリデーションを attach したコントロールがあれば、それもエラーステートをクリアする対象コントロール（本バリデータでエラーステートをセットしたコントロール）となる。
+			// attach したコントロールには customData を付加しているので、そこからクリア対象のコントロールを探す。
+			// （画面遷移等によりエラーメッセージは消えているがエラーステートは残っていることがあるため、この方法も併用する。）
+			// Element.registry は現在表示されているビューだけでなくすべての Element を保持している。
+			const aElementsSettedErrorStateByThisValidator = Element.registry.filter((oElement, sId) => 
+				this._isAddedRequiredValidator2Control(oElement) || this._isAddedValidator2Control(oElement)
+			);
+			for (let i = 0, n = aElementsSettedErrorStateByThisValidator.length; i < n; i++) {
+				const oControl = aElementsSettedErrorStateByThisValidator[i];
+				if (this._isChildOrEqualControlId(oControl, oTargetRootControl)) {
+					this._clearValueStateIfNoErrors(oControl, this._resolveMessageTarget(oControl));
+				}
+			}
+		}
+
+		removeAttachedValidators(oTargetRootControl) {
+			if (!oTargetRootControl) {
+				throw new SyntaxError();
+			}
+			if (!oTargetRootControl instanceof Control &&
+				!oTargetRootControl instanceof FormContainer &&
+				!oTargetRootControl instanceof FormElement &&
+				!oTargetRootControl instanceof IconTabFilter) {
+				return;
+			}
+			Element.registry.forEach((oElement, sId) => {
+				if (this._isAddedRequiredValidator2Control(oElement)) {
+					if (this._isChildOrEqualControlId(oElement, oTargetRootControl)) {
+						this._removeRequiredValidator2Control(oElement);
+					}
+				}
+				if (this._isAddedValidator2Control(oElement)) {
+					if (this._isChildOrEqualControlId(oElement, oTargetRootControl)) {
+						this._removeValidator2Control(oElement);
+					}
+				}
+			});
+			// TODO:this._mValidateFunctionCalledAfterValidate をどうするか要検討。 _mValidateFunctionCalledAfterValidate の情報で削除するのか、customDataの情報で削除するのか
+			// 両方使うのか、それによって _mValidateFunctionCalledAfterValidate にいつまで情報を残すか（いつ消すか）が決まる。
+			// -> view/fragment が生きていれば、そこから参照されている controller も生きており、さらにそこから参照される Validator も生きているはずなので、
+			// attach したコントロールのIDや、valueState.ErrorをセットしたコントロールのIDもValidatorにもっておけばOK。
+			// なので、customData のセットはやめる。Validatorに保持するのは _mValidateFunctionCalledAfterValidate (これはregisterされたものをvalidateメソッドで検証するために保持)、
+			// attach したコントロールのIDの配列、valueState.ErrorをセットしたコントロールのIDの配列とし、
+			// メッセージのクリアは今まで通りMessageManagerからで、
+			// エラー状態のクリアはvalueState.ErrorをセットしたコントロールのIDの配列と、MessageManagerにそのコントロールに他のエラーがないかの情報からで、
+			// detach はattach したコントロールのIDの配列から行うようにする。
 		}
 
 		/**
@@ -437,23 +517,39 @@ sap.ui.define([
 				return;
 			}
 			const sMessageText = this._getRequiredErrorMessageTextByControl(oControl);
-			const fnRequiredValidator = oEvent => {
-				if (this._isNullValue(oControl)) {
-					this._addMessage(oControl, sMessageText);
-					this._setValueState(oControl, ValueState.Error, sMessageText);
-				} else {
-					this._removeMessageAndValueState(oControl);
-				}
-			};
+
 			if (oControl.attachSelectionFinish) {
-				oControl.attachSelectionFinish(fnRequiredValidator);
-				this._markedAddedRequiredValidator2Control(oControl);
+				oControl.attachSelectionFinish(sMessageText, this._requiredValidator, this);
+				this._markAddedRequiredValidator2Control(oControl);
 			} else if (oControl.attachChange) {
-				oControl.attachChange(fnRequiredValidator);
-				this._markedAddedRequiredValidator2Control(oControl);
+				oControl.attachChange(sMessageText, this._requiredValidator, this);
+				this._markAddedRequiredValidator2Control(oControl);
 			} else if (oControl.attachSelect) {
-				oControl.attachSelect(fnRequiredValidator);
-				this._markedAddedRequiredValidator2Control(oControl);
+				oControl.attachSelect(sMessageText, this._requiredValidator, this);
+				this._markAddedRequiredValidator2Control(oControl);
+			}
+		}
+
+		_removeRequiredValidator2Control(oControl) {
+			if (oControl.detachSelectionFinish) {
+				oControl.detachSelectionFinish(this._requiredValidator, this);
+				this._unmarkAddedRequiredValidator2Control(oControl);
+			} else if (oControl.detachChange) {
+				oControl.detachChange(this._requiredValidator, this);
+				this._unmarkAddedRequiredValidator2Control(oControl);
+			} else if (oControl.detachSelect) {
+				oControl.detachSelect(this._requiredValidator, this);
+				this._unmarkAddedRequiredValidator2Control(oControl);
+			}
+		}
+
+		_requiredValidator(oEvent, sMessageText) {
+			const oControl = oEvent.getSource();
+			if (this._isNullValue(oControl)) {
+				this._addMessage(oControl, sMessageText);
+				this._setValueState(oControl, ValueState.Error, sMessageText);
+			} else {
+				this._removeMessageAndValueState(oControl);
 			}
 		}
 
@@ -472,11 +568,15 @@ sap.ui.define([
 		 * 
 		 * @param {sap.ui.core.Element} oElement エレメント
 		 */
-		_markedAddedRequiredValidator2Control(oElement) {
+		_markAddedRequiredValidator2Control(oElement) {
 			oElement.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR, "true");
 		}
 
-		_addValidator2Control(oControlOrAControls, fnTest, sMessageTextOrAMessageTexts, sValidateFunctionId, isGroupedTargetControls) {
+		_unmarkAddedRequiredValidator2Control(oElement) {
+			oElement.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REQUIRED_VALIDATOR, null);
+		}
+
+		_addValidator2Control(oControlOrAControls, fnTest, sMessageTextOrAMessageTexts, sValidateFunctionId, bIsGroupedTargetControls) {
 			let aControls;
 			if (!Array.isArray(oControlOrAControls)) {
 				aControls = [oControlOrAControls];
@@ -492,36 +592,63 @@ sap.ui.define([
 				if (this._isAddedValidator2Control(oControl)) {
 					continue;
 				}
-				const fnValidator = oEvent => {
-					if (fnTest(oControl)) {
-						aControls.forEach(oCtl => {
-							// 例えば、日付の大小関係チェックのように、自身以外のコントロールの値が修正されてフォーカスアウトしたことで、自身も正常となるので対象コントロール達のエラーは解除する。
-							this._removeMessageAndValueState(oCtl, sValidateFunctionId);
-						});
-					} else {
-						if (isGroupedTargetControls) {
-							const sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[0] : sMessageTextOrAMessageTexts;
-							this._addMessage(aControls, sMessageText, sValidateFunctionId);
-							
-							aControls.forEach(oCtl => {
-								this._setValueState(oCtl, ValueState.Error, sMessageText);
-							});
-						} else {
-							const sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[i] : sMessageTextOrAMessageTexts;
-							this._addMessage(oControl, sMessageText, sValidateFunctionId);
-							this._setValueState(oControl, ValueState.Error, sMessageText);
-						}
-					}
+				let sMessageText;
+				if (bIsGroupedTargetControls) {
+					sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[0] : sMessageTextOrAMessageTexts;
+				} else {
+					sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[i] : sMessageTextOrAMessageTexts;
+				}
+				const oData = {
+					messageText: sMessageText,
+					test: fnTest,
+					controls: aControls,
+					validateFunctionId: sValidateFunctionId,
+					isGroupedTargetControls: bIsGroupedTargetControls,
+					messageTextOrMessageTexts: sMessageTextOrAMessageTexts
 				};
 				if (oControl.attachSelectionFinish) {
-					oControl.attachSelectionFinish(fnValidator);
-					this._markedAddedValidator2Control(oControl);
+					oControl.attachSelectionFinish(oData, this._validator, this);
+					this._markAddedValidator2Control(oControl);
 				} else if (oControl.attachChange) {
-					oControl.attachChange(fnValidator);
-					this._markedAddedValidator2Control(oControl);
+					oControl.attachChange(oData, this._validator, this);
+					this._markAddedValidator2Control(oControl);
 				} else if (oControl.attachSelect) {
-					oControl.attachSelect(fnValidator);
-					this._markedAddedValidator2Control(oControl);
+					oControl.attachSelect(oData, this._validator, this);
+					this._markAddedValidator2Control(oControl);
+				}
+			}
+		}
+
+		_removeValidator2Control(oControl) {
+			if (oControl.detachSelectionFinish) {
+				oControl.detachSelectionFinish(this._validator, this);
+				this._unmarkAddedValidator2Control(oControl);
+			} else if (oControl.detachChange) {
+				oControl.detachChange(this._validator, this);
+				this._unmarkAddedValidator2Control(oControl);
+			} else if (oControl.detachSelect) {
+				oControl.detachSelect(this._validator, this);
+				this._unmarkAddedValidator2Control(oControl);
+			}
+		}
+
+		_validator(oEvent, oData) {
+			const oControl = oEvent.getSource();
+			if (oData.test(oControl)) {
+				oData.controls.forEach(oCtl => {
+					// 例えば、日付の大小関係チェックのように、自身以外のコントロールの値が修正されてフォーカスアウトしたことで、自身も正常となるので対象コントロール達のエラーは解除する。
+					this._removeMessageAndValueState(oCtl, oData.validateFunctionId);
+				});
+			} else {
+				if (oData.isGroupedTargetControls) {
+					this._addMessage(oData.controls, oData.messageText, oData.validateFunctionId);
+					
+					oData.controls.forEach(oCtl => {
+						this._setValueState(oCtl, ValueState.Error, oData.messageText);
+					});
+				} else {
+					this._addMessage(oControl, oData.messageText, oData.validateFunctionId);
+					this._setValueState(oControl, ValueState.Error, oData.messageText);
 				}
 			}
 		}
@@ -541,8 +668,12 @@ sap.ui.define([
 		 * 
 		 * @param {sap.ui.core.Element} oElement エレメント
 		 */
-		_markedAddedValidator2Control(oElement) {
+		_markAddedValidator2Control(oElement) {
 			oElement.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REGISTERED_VALIDATOR, "true");
+		}
+
+		_unmarkAddedValidator2Control(oElement) {
+			oElement.data(this._CUSTOM_DATA_KEY_FOR_IS_ADDED_REGISTERED_VALIDATOR, null);
 		}
 
 		/**
@@ -559,52 +690,6 @@ sap.ui.define([
 			this._addMessage(oControl, sMessageText);
 			this._setValueState(oControl, ValueState.Error, sMessageText);
 			return false;
-		}
-
-		_removeMessagesAndValueStateIncludeChildren(oTargetRootControl) {
-			const oMessageManager = sap.ui.getCore().getMessageManager();
-			const oMessageModel = oMessageManager.getMessageModel();
-			const sValidatorMessageName = _ValidatorMessage.getMetadata().getName();
-			const aMessagesAddedByThisValidator = oMessageModel.getProperty("/")
-				.filter(oMessage => BaseObject.isA(oMessage, sValidatorMessageName));
-			const oCore = sap.ui.getCore();
-
-			for (let i = 0, n = aMessagesAddedByThisValidator.length; i < n; i++) {
-				const oMessage = aMessagesAddedByThisValidator[i];
-				const aControlIds = oMessage.getValidationErrorControlIds();
-
-				if (!aControlIds.some(sControlId => oCore.byId(sControlId))) {
-					// 対象のコントロールが1つもない場合はメッセージも削除する。
-					oMessageManager.removeMessages(oMessage);
-					continue;
-				}
-				aControlIds.forEach(sControlId => {
-					const oControl = oCore.byId(sControlId);
-					if (!oTargetRootControl || this._isChildOrEqualControlId(oControl, oTargetRootControl)) {
-						oMessageManager.removeMessages(oMessage);
-						if (!this._useFocusoutValidation) {
-							// _useFocusoutValidation が false の場合は、エラーステートをクリアする対象コントロール（本バリデータでエラーステートをセットしたコントロール）の情報が
-							// メッセージにしかないので、メッセージの targets のコントロールを対象に処理する。
-							this._clearValueStateIfNoErrors(oControl, oMessage.getTargets());
-						}
-					}
-				});
-			}
-
-			if (this._useFocusoutValidation) {
-				// _useFocusoutValidation が true の場合は、エラーステートをクリアする対象コントロール（本バリデータでエラーステートをセットしたコントロール）には
-				// customData を付加しているので、そこからクリア対象のコントロールを探す。
-				// （画面遷移等によりエラーメッセージは消えているがエラーステートは残っていることがあるため、この方法の方が確実。）
-				const aElementsSettedErrorStateByThisValidator = Element.registry.filter((oElement, sId) => 
-					this._isAddedRequiredValidator2Control(oElement) || this._isAddedValidator2Control(oElement)
-				);
-				for (let i = 0, n = aElementsSettedErrorStateByThisValidator.length; i < n; i++) {
-					const oControl = aElementsSettedErrorStateByThisValidator[i];
-					if (!oTargetRootControl || this._isChildOrEqualControlId(oControl, oTargetRootControl)) {
-						this._clearValueStateIfNoErrors(oControl, this._resolveMessageTarget(oControl));
-					}
-				}
-			}
 		}
 
 		_removeMessageAndValueState(oControl, sValidateFunctionId) {
