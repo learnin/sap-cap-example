@@ -4,7 +4,6 @@ sap.ui.define([
 	"sap/m/ButtonType",
 	"sap/m/MessageItem",
 	"sap/m/MessagePopover",
-	"sap/ui/core/aria/HasPopup",
 	"sap/ui/model/BindingMode"
 ], function (
 	Button,
@@ -12,7 +11,6 @@ sap.ui.define([
 	ButtonType,
 	MessageItem,
 	MessagePopover,
-	HasPopup,
 	BindingMode) {
 	"use strict";
 
@@ -25,16 +23,18 @@ sap.ui.define([
 	 */
 	return Button.extend("fw.control.MessagePopoverButton", {
 		init: function () {
-			this.setType(ButtonType.Negative);
+			// ButtonType.Negative は UI5 1.73以降なので、ない場合は ButtonType.Reject で代用する。
+			this.setType(ButtonType.Negative || ButtonType.Reject);
 			this.setIcon("sap-icon://message-error");
-			this.setAriaHasPopup(HasPopup.Dialog);
 
-			this.attachPress(oEvent => {
-				if (!this._oMessagePopover) {
-					this._oMessagePopover = this._createMessagePopover();
-				}
-				this._oMessagePopover.toggle(oEvent.getSource());
-			});
+			this.attachPress(this._onPress, this);
+		},
+		exit: function () {
+			this.detachPress(this._onPress, this);
+
+			if (Button.prototype.exit) {
+				Button.prototype.exit.apply(this, arguments);
+			}
 		},
 		renderer: ButtonRenderer,
 		onBeforeRendering: function () {
@@ -50,6 +50,12 @@ sap.ui.define([
 				mode: BindingMode.OneWay,
 				formatter: oMessage => String(oMessage.length)
 			});
+		},
+		_onPress: function(oEvent) {
+			if (!this._oMessagePopover) {
+				this._oMessagePopover = this._createMessagePopover();
+			}
+			this._oMessagePopover.toggle(oEvent.getSource());
 		},
 		_createMessagePopover: function () {
 			const oMessagePopover = new MessagePopover({
