@@ -99,7 +99,7 @@ sap.ui.define([
 		onAfterRendering: function () {
 			const oView = this.getView();
 
-			this._validator.registerRequiredValidateFunctionCalledAfterValidate(
+			this._validator.registerRequiredValidator(
 				"requiredCheckBoxCustomValidator",
 				() => oView.byId("requiredCheckBoxCustom").getItems().some(oCheckBox => oCheckBox.getSelected()),
 				oView.byId("requiredCheckBoxCustom").getItems(),
@@ -114,8 +114,10 @@ sap.ui.define([
 
 			// TODO: もう1例追加する。チェックボックスで1つ以上3つ以下で選ばないといけないというチェック。
 
+			// TODO: Fragment 上のコントロールのバリデーション
+
 			// 必須入力チェック以外のバリデーションは、UI5標準バリデーションと同様にフォーカスアウト時にエラー表示させる。
-			this._validator.registerValidateFunctionCalledAfterValidate(
+			this._validator.registerValidator(
 				"toDateIsAfterFromDateValidator",
 				() => {
 					const dFromDateValue = oView.byId("fromDate").getDateValue();
@@ -163,6 +165,7 @@ sap.ui.define([
 		onClearErrors: function () {
 			this._validator.removeErrors(this.getView());
 			sap.ui.getCore().getMessageManager().removeAllMessages();
+			// this._validator.removeAttachedValidators(this.getView());
 		}
 	});
 });
