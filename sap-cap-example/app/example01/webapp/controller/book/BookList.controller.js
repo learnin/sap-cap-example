@@ -28,10 +28,10 @@ sap.ui.define([
 			this.setModel(oCatalog);
 
 			const oMessageModel = sap.ui.getCore().getMessageManager().getMessageModel();
-			const oMessageModelBinding = oMessageModel.bindList("/", undefined, [], new Filter("technical", FilterOperator.EQ, true));
+			this._oMessageModelBinding = oMessageModel.bindList("/", undefined, [], new Filter("technical", FilterOperator.EQ, true));
 			this.setModel(oMessageModel, "message");
 
-			oMessageModelBinding.attachChange(this.onMessageBindingChange, this);
+			this._oMessageModelBinding.attachChange(this.onMessageBindingChange, this);
 			this._bTechnicalErrors = false;
 
 			// OData の総データ件数（ページングされる可能性のあるレスポンスデータの件数ではなく、$inlinecount でデータ取得した際に返される __count の値）を表示するための
@@ -41,24 +41,13 @@ sap.ui.define([
 				count: 0
 			});
 			this.setModel(oCountModel, "count");
-			oCatalog.attachRequestCompleted(oEvent => {
-				if (!oEvent.getParameters().success) {
-					return;
-				}
-				const oResponse = oEvent.getParameters().response;
-				if (!oResponse) {
-					return;
-				}
-				const sResponseText = oResponse.responseText;
-				if (sResponseText) {
-					try {
-						const oResponseText = JSON.parse(sResponseText);
-						oCountModel.setProperty("/count", oResponseText.d.__count);
-					} catch (oError) {
-						console.error(oError);
-					}
-				}
-			});
+			oCatalog.attachRequestCompleted(this._onRequestCompletedODataModel, this);
+		},
+		onExit: function () {
+			if (this._oMessageModelBinding) {
+				this._oMessageModelBinding.detachChange(this.onMessageBindingChange, this);
+			}
+			this.getModel().detachRequestCompleted(this._onRequestCompletedODataModel, this);
 		},
 		onNavToBookPage: function (oEvent) {
 			// onStockChange のように引数に id を追加するのではなく、以下のように oEvent からバインドコンテキスト経由でバインドされているモデルのプロパティを取得することも可能。
@@ -156,6 +145,24 @@ sap.ui.define([
 		 */
 		_setBusy: function (bIsBusy) {
 			this.getModel("state").setProperty("/isBusy", bIsBusy);
+		},
+		_onRequestCompletedODataModel: function (oEvent) {
+			if (!oEvent.getParameters().success) {
+				return;
+			}
+			const oResponse = oEvent.getParameters().response;
+			if (!oResponse) {
+				return;
+			}
+			const sResponseText = oResponse.responseText;
+			if (sResponseText) {
+				try {
+					const oResponseText = JSON.parse(sResponseText);
+					oCountModel.setProperty("/count", oResponseText.d.__count);
+				} catch (oError) {
+					console.error(oError);
+				}
+			}
 		}
 	});
 });

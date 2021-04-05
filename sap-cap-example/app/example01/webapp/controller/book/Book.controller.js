@@ -20,8 +20,14 @@ sap.ui.define([
 
 			this._oFragmentsCache = {};
 
+			this._validator = new Validator();
+
 			// manifest.json で sap.ui5.handleValidation を true にしている場合は不要 cf. https://sapui5.hana.ondemand.com/#/topic/a90d93df5a024e8bb18826b699c9aaa7.html
 			// oMessageManager.registerObject(this.getView(), true);
+		},
+		onExit: function () {
+			this.getRouter().getRoute("book").detachMatched(this._onRouteMatched, this);
+			this._validator.removeAttachedValidators(this.getView());
 		},
 		onEdit: function (oEvent) {
 			if (this._isEditing()) {
@@ -35,15 +41,14 @@ sap.ui.define([
 			this._showGeneralInformationFragment("BookDisplayGeneralInformation");
 			this._setEditing(false);
 
-			new Validator().removeErrors(this.getView());
+			this._validator.removeErrors(this.getView());
 		},
 		onSave: function () {
 			const oView = this.getView();
-			const validator = new Validator();
-			validator.removeErrors(oView);
+			this._validator.removeErrors(oView);
 			this.removeAllTechnicalMessages();
 
-			if (!validator.validate(oView) || this.hasErrorMessages()) {
+			if (!this._validator.validate(oView) || this.hasErrorMessages()) {
 				this.showValidationErrorMessageDialog();
 				return;
 			}

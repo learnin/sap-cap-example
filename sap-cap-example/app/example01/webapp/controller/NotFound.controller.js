@@ -6,10 +6,10 @@ sap.ui.define([
 	return BaseController.extend("com.example.example01.controller.NotFound", {
 
 		onInit: function () {
-			const oTarget = this.getRouter().getTarget("notFound");
-			oTarget.attachDisplay(function (oEvent) {
-				this._oData = oEvent.getParameter("data");	// store the data
-			}, this);
+			this.getRouter().getTarget("notFound").attachDisplay(this._onDisplayTarget, this);
+		},
+		onExit: function () {
+			this.getRouter().getTarget("notFound").detachDisplay(this._onDisplayTarget, this);
 		},
 
 		// override the parent's onNavBack (inherited from BaseController)
@@ -23,6 +23,9 @@ sap.ui.define([
 
 			// call the parent's onNavBack
 			BaseController.prototype.onNavBack.apply(this, arguments);
+		},
+		_onDisplayTarget: function(oEvent) {
+			this._oData = oEvent.getParameter("data");
 		}
 	});
 });

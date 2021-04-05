@@ -94,7 +94,7 @@
             "fwI18n": {
                 "type": "sap.ui.model.resource.ResourceModel",
                 "settings": {
-                    "bundleUrl": "fw/i18n/i18n.properties"
+                    "bundleName": "com.example.example01.fw.i18n.i18n"
                 }
             },
             "i18n": {

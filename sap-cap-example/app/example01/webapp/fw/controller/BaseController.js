@@ -137,7 +137,7 @@ sap.ui.define([
 		 * 
 		 * @public
 		 * @param {sap.ui.model.odata.v2.ODataModel} oODataV2Model サブミット対象のモデル
-		 * @param {Object} mParameter sap.ui.model.odata.v2.ODataModel#submitChanges のパラメータ。ただし、success, error は無視される。
+		 * @param {Object} [mParameter] sap.ui.model.odata.v2.ODataModel#submitChanges のパラメータ。ただし、success, error は無視される。
 		 * @returns {Promise<Object>|Promise<ODataException>|Promise<ConcurrentModificationException>} Promise 排他制御エラー時は Promise<ConcurrentModificationException>
 		 */
 		submitChanges: function (oODataV2Model, mParameter) {
