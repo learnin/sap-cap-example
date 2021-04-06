@@ -1,7 +1,9 @@
 sap.ui.define([
 	"sap/m/CheckBox",
+	"sap/m/ColumnListItem",
 	"sap/m/IconTabFilter",
 	"sap/m/Input",
+	"sap/m/Table",
 	"sap/ui/base/Object",
 	"sap/ui/core/Control",
 	"sap/ui/core/Element",
@@ -16,8 +18,10 @@ sap.ui.define([
 	"sap/ui/table/Table"
 ], function (
 	CheckBox,
+	ColumnListItem,
 	IconTabFilter,
 	Input,
+	sapMTable,
 	BaseObject,
 	Control,
 	Element,
@@ -894,21 +898,40 @@ sap.ui.define([
 					}
 				}
 			}
-			if (oControl.getParent && oControl.getParent() instanceof sapUiTableRow) {
-				const oRow = oControl.getParent();
-				if (oRow.getParent() instanceof sapUiTableTable) {
-					const oTable = oRow.getParent();
-					const iColumnIndex = oRow.indexOfCell(oControl);
-					if (iColumnIndex !== -1) {
-						const oLabelOrSLabel = oTable.getColumns()[iColumnIndex].getLabel();
-						if (typeof oLabelOrSLabel === "string") {
-							return oLabelOrSLabel;
-						} else if (oLabelOrSLabel.getText) {
-							return oLabelOrSLabel.getText();
+			if (oControl.getParent) {
+				const oParent = oControl.getParent();
+
+				if (oParent instanceof sapUiTableRow) {
+					// sap.ui.table.Table, sap.ui.table.Row, sap.ui.table.Column の場合
+					const oRow = oParent;
+					if (oRow.getParent() instanceof sapUiTableTable) {
+						const oTable = oRow.getParent();
+						const iColumnIndex = oRow.indexOfCell(oControl);
+						if (iColumnIndex !== -1) {
+							const oLabelOrSLabel = oTable.getColumns()[iColumnIndex].getLabel();
+							if (typeof oLabelOrSLabel === "string") {
+								return oLabelOrSLabel;
+							} else if (oLabelOrSLabel.getText) {
+								return oLabelOrSLabel.getText();
+							}
 						}
 					}
+					return undefined;
+				} else if (oParent instanceof ColumnListItem) {
+					// sap.m.Table, sap.m.Column, sap.m.ColumnListItem の場合
+					const oColumnListItem = oParent;
+					if (oColumnListItem.getParent() instanceof sapMTable) {
+						const oTable = oColumnListItem.getParent();
+						const iColumnIndex = oColumnListItem.indexOfCell(oControl);
+						if (iColumnIndex !== -1) {
+							const oColumnHeader = oTable.getColumns()[iColumnIndex].getHeader();
+							if (oColumnHeader && oColumnHeader.getText) {
+								return oColumnHeader.getText();
+							}
+						}
+					}
+					return undefined;
 				}
-				return undefined;
 			}
 			const aLabelId = LabelEnablement.getReferencingLabels(oControl);
 			if (aLabelId && aLabelId.length > 0) {

@@ -71,11 +71,18 @@ sap.ui.define([
 				rows: [{
 					requiredInputStringLabel: "",
 					requiredInputLabel: ""
+				}, {
+					requiredInputStringLabel: "",
+					requiredInputLabel: ""
 				}]
 			}), "inGridTable");
 			this.setModel(new JSONModel({
 				items: [{
-					requiredInput: ""
+					requiredInput: "",
+					requiredInput2: ""
+				}, {
+					requiredInput: "",
+					requiredInput2: ""
 				}]
 			}), "inResponsiveTable");
 			this.setModel(new JSONModel({
@@ -116,6 +123,10 @@ sap.ui.define([
 
 			// TODO: Fragment 上のコントロールのバリデーション
 
+			// TODO: registerValidatorのsValidateFunctionIdはtargetのid + 連番とかで自動生成できないか？
+			// unregisterValidatorの引数に渡す必要があるので戻り値をsValidateFunctionIdに変えるか、もしくはオプション引数にして渡されなければ自動採番にするか。
+			// 採番にはsap/base/util/uidが使える。
+
 			// 必須入力チェック以外のバリデーションは、UI5標準バリデーションと同様にフォーカスアウト時にエラー表示させる。
 			this._validator.registerValidator(
 				"toDateIsAfterFromDateValidator",
@@ -142,7 +153,6 @@ sap.ui.define([
 			// 	.after(oView.byId("toDate"))
 			// 	.build();
 
-			// // TODO: validatorFunctonのidはtargetのid + 連番とかで自動生成できないか？
 			// this._validator.builder()
 			// 	.target(oView.byId("requiredCheckBoxCustom").getItems())
 			// 	.isValid(oControl => !(oControl.getItems().every(oCheckBox => !oCheckBox.getSelected())))
@@ -151,8 +161,6 @@ sap.ui.define([
 		},
 		onValidate: function () {
 			const oView = this.getView();
-
-			// TODO: sap.m.Table 内のバリデーション時のエラーメッセージにLabelを出す
 
 			this._validator.removeErrors(oView);
 			this.removeAllTechnicalMessages();

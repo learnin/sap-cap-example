@@ -138,10 +138,14 @@
 							<Column>
 								<Text text="Required Input in ResponsiveTable" />
 							</Column>
+							<Column>
+								<Text text="Required Input in ResponsiveTable2" />
+							</Column>
 						</columns>
 						<items>
 							<ColumnListItem>
-								<Input id="requiredInputInResponsiveTable" value="{inResponsiveTable>requiredInput}" required="true" />
+								<Input value="{inResponsiveTable>requiredInput}" required="true" />
+								<Input value="{inResponsiveTable>requiredInput2}" required="true" />
 							</ColumnListItem>
 						</items>
 					</Table>
