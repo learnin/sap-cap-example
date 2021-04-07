@@ -1,4 +1,5 @@
 sap.ui.define([
+	"sap/base/util/uid",
 	"sap/m/CheckBox",
 	"sap/m/ColumnListItem",
 	"sap/m/IconTabFilter",
@@ -17,6 +18,7 @@ sap.ui.define([
 	"sap/ui/table/Row",
 	"sap/ui/table/Table"
 ], function (
+	uid,
 	CheckBox,
 	ColumnListItem,
 	IconTabFilter,
@@ -230,7 +232,7 @@ sap.ui.define([
 		 * oControl の検証後に実行する関数を登録する。
 		 * すでに oControl に sValidateFunctionId の関数が登録されている場合は関数を上書きする。
 		 * 
-		 * @param {string} sValidateFunctionId fnTest を識別するための任意のID
+		 * @param {string} [sValidateFunctionId] fnTest を識別するための任意のID。省略時は自動生成される
 		 * @param {testFunction} fnTest oControl の検証後に実行される検証用の関数
 		 * @param {string|string[]} sMessageTextOrAMessageTexts 検証エラーメッセージまたはその配列
 		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oTargetControlOrAControls 検証対象のコントロールまたはその配列
@@ -242,6 +244,15 @@ sap.ui.define([
 		// oTargetControlOrAControls が配列で sMessageTextOrAMessageTexts がObjectもOK
 		// oTargetControlOrAControls がObjectで sMessageTextOrAMessageTexts もObjectもOK
 		registerValidator(sValidateFunctionId, fnTest, sMessageTextOrAMessageTexts, oTargetControlOrAControls, oControl, mParameter) {
+			if (typeof sValidateFunctionId !== 'string') {
+				// sValidateFunctionId 省略時は ID を自動生成する。
+				mParameter = oControl;
+				oControl = oTargetControlOrAControls;
+				oTargetControlOrAControls = sMessageTextOrAMessageTexts;
+				sMessageTextOrAMessageTexts = fnTest;
+				fnTest = sValidateFunctionId;
+				sValidateFunctionId = uid();
+			}
 			if (!(
 				(!Array.isArray(oTargetControlOrAControls) && !Array.isArray(sMessageTextOrAMessageTexts)) ||
 				(Array.isArray(oTargetControlOrAControls) && !Array.isArray(sMessageTextOrAMessageTexts)) ||

@@ -129,7 +129,6 @@ sap.ui.define([
 
 			// 必須入力チェック以外のバリデーションは、UI5標準バリデーションと同様にフォーカスアウト時にエラー表示させる。
 			this._validator.registerValidator(
-				"toDateIsAfterFromDateValidator",
 				() => {
 					const dFromDateValue = oView.byId("fromDate").getDateValue();
 					const dToDateValue = oView.byId("toDate").getDateValue();
