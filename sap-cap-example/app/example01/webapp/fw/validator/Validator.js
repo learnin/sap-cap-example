@@ -333,6 +333,14 @@ sap.ui.define([
 		}
 
 		registerRequiredValidator(sValidateFunctionId, fnTest, oTargetControlOrAControls, oControl, mParameter) {
+			if (typeof sValidateFunctionId !== 'string') {
+				// sValidateFunctionId 省略時は ID を自動生成する。
+				mParameter = oControl;
+				oControl = oTargetControlOrAControls;
+				oTargetControlOrAControls = fnTest;
+				fnTest = sValidateFunctionId;
+				sValidateFunctionId = uid();
+			}
 			const oDefaultParam = {
 				isAttachFocusoutValidationImmediately: false,
 				// isGroupedTargetControls: true の場合、oTargetControlOrAControls を1つのグループとみなして検証は1回だけ（コントロール数分ではない）で、エラーメッセージも1つだけで、

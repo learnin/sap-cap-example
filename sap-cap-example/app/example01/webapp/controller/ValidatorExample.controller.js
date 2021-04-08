@@ -107,7 +107,6 @@ sap.ui.define([
 			const oView = this.getView();
 
 			this._validator.registerRequiredValidator(
-				"requiredCheckBoxCustomValidator",
 				() => oView.byId("requiredCheckBoxCustom").getItems().some(oCheckBox => oCheckBox.getSelected()),
 				oView.byId("requiredCheckBoxCustom").getItems(),
 				oView.byId("requiredCheckBoxCustom"),
@@ -122,10 +121,6 @@ sap.ui.define([
 			// TODO: もう1例追加する。チェックボックスで1つ以上3つ以下で選ばないといけないというチェック。
 
 			// TODO: Fragment 上のコントロールのバリデーション
-
-			// TODO: registerValidatorのsValidateFunctionIdはtargetのid + 連番とかで自動生成できないか？
-			// unregisterValidatorの引数に渡す必要があるので戻り値をsValidateFunctionIdに変えるか、もしくはオプション引数にして渡されなければ自動採番にするか。
-			// 採番にはsap/base/util/uidが使える。
 
 			// 必須入力チェック以外のバリデーションは、UI5標準バリデーションと同様にフォーカスアウト時にエラー表示させる。
 			this._validator.registerValidator(
