@@ -90,6 +90,15 @@ sap.ui.define([
 					text: "text1"
 				}, {
 					text: "text2"
+				}],
+				requiredCheckBox1to3: [{
+					text: "text1"
+				}, {
+					text: "text2"
+				}, {
+					text: "text3"
+				}, {
+					text: "text4"
 				}]
 			}), "custom");
 			this.setModel(new JSONModel({
@@ -115,10 +124,22 @@ sap.ui.define([
 				}
 			);
 
+			this._validator.registerValidator(
+				() => {
+					const selectedCheckBoxes = oView.byId("requiredCheckBoxCustom1to3").getItems().filter(oCheckBox => oCheckBox.getSelected());
+					return 1 <= selectedCheckBoxes.length && selectedCheckBoxes.length <=3;
+				},
+				"1つ以上3つ以下で選択してください。",
+				oView.byId("requiredCheckBoxCustom1to3").getItems(),
+				oView.byId("requiredCheckBoxCustom1to3"),
+				{
+					isAttachFocusoutValidationImmediately: false,
+					isGroupedTargetControls: true
+				}
+			);
+
 			// TODO: もう1例追加する。ラジオボタンでどれか1つを選択必須でかつ「その他」を選んだ場合はInputも必須というチェック。
 			// もしかすると、独自バリデーションにしなくても、isRequireをバインド式にしてやればできるかも？できたとしても、それと独自バリデーション版と両方をサンプルに載せる。
-
-			// TODO: もう1例追加する。チェックボックスで1つ以上3つ以下で選ばないといけないというチェック。
 
 			// TODO: Fragment 上のコントロールのバリデーション
 

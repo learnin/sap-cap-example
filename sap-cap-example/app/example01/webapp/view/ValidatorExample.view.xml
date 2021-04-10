@@ -161,6 +161,12 @@
 								<CheckBox text="{custom>text}" />
 							</HBox>
 						</VBox>
+						<VBox>
+							<Label text="Required CheckBox 1 to 3" labelFor="requiredCheckBoxCustom1to3" required="true" />
+							<HBox id="requiredCheckBoxCustom1to3" items="{custom>/requiredCheckBox1to3}">
+								<CheckBox text="{custom>text}" />
+							</HBox>
+						</VBox>
 					</VBox>
 				</uxap:ObjectPageSubSection>
 			</uxap:ObjectPageSection>
