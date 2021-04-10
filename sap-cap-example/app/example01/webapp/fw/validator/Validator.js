@@ -40,18 +40,31 @@ sap.ui.define([
 
 	/**
 	 * バリデータ。
-	 * SAPUI5 の標準のバリデーションの仕組みは基本的にフォームフィールドの change イベントで実行されるため
+	 * SAPUI5 の標準のバリデーションの仕組みは基本的にフォームフィールドの change 等のイベントで実行されるため
 	 * 必須フィールドに未入力のまま保存ボタン等を押された時にはバリデーションが実行されない。
-	 * 本バリデータはそれに対応するためのもので、必須フィールドのバリデーションを行う。
-	 * （必須チェック以外は標準の仕組みでカバーできるため本バリデータでは行わない）
+	 * 本バリデータはそれに対応するためのもので、必須フィールドのバリデーションや相関バリデーション等の独自バリデーションを行うための機能を提供する。
 	 *
 	 * @class
 	 */
 	class Validator {
 		/**
+		 * コンストラクタのオプションパラメータ
+		 * 
+		 * @typedef {Object} Validator~Parameter
+		 * @property {sap.base.i18n.ResourceBundle} resourceBundle i18n リソースバンドルクラス
+		 * @property {string|string[]} targetAggregations バリデーション対象として追加する、コントロールの aggregation 名
+		 * @property {boolean} useFocusoutValidation validate メソッド実行時に isRequired が true のコントロールおよび、registerValidator, registerRequiredValidator の対象コントロールに
+		 * 		フォーカスアウト時のバリデーション関数を attach するか。
+		 * 		挙動としては以下のいずれかとなる。
+		 * 		true （デフォルト）の場合：1度 validate するとフォーカスアウトでバリデーションが効くようになる（正しい値を入れてフォーカスアウトしてエラーが消えてもまた不正にしてフォーカスアウトするとエラーになる）
+		 * 		false の場合：1度 validate すると removeErrors するまでエラーは残りっぱなしとなる
+		 * 		ただし、registerValidator, registerRequiredValidator が isAttachFocusoutValidationImmediately: true で実行された場合にはそのバリデーション関数は
+		 * 		useFocusoutValidation の値には関係なく attach される。
+		 */
+		/**
 		 * @constructor
 		 * @public
-		 * @param {Object} mParameter
+		 * @param {Validator~Parameter} [mParameter] パラメータ
 		 */
 		constructor(mParameter) {
 			
@@ -64,6 +77,12 @@ sap.ui.define([
 			 */
 			this.RESOURCE_BUNDLE_KEY_REQUIRED_SELECT = "fw.validator.Validator.message.requiredSelect";
 
+			/**
+			 * バリデーションエラーにより ValueState.Error をセットされたコントロールに付加する customData 属性のキー
+			 */
+			this._CUSTOM_DATA_KEY_FOR_IS_SET_VALUE_STATE_ERROR = "fw.validator.Validator.IS_SET_VALUE_STATE_ERROR";
+
+			// バリデーション対象とするコントロールの aggregation 名
 			this._aTargetAggregations = [
 				"items",
 				"content",
@@ -77,6 +96,17 @@ sap.ui.define([
 				"_page",
 				"cells"		// sap.m.Table -> items -> cells
 			];
+
+			// キーのコントロールIDのコントロールの検証後に実行する関数配列を保持するマップ。型は Map<string, Object[]>
+			this._mValidateFunctionCalledAfterValidate = new Map();
+
+			// フォーカスアウト時のバリデーション関数が attach されたコントロールIDを保持するマップ。型は Map<String, Object>
+			this._mControlIdAttachedValidator = new Map();
+
+			if (mParameter && mParameter.resourceBundle) {
+				this._resourceBundle = mParameter.resourceBundle;
+			}
+
 			if (mParameter && mParameter.targetAggregations) {
 				if (Array.isArray(mParameter.targetAggregations)) {
 					mParameter.targetAggregations.forEach(sTargetAggregation => {
@@ -91,34 +121,9 @@ sap.ui.define([
 				}
 			}
 
-			// キーのコントロールIDのコントロールの検証後に実行する関数配列を保持するマップ。型は Map<string, Object[]>
-			this._mValidateFunctionCalledAfterValidate = new Map();
-
-			// フォーカスアウト時のバリデーション関数が attach されたコントロールIDを保持するマップ。型は Map<String, Object>
-			this._mControlIdAttachedValidator = new Map();
-
-			// バリデーションエラーにより ValueState.Error をセットされたコントロールIDを保持するマップ。型は Map<String, Object>
-			// this._mControlIdSetErrorValueState = new Map();
-			this._CUSTOM_DATA_KEY_FOR_IS_SET_VALUE_STATE_ERROR = "fw.validator.Validator.IS_SET_VALUE_STATE_ERROR";
-
-			/**
-			 * validate メソッド実行時に isRequired が true のコントロールおよび、
-			 * registerValidator, registerRequiredValidator の対象コントロールに
-			 * フォーカスアウト時のバリデーション関数を attach するか。
-			 * 挙動としては以下のいずれかとなる。
-			 * true （デフォルト）の場合：1度 validate するとフォーカスアウトでバリデーションが効くようになる
-			 *                        （正しい値を入れてフォーカスアウトしてエラーが消えてもまた不正にしてフォーカスアウトするとエラーになる）
-			 * false の場合：1度 validate すると removeErrors するまでエラーは残りっぱなしとなる
-			 * ただし、registerValidator, registerRequiredValidator が
-			 * isAttachFocusoutValidationImmediately: true で実行された場合にはそのバリデーション関数は useFocusoutValidation の値には関係なく attach される。
-			 */
 			this._useFocusoutValidation = true;
 			if (mParameter && mParameter.useFocusoutValidation === false) {
 				this._useFocusoutValidation = false;
-			}
-
-			if (mParameter && mParameter.resourceBundle) {
-				this._resourceBundle = mParameter.resourceBundle;
 			}
 		}
 
