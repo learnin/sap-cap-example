@@ -131,14 +131,14 @@ sap.ui.define([
 		 * 引数のオブジェクトもしくはその配下のコントロールのバリデーションを行う。
 		 *
 		 * @public
-		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oControl 検証対象のコントロールもしくはそれを含むコンテナ
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oTargetRootControl 検証対象のコントロールもしくはそれを含むコンテナ
 		 * @returns {boolean} true: valid、false: invalid
 		 */
-		validate(oControl) {
+		validate(oTargetRootControl) {
 			if (this._useFocusoutValidation) {
-				this._attachValidator(oControl);
+				this._attachValidator(oTargetRootControl);
 			}
-			return this._validate(oControl);
+			return this._validate(oTargetRootControl);
 		}
 
 		/**
@@ -195,9 +195,9 @@ sap.ui.define([
 		}
 
 		/**
+		 * 引数のオブジェクトもしくはその配下のコントロールについて、本クラスにより attach されたバリデータ関数を detach する。
 		 * 
-		 * @param {*} oTargetRootControl 対象のコントロールもしくはそれを含むコンテナ
-		 * @returns 
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oTargetRootControl 対象のコントロールもしくはそれを含むコンテナ
 		 */
 		removeAttachedValidators(oTargetRootControl) {
 			if (!oTargetRootControl) {
@@ -227,32 +227,32 @@ sap.ui.define([
 		}
 
 		/**
-		 * {@link #registerValidator registerValidator} の引数のコールバック関数の型
+		 * {@link #registerValidator registerValidator} {@link #registerRequiredValidator registerRequiredValidator} の引数のコールバック関数の型
 		 *
 		 * @callback testFunction
-		 * @param {sap.ui.core.Control} oControl 本関数が呼び出される直前に検証された（または検証をスキップされた）コントロール
+		 * @param {sap.ui.core.Control} oControlValidateBefore 本関数が呼び出される直前に検証された（または検証をスキップされた）コントロール
 		 * @returns {boolean} true: valid、false: invalid
 		 */
 		/**
-		 * oControl の検証後に実行する関数を登録する。
-		 * すでに oControl に sValidateFunctionId の関数が登録されている場合は関数を上書きする。
+		 * oControlValidateBefore の検証後に実行する関数を登録する。
+		 * すでに oControlValidateBefore に sValidateFunctionId の関数が登録されている場合は関数を上書きする。
 		 * 
 		 * @param {string} [sValidateFunctionId] fnTest を識別するための任意のID。省略時は自動生成される
-		 * @param {testFunction} fnTest oControl の検証後に実行される検証用の関数
+		 * @param {testFunction} fnTest oControlValidateBefore の検証後に実行される検証用の関数
 		 * @param {string|string[]} sMessageTextOrAMessageTexts 検証エラーメッセージまたはその配列
 		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oTargetControlOrAControls 検証対象のコントロールまたはその配列
-		 * @param {sap.ui.core.Control} oControl {@link #validate validate} 実行時に oControl の検証後に fnTest を使って検証を行う
+		 * @param {sap.ui.core.Control} oControlValidateBefore {@link #validate validate} oControlValidateBefore の検証後に fnTest が実行される。fnTest の実行順を指定するためのもの
 		 * @param {Object} [mParameter] オプションパラメータ
 		 * @returns {Validator} Reference to this in order to allow method chaining
 		 */
 		// oTargetControlOrAControls が配列で sMessageTextOrAMessageTexts も配列で要素数が同じはOK
 		// oTargetControlOrAControls が配列で sMessageTextOrAMessageTexts がObjectもOK
 		// oTargetControlOrAControls がObjectで sMessageTextOrAMessageTexts もObjectもOK
-		registerValidator(sValidateFunctionId, fnTest, sMessageTextOrAMessageTexts, oTargetControlOrAControls, oControl, mParameter) {
+		registerValidator(sValidateFunctionId, fnTest, sMessageTextOrAMessageTexts, oTargetControlOrAControls, oControlValidateBefore, mParameter) {
 			if (typeof sValidateFunctionId !== 'string') {
 				// sValidateFunctionId 省略時は ID を自動生成する。
-				mParameter = oControl;
-				oControl = oTargetControlOrAControls;
+				mParameter = oControlValidateBefore;
+				oControlValidateBefore = oTargetControlOrAControls;
 				oTargetControlOrAControls = sMessageTextOrAMessageTexts;
 				sMessageTextOrAMessageTexts = fnTest;
 				fnTest = sValidateFunctionId;
@@ -270,6 +270,7 @@ sap.ui.define([
 			};
 			const oParam = { ...oDefaultParam, ...mParameter };
 
+			// TODO: fnTest の引数を oTargetControlOrAControls にできないか？
 			const fnValidateFunction = oCtl => {
 				if (fnTest(oCtl)) {
 					// このバリデータ関数は validate メソッド実行時に呼ばれるものとなるので、エラーメッセージの除去やエラーステートの解除は不要。
@@ -299,7 +300,7 @@ sap.ui.define([
 				return false;
 			};
 
-			const sControlId = oControl.getId();
+			const sControlId = oControlValidateBefore.getId();
 
 			if (this._mValidateFunctionCalledAfterValidate.has(sControlId)) {
 				const aValidateFunctions = this._mValidateFunctionCalledAfterValidate.get(sControlId);
@@ -337,11 +338,22 @@ sap.ui.define([
 			return this;
 		}
 
-		registerRequiredValidator(sValidateFunctionId, fnTest, oTargetControlOrAControls, oControl, mParameter) {
+		/**
+		 * oControlValidateBefore の検証後に実行する必須チェック関数を登録する。
+		 * すでに oControlValidateBefore に sValidateFunctionId の関数が登録されている場合は関数を上書きする。
+		 * 
+		 * @param {string} [sValidateFunctionId] fnTest を識別するための任意のID。省略時は自動生成される
+		 * @param {testFunction} fnTest oControlValidateBefore の検証後に実行される検証用の関数
+		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oTargetControlOrAControls 検証対象のコントロールまたはその配列
+		 * @param {sap.ui.core.Control} oControlValidateBefore {@link #validate validate} oControlValidateBefore の検証後に fnTest が実行される。fnTest の実行順を指定するためのもの
+		 * @param {Object} [mParameter] オプションパラメータ
+		 * @returns {Validator} Reference to this in order to allow method chaining
+		 */
+		registerRequiredValidator(sValidateFunctionId, fnTest, oTargetControlOrAControls, oControlValidateBefore, mParameter) {
 			if (typeof sValidateFunctionId !== 'string') {
 				// sValidateFunctionId 省略時は ID を自動生成する。
-				mParameter = oControl;
-				oControl = oTargetControlOrAControls;
+				mParameter = oControlValidateBefore;
+				oControlValidateBefore = oTargetControlOrAControls;
 				oTargetControlOrAControls = fnTest;
 				fnTest = sValidateFunctionId;
 				sValidateFunctionId = uid();
@@ -364,7 +376,7 @@ sap.ui.define([
 			} else {
 				sMessageTextOrAMessageTexts = this._getRequiredErrorMessageTextByControl(oTargetControlOrAControls);
 			}
-			this.registerValidator(sValidateFunctionId, fnTest, sMessageTextOrAMessageTexts, oTargetControlOrAControls, oControl, oParam);
+			this.registerValidator(sValidateFunctionId, fnTest, sMessageTextOrAMessageTexts, oTargetControlOrAControls, oControlValidateBefore, oParam);
 			return this;
 		}
 
