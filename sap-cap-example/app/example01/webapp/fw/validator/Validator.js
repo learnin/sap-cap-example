@@ -381,14 +381,14 @@ sap.ui.define([
 		}
 
 		/**
-		 * oControl の検証後に実行するように登録されている関数を登録解除する。
+		 * {@link #registerValidator registerValidator} {@link #registerRequiredValidator registerRequiredValidator} で登録されている関数を登録解除する。
 		 * 
-		 * @param {string} sValidateFunctionId validateFunction を識別するための任意のID
-		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @param {string} sValidateFunctionId validateFunction を識別するための ID
+		 * @param {sap.ui.core.Control} oControlValidateBefore コントロール
 		 * @returns {Validator} Reference to this in order to allow method chaining
 		 */
-		unregisterValidator(sValidateFunctionId, oControl) {
-			const sControlId = oControl.getId();
+		unregisterValidator(sValidateFunctionId, oControlValidateBefore) {
+			const sControlId = oControlValidateBefore.getId();
 			if (!this._mValidateFunctionCalledAfterValidate.has(sControlId)) {
 				return this;
 			}
