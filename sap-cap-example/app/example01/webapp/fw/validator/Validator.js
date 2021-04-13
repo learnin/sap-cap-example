@@ -197,6 +197,7 @@ sap.ui.define([
 		/**
 		 * 引数のオブジェクトもしくはその配下のコントロールについて、本クラスにより attach されたバリデータ関数を detach する。
 		 * 
+		 * @public
 		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oTargetRootControl 対象のコントロールもしくはそれを含むコンテナ
 		 */
 		removeAttachedValidators(oTargetRootControl) {
@@ -229,6 +230,7 @@ sap.ui.define([
 		/**
 		 * {@link #registerValidator registerValidator} {@link #registerRequiredValidator registerRequiredValidator} の引数のコールバック関数の型
 		 *
+		 * @public
 		 * @callback testFunction
 		 * @param {sap.ui.core.Control} oControlValidateBefore 本関数が呼び出される直前に検証された（または検証をスキップされた）コントロール
 		 * @returns {boolean} true: valid、false: invalid
@@ -237,6 +239,7 @@ sap.ui.define([
 		 * oControlValidateBefore の検証後に実行する関数を登録する。
 		 * すでに oControlValidateBefore に sValidateFunctionId の関数が登録されている場合は関数を上書きする。
 		 * 
+		 * @public
 		 * @param {string} [sValidateFunctionId] fnTest を識別するための任意のID。省略時は自動生成される
 		 * @param {testFunction} fnTest oControlValidateBefore の検証後に実行される検証用の関数
 		 * @param {string|string[]} sMessageTextOrAMessageTexts 検証エラーメッセージまたはその配列
@@ -342,6 +345,7 @@ sap.ui.define([
 		 * oControlValidateBefore の検証後に実行する必須チェック関数を登録する。
 		 * すでに oControlValidateBefore に sValidateFunctionId の関数が登録されている場合は関数を上書きする。
 		 * 
+		 * @public
 		 * @param {string} [sValidateFunctionId] fnTest を識別するための任意のID。省略時は自動生成される
 		 * @param {testFunction} fnTest oControlValidateBefore の検証後に実行される検証用の関数
 		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oTargetControlOrAControls 検証対象のコントロールまたはその配列
@@ -383,6 +387,7 @@ sap.ui.define([
 		/**
 		 * {@link #registerValidator registerValidator} {@link #registerRequiredValidator registerRequiredValidator} で登録されている関数を登録解除する。
 		 * 
+		 * @public
 		 * @param {string} sValidateFunctionId validateFunction を識別するための ID
 		 * @param {sap.ui.core.Control} oControlValidateBefore コントロール
 		 * @returns {Validator} Reference to this in order to allow method chaining
@@ -403,12 +408,17 @@ sap.ui.define([
 			return this;
 		}
 
-		_attachValidator(oControl) {
+		/**
+		 * 引数のオブジェクトもしくはその配下のコントロールにバリデータ関数を attach する。
+		 *
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oTargetRootControl バリデータ関数を attach するコントロールもしくはそれを含むコンテナ
+		 */
+		_attachValidator(oTargetRootControl) {
 			// 非表示のコントロールも後で表示される可能性が想定されるため、処理対象とする
-			if (!(oControl instanceof Control ||
-				oControl instanceof FormContainer ||
-				oControl instanceof FormElement ||
-				oControl instanceof IconTabFilter)) {
+			if (!(oTargetRootControl instanceof Control ||
+				oTargetRootControl instanceof FormContainer ||
+				oTargetRootControl instanceof FormElement ||
+				oTargetRootControl instanceof IconTabFilter)) {
 				return;
 			}
 
@@ -416,11 +426,11 @@ sap.ui.define([
 		    // labelFor 属性で紐づく Label や、sap.ui.layout.form.SimpleForm 内での対象コントロール・エレメントの直前の Label の required 属性まで見て判断してくれる。
 			// （なお、ariaLabelledBy で参照される Label までは見てくれない）
 			// disable のコントロールも後で有効化される可能性が想定されるため、処理対象とする
-			if (LabelEnablement.isRequired(oControl)) {
-				this._attachNotRegisteredValidator(oControl);
+			if (LabelEnablement.isRequired(oTargetRootControl)) {
+				this._attachNotRegisteredValidator(oTargetRootControl);
 			}
-			if (this._mValidateFunctionCalledAfterValidate.has(oControl.getId())) {
-				this._mValidateFunctionCalledAfterValidate.get(oControl.getId()).forEach(oValidateFunction => {
+			if (this._mValidateFunctionCalledAfterValidate.has(oTargetRootControl.getId())) {
+				this._mValidateFunctionCalledAfterValidate.get(oTargetRootControl.getId()).forEach(oValidateFunction => {
 					this._attachRegisteredValidator(
 						oValidateFunction.targetControlOrControls,
 						oValidateFunction.testFunction,
@@ -431,9 +441,9 @@ sap.ui.define([
 			}
 			// sap.ui.table.Table の場合は普通にaggregationを再帰的に処理すると存在しない行も処理対象になってしまうため、
 			// Table.getBinding().getLength() してその行までの getRows() の getCells() のコントロールを処理する。
-			if (oControl instanceof sapUiTableTable && oControl.getBinding()) {
-				const aRows = oControl.getRows();
-				for (let i = 0, iTableRowCount = oControl.getBinding().getLength(); i < iTableRowCount; i++) {
+			if (oTargetRootControl instanceof sapUiTableTable && oTargetRootControl.getBinding()) {
+				const aRows = oTargetRootControl.getRows();
+				for (let i = 0, iTableRowCount = oTargetRootControl.getBinding().getLength(); i < iTableRowCount; i++) {
 					const aCellControls = aRows[i].getCells();
 					if (aCellControls) {
 						for (let j = 0; j < aCellControls.length; j++) {
@@ -444,7 +454,7 @@ sap.ui.define([
 			} else {
 				// sap.ui.table.Table や入力コントロールでなかった場合は、aggregation のコントロールを再帰的に処理する。
 				for (let i = 0; i < this._aTargetAggregations.length; i++) {
-					const aControlAggregation = oControl.getAggregation(this._aTargetAggregations[i]);
+					const aControlAggregation = oTargetRootControl.getAggregation(this._aTargetAggregations[i]);
 					if (!aControlAggregation) {
 						continue;
 					}
