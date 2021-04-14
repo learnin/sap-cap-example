@@ -44,6 +44,7 @@ sap.ui.define([
 	 * 必須フィールドに未入力のまま保存ボタン等を押された時にはバリデーションが実行されない。
 	 * 本バリデータはそれに対応するためのもので、必須フィールドのバリデーションや相関バリデーション等の独自バリデーションを行うための機能を提供する。
 	 *
+	 * @public
 	 * @class
 	 */
 	class Validator {
@@ -70,15 +71,21 @@ sap.ui.define([
 			
 			/**
 			 * 入力コントロールの必須バリデーションエラーメッセージのリソースバンドルキー
+			 * 
+			 * @public
 			 */
 			this.RESOURCE_BUNDLE_KEY_REQUIRED_INPUT = "fw.validator.Validator.message.requiredInput";
 			/**
 			 * 選択コントロールの必須バリデーションエラーメッセージのリソースバンドルキー
+			 * 
+			 * @public
 			 */
 			this.RESOURCE_BUNDLE_KEY_REQUIRED_SELECT = "fw.validator.Validator.message.requiredSelect";
 
 			/**
 			 * バリデーションエラーにより ValueState.Error をセットされたコントロールに付加する customData 属性のキー
+			 * 
+			 * @private
 			 */
 			this._CUSTOM_DATA_KEY_FOR_IS_SET_VALUE_STATE_ERROR = "fw.validator.Validator.IS_SET_VALUE_STATE_ERROR";
 
@@ -411,6 +418,7 @@ sap.ui.define([
 		/**
 		 * 引数のオブジェクトもしくはその配下のコントロールにバリデータ関数を attach する。
 		 *
+		 * @private
 		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oTargetRootControl バリデータ関数を attach するコントロールもしくはそれを含むコンテナ
 		 */
 		_attachValidator(oTargetRootControl) {
