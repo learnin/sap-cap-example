@@ -480,21 +480,22 @@ sap.ui.define([
 		/**
 		 * 引数のオブジェクトとその配下のコントロールのバリデーションを行う。
 		 *
-		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oControl 検証対象のコントロールもしくはそれを含むコンテナ
+		 * @private
+		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oTargetRootControl 検証対象のコントロールもしくはそれを含むコンテナ
 		 * @returns {boolean}　true: valid、false: invalid
 		 */
-		_validate(oControl) {
+		_validate(oTargetRootControl) {
 			let isValid = true;
 
-			if (!((oControl instanceof Control ||
-				oControl instanceof FormContainer ||
-				oControl instanceof FormElement ||
-				oControl instanceof IconTabFilter) &&
-				oControl.getVisible())) {
+			if (!((oTargetRootControl instanceof Control ||
+				oTargetRootControl instanceof FormContainer ||
+				oTargetRootControl instanceof FormElement ||
+				oTargetRootControl instanceof IconTabFilter) &&
+				oTargetRootControl.getVisible())) {
 				
-				if (this._mValidateFunctionCalledAfterValidate.has(oControl.getId())) {
-					this._mValidateFunctionCalledAfterValidate.get(oControl.getId()).forEach(oValidateFunction => {
-						if (!oValidateFunction.validateFunction(oControl)) {
+				if (this._mValidateFunctionCalledAfterValidate.has(oTargetRootControl.getId())) {
+					this._mValidateFunctionCalledAfterValidate.get(oTargetRootControl.getId()).forEach(oValidateFunction => {
+						if (!oValidateFunction.validateFunction(oTargetRootControl)) {
 							isValid = false;
 						}
 					});
@@ -504,9 +505,9 @@ sap.ui.define([
 
 			// sap.ui.table.Table の場合は普通にaggregationを再帰的に処理すると存在しない行も処理対象になってしまうため、
 			// Table.getBinding().getLength() してその行までの getRows() の getCells() のコントロールを検証する。
-			if (oControl instanceof sapUiTableTable && oControl.getBinding()) {
-				const aRows = oControl.getRows();
-				for (let i = 0, iTableRowCount = oControl.getBinding().getLength(); i < iTableRowCount; i++) {
+			if (oTargetRootControl instanceof sapUiTableTable && oTargetRootControl.getBinding()) {
+				const aRows = oTargetRootControl.getRows();
+				for (let i = 0, iTableRowCount = oTargetRootControl.getBinding().getLength(); i < iTableRowCount; i++) {
 					const aCellControls = aRows[i].getCells();
 					if (aCellControls) {
 						for (let j = 0; j < aCellControls.length; j++) {
@@ -520,13 +521,13 @@ sap.ui.define([
 				// sap.ui.core.LabelEnablement#isRequired は対象コントロール・エレメント自体の required 属性だけでなく、
 				// labelFor 属性で紐づく Label や、sap.ui.layout.form.SimpleForm 内での対象コントロール・エレメントの直前の Label の required 属性まで見て判断してくれる。
 				// （なお、ariaLabelledBy で参照される Label までは見てくれない）
-				if (((oControl.getEnabled && oControl.getEnabled()) || !oControl.getEnabled) &&
-					LabelEnablement.isRequired(oControl)) {
-					isValid = this._validateRequired(oControl);
+				if (((oTargetRootControl.getEnabled && oTargetRootControl.getEnabled()) || !oTargetRootControl.getEnabled) &&
+					LabelEnablement.isRequired(oTargetRootControl)) {
+					isValid = this._validateRequired(oTargetRootControl);
 				}
 				// sap.ui.table.Table や入力コントロールでなかった場合は、aggregation のコントロールを再帰的に検証する。
 				for (let i = 0; i < this._aTargetAggregations.length; i++) {
-					const aControlAggregation = oControl.getAggregation(this._aTargetAggregations[i]);
+					const aControlAggregation = oTargetRootControl.getAggregation(this._aTargetAggregations[i]);
 					if (!aControlAggregation) {
 						continue;
 					}
@@ -543,9 +544,9 @@ sap.ui.define([
 					}
 				}
 			}
-			if (this._mValidateFunctionCalledAfterValidate.has(oControl.getId())) {
-				this._mValidateFunctionCalledAfterValidate.get(oControl.getId()).forEach(oValidateFunction => {
-					if (!oValidateFunction.validateFunction(oControl)) {
+			if (this._mValidateFunctionCalledAfterValidate.has(oTargetRootControl.getId())) {
+				this._mValidateFunctionCalledAfterValidate.get(oTargetRootControl.getId()).forEach(oValidateFunction => {
+					if (!oValidateFunction.validateFunction(oTargetRootControl)) {
 						isValid = false;
 					}
 				});
