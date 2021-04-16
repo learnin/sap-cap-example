@@ -554,6 +554,12 @@ sap.ui.define([
 			return isValid;
 		}
 
+		/**
+		 * {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されていない必須バリデーション関数を oControl に attach する。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Control} oControl コントロール
+		 */
 		_attachNotRegisteredValidator(oControl) {
 			if (!oControl.attachSelectionFinish && !oControl.attachChange && !oControl.attachSelect) {
 				// 対象外
