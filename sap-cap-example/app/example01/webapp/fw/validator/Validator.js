@@ -139,7 +139,7 @@ sap.ui.define([
 		 *
 		 * @public
 		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oTargetRootControl 検証対象のコントロールもしくはそれを含むコンテナ
-		 * @returns {boolean} true: valid、false: invalid
+		 * @returns {boolean} true: valid, false: invalid
 		 */
 		validate(oTargetRootControl) {
 			if (this._useFocusoutValidation) {
@@ -555,7 +555,7 @@ sap.ui.define([
 		}
 
 		/**
-		 * {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されていない必須バリデーション関数を oControl に attach する。
+		 * oControl に必須チェック用フォーカスアウトバリデータを attach する。
 		 * 
 		 * @private
 		 * @param {sap.ui.core.Control} oControl コントロール
@@ -585,23 +585,33 @@ sap.ui.define([
 		/**
 		 * oControl に必須チェック用フォーカスアウトバリデータを attach 済みかどうかを返す。
 		 * 
+		 * @private
 		 * @param {sap.ui.core.Control} oControl コントロール
-		 * @returns {boolean} true: 必須チェック用フォーカスアウトバリデータを attach 済み false: 必須チェック用フォーカスアウトバリデータを attach 済みでない
+		 * @returns {boolean} true: 必須チェック用フォーカスアウトバリデータを attach 済み, false: 必須チェック用フォーカスアウトバリデータを attach 済みでない
 		 */
 		_isAttachedNotRegisteredValidator(oControl) {
 			return this._isAttachedValidator(oControl, false);
 		}
 
 		/**
-		 * oControl に独自の検証用フォーカスアウトバリデータを attach 済みかどうかを返す。
+		 * oControl に {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータを attach 済みかどうかを返す。
 		 * 
+		 * @private
 		 * @param {sap.ui.core.Control} oControl コントロール
-		 * @returns {boolean} true: 独自の検証用フォーカスアウトバリデータを attach 済み false: 独自の検証用フォーカスアウトバリデータを attach 済みでない
+		 * @returns {boolean} true: フォーカスアウトバリデータを attach 済み, false: フォーカスアウトバリデータを attach 済みでない
 		 */
 		_isAttachedRegisteredValidator(oControl) {
 			return this._isAttachedValidator(oControl, true);
 		}
 
+		/**
+		 * oControl にフォーカスアウトバリデータを attach 済みかどうかを返す。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @param {boolean} bIsRegisteredValidator true: 必須チェック用フォーカスアウトバリデータ, false: {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータ
+		 * @returns {boolean} true: フォーカスアウトバリデータを attach 済み, false: フォーカスアウトバリデータを attach 済みでない
+		 */
 		_isAttachedValidator(oControl, bIsRegisteredValidator) {
 			const sControlId = oControl.getId();
 			const oValidatorType = this._mControlIdAttachedValidator.get(sControlId);
