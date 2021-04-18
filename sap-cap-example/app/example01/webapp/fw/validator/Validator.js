@@ -609,7 +609,7 @@ sap.ui.define([
 		 * 
 		 * @private
 		 * @param {sap.ui.core.Control} oControl コントロール
-		 * @param {boolean} bIsRegisteredValidator true: 必須チェック用フォーカスアウトバリデータ, false: {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータ
+		 * @param {boolean} bIsRegisteredValidator true: {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータ, false: 必須チェック用フォーカスアウトバリデータ
 		 * @returns {boolean} true: フォーカスアウトバリデータを attach 済み, false: フォーカスアウトバリデータを attach 済みでない
 		 */
 		_isAttachedValidator(oControl, bIsRegisteredValidator) {
@@ -624,14 +624,33 @@ sap.ui.define([
 			return oValidatorType.notRegistered;
 		}
 
+		/**
+		 * oControl に必須チェック用フォーカスアウトバリデータを attach 済みとマークする。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Control} oControl コントロール
+		 */
 		_markAttachedNotRegisteredValidator(oControl) {
 			this._markAttachedValidator(oControl, false);
 		}
 
+		/**
+		 * oControl に {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータを attach 済みとマークする。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Control} oControl コントロール
+		 */
 		_markAttachedRegisteredValidator(oControl) {
 			this._markAttachedValidator(oControl, true);
 		}
 
+		/**
+		 * oControl にフォーカスアウトバリデータを attach 済みとマークする。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @param {boolean} bIsRegisteredValidator true: {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータ, false: 必須チェック用フォーカスアウトバリデータ
+		 */
 		_markAttachedValidator(oControl, bIsRegisteredValidator) {
 			const sControlId = oControl.getId();
 			const oValidatorType = this._mControlIdAttachedValidator.get(sControlId);
