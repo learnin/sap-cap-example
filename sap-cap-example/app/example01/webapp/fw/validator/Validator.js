@@ -668,14 +668,33 @@ sap.ui.define([
 			}
 		}
 
+		/**
+		 * oControl に必須チェック用フォーカスアウトバリデータを attach 済みとマークしていたのを外す。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Control} oControl コントロール
+		 */
 		_unmarkAttachedNotRegisteredValidator(oControl) {
 			this._unmarkAttachedValidator(oControl, false);
 		}
 
+		/**
+		 * oControl に {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータを attach 済みとマークしていたのを外す。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Control} oControl コントロール
+		 */
 		_unmarkAttachedRegisteredValidator(oControl) {
 			this._unmarkAttachedValidator(oControl, true);
 		}
 
+		/**
+		 * oControl にフォーカスアウトバリデータを attach 済みとマークしていたのを外す。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @param {boolean} bIsRegisteredValidator true: {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータ, false: 必須チェック用フォーカスアウトバリデータ
+		 */
 		_unmarkAttachedValidator(oControl, bIsRegisteredValidator) {
 			const sControlId = oControl.getId();
 			const oValidatorType = this._mControlIdAttachedValidator.get(sControlId);
