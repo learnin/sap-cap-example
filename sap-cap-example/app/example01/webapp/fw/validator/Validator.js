@@ -583,6 +583,60 @@ sap.ui.define([
 		}
 
 		/**
+		 * oControl に {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータを attach する。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oControlOrAControls コントロールまたはコントロール配列
+		 * @param {testFunction} fnTest attach するバリデータ関数
+		 * @param {string|string[]} sMessageTextOrAMessageTexts 検証エラーメッセージまたはその配列
+		 * @param {string} sValidateFunctionId fnTest を識別するための任意のID
+		 * @param {boolean} bIsGroupedTargetControls true: oControlOrAControls を1つのグループとみなして検証は1回だけ（コントロール数分ではない）で、エラーメッセージも1つだけで、エラーステートは全部のコントロールにつくかつかないか（一部だけつくことはない）,
+		 *                                           false: oControlOrAControls を1つのグループとみなさない
+		 */
+		_attachRegisteredValidator(oControlOrAControls, fnTest, sMessageTextOrAMessageTexts, sValidateFunctionId, bIsGroupedTargetControls) {
+			let aControls;
+			if (!Array.isArray(oControlOrAControls)) {
+				aControls = [oControlOrAControls];
+			} else if (oControlOrAControls.length === 0) {
+				return;
+			} else {
+				aControls = oControlOrAControls;
+			}
+
+			for (let i = 0; i < aControls.length; i++) {
+				const oControl = aControls[i];
+
+				if (this._isAttachedRegisteredValidator(oControl)) {
+					continue;
+				}
+				let sMessageText;
+				if (bIsGroupedTargetControls) {
+					sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[0] : sMessageTextOrAMessageTexts;
+				} else {
+					sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[i] : sMessageTextOrAMessageTexts;
+				}
+				const oData = {
+					messageText: sMessageText,
+					test: fnTest,
+					controls: aControls,
+					validateFunctionId: sValidateFunctionId,
+					isGroupedTargetControls: bIsGroupedTargetControls,
+					messageTextOrMessageTexts: sMessageTextOrAMessageTexts
+				};
+				if (oControl.attachSelectionFinish) {
+					oControl.attachSelectionFinish(oData, this._registeredvalidator, this);
+					this._markAttachedRegisteredValidator(oControl);
+				} else if (oControl.attachChange) {
+					oControl.attachChange(oData, this._registeredvalidator, this);
+					this._markAttachedRegisteredValidator(oControl);
+				} else if (oControl.attachSelect) {
+					oControl.attachSelect(oData, this._registeredvalidator, this);
+					this._markAttachedRegisteredValidator(oControl);
+				}
+			}
+		}
+
+		/**
 		 * oControl に必須チェック用フォーカスアウトバリデータを attach 済みかどうかを返す。
 		 * 
 		 * @private
@@ -741,49 +795,6 @@ sap.ui.define([
 				this._setValueState(oControl, ValueState.Error, sMessageText);
 			} else {
 				this._removeMessageAndValueState(oControl);
-			}
-		}
-
-		_attachRegisteredValidator(oControlOrAControls, fnTest, sMessageTextOrAMessageTexts, sValidateFunctionId, bIsGroupedTargetControls) {
-			let aControls;
-			if (!Array.isArray(oControlOrAControls)) {
-				aControls = [oControlOrAControls];
-			} else if (oControlOrAControls.length === 0) {
-				return;
-			} else {
-				aControls = oControlOrAControls;
-			}
-
-			for (let i = 0; i < aControls.length; i++) {
-				const oControl = aControls[i];
-
-				if (this._isAttachedRegisteredValidator(oControl)) {
-					continue;
-				}
-				let sMessageText;
-				if (bIsGroupedTargetControls) {
-					sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[0] : sMessageTextOrAMessageTexts;
-				} else {
-					sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[i] : sMessageTextOrAMessageTexts;
-				}
-				const oData = {
-					messageText: sMessageText,
-					test: fnTest,
-					controls: aControls,
-					validateFunctionId: sValidateFunctionId,
-					isGroupedTargetControls: bIsGroupedTargetControls,
-					messageTextOrMessageTexts: sMessageTextOrAMessageTexts
-				};
-				if (oControl.attachSelectionFinish) {
-					oControl.attachSelectionFinish(oData, this._registeredvalidator, this);
-					this._markAttachedRegisteredValidator(oControl);
-				} else if (oControl.attachChange) {
-					oControl.attachChange(oData, this._registeredvalidator, this);
-					this._markAttachedRegisteredValidator(oControl);
-				} else if (oControl.attachSelect) {
-					oControl.attachSelect(oData, this._registeredvalidator, this);
-					this._markAttachedRegisteredValidator(oControl);
-				}
 			}
 		}
 
