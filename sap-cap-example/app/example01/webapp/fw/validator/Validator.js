@@ -762,19 +762,12 @@ sap.ui.define([
 			}
 		}
 
-		_detachRegisteredValidator(oControl) {
-			if (oControl.detachSelectionFinish) {
-				oControl.detachSelectionFinish(this._registeredvalidator, this);
-				this._unmarkAttachedRegisteredValidator(oControl);
-			} else if (oControl.detachChange) {
-				oControl.detachChange(this._registeredvalidator, this);
-				this._unmarkAttachedRegisteredValidator(oControl);
-			} else if (oControl.detachSelect) {
-				oControl.detachSelect(this._registeredvalidator, this);
-				this._unmarkAttachedRegisteredValidator(oControl);
-			}
-		}
-
+		/**
+		 * oControl に attach されている必須チェック用フォーカスアウトバリデータを detach する。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Control} oControl コントロール
+		 */
 		_detachNotRegisteredValidator(oControl) {
 			if (oControl.detachSelectionFinish) {
 				oControl.detachSelectionFinish(this._notRegisteredValidator, this);
@@ -785,6 +778,19 @@ sap.ui.define([
 			} else if (oControl.detachSelect) {
 				oControl.detachSelect(this._notRegisteredValidator, this);
 				this._unmarkAttachedNotRegisteredValidator(oControl);
+			}
+		}
+
+		_detachRegisteredValidator(oControl) {
+			if (oControl.detachSelectionFinish) {
+				oControl.detachSelectionFinish(this._registeredvalidator, this);
+				this._unmarkAttachedRegisteredValidator(oControl);
+			} else if (oControl.detachChange) {
+				oControl.detachChange(this._registeredvalidator, this);
+				this._unmarkAttachedRegisteredValidator(oControl);
+			} else if (oControl.detachSelect) {
+				oControl.detachSelect(this._registeredvalidator, this);
+				this._unmarkAttachedRegisteredValidator(oControl);
 			}
 		}
 
