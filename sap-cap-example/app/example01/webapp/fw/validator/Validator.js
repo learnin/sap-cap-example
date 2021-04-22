@@ -781,6 +781,12 @@ sap.ui.define([
 			}
 		}
 
+		/**
+		 * oControl に attach されている {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータを detach する。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Control} oControl コントロール
+		 */
 		_detachRegisteredValidator(oControl) {
 			if (oControl.detachSelectionFinish) {
 				oControl.detachSelectionFinish(this._registeredvalidator, this);
