@@ -800,6 +800,13 @@ sap.ui.define([
 			}
 		}
 
+		/**
+		 * 必須チェック用フォーカスアウトバリデータ関数
+		 * 
+		 * @private
+		 * @param {sap.ui.base.Event} oEvent イベント
+		 * @param {string} sMessageText エラーメッセージ
+		 */
 		_notRegisteredValidator(oEvent, sMessageText) {
 			const oControl = oEvent.getSource();
 			if (this._isNullValue(oControl)) {
