@@ -817,6 +817,18 @@ sap.ui.define([
 			}
 		}
 
+		/**
+		 * {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータ関数
+		 * 
+		 * @private
+		 * @param {sap.ui.base.Event} oEvent イベント
+		 * @param {Object} oData データ
+		 * @param {function} oData.test バリデータ関数
+		 * @param {sap.ui.core.Control[]} oData.controls 合わせてエラー状態がセットまたは解除されるコントロールの配列
+		 * @param {boolean} oData.isGroupedTargetControls true: oData.controls を1つのグループとみなす, false: oData.controls を1つのグループとみなさない
+		 * @param {string} oData.messageText エラーメッセージ
+		 * @param {string} oData.validateFunctionId バリデータ関数を識別するID
+		 */
 		_registeredvalidator(oEvent, oData) {
 			const oControl = oEvent.getSource();
 			if (oData.test(oControl)) {
