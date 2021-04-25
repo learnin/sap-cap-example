@@ -866,6 +866,14 @@ sap.ui.define([
 			return false;
 		}
 
+		/**
+		 * メッセージを除去し、oControl に他にエラーがなければエラーステートをクリアする。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Control} oControl 対象のコントロール
+		 * @param {string} [sValidateFunctionId] 検証を行った関数のID
+		 *                                       {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータ関数で検証した場合にのみ必要
+		 */
 		_removeMessageAndValueState(oControl, sValidateFunctionId) {
 			const oMessageManager = sap.ui.getCore().getMessageManager();
 			const oMessageModel = oMessageManager.getMessageModel();
