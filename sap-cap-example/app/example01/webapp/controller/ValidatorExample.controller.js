@@ -116,7 +116,7 @@ sap.ui.define([
 			const oView = this.getView();
 
 			this._validator.registerRequiredValidator(
-				() => oView.byId("requiredCheckBoxCustom").getItems().some(oCheckBox => oCheckBox.getSelected()),
+				(aCheckBoxes) => aCheckBoxes.some(oCheckBox => oCheckBox.getSelected()),
 				oView.byId("requiredCheckBoxCustom").getItems(),
 				oView.byId("requiredCheckBoxCustom"),
 				{
@@ -125,8 +125,8 @@ sap.ui.define([
 			);
 
 			this._validator.registerValidator(
-				() => {
-					const selectedCheckBoxes = oView.byId("requiredCheckBoxCustom1to3").getItems().filter(oCheckBox => oCheckBox.getSelected());
+				(aCheckBoxes) => {
+					const selectedCheckBoxes = aCheckBoxes.filter(oCheckBox => oCheckBox.getSelected());
 					return 1 <= selectedCheckBoxes.length && selectedCheckBoxes.length <=3;
 				},
 				"1つ以上3つ以下で選択してください。",
@@ -145,9 +145,9 @@ sap.ui.define([
 
 			// 必須入力チェック以外のバリデーションは、UI5標準バリデーションと同様にフォーカスアウト時にエラー表示させる。
 			this._validator.registerValidator(
-				() => {
-					const dFromDateValue = oView.byId("fromDate").getDateValue();
-					const dToDateValue = oView.byId("toDate").getDateValue();
+				([oFromDate, oToDate]) => {
+					const dFromDateValue = oFromDate.getDateValue();
+					const dToDateValue = oToDate.getDateValue();
 					// 必須チェックは別でやっているのでここでエラーにするのは両方入力されていて値が不正な場合のみ
 					return !(dFromDateValue && dToDateValue && dFromDateValue.getTime() > dToDateValue.getTime());
 				},

@@ -104,8 +104,9 @@ sap.ui.define([
 				"cells"		// sap.m.Table -> items -> cells
 			];
 
-			// キーのコントロールIDのコントロールの検証後に実行する関数配列を保持するマップ。型は Map<string, Object[]>
-			this._mValidateFunctionCalledAfterValidate = new Map();
+			// {@link #registerValidator registerValidator} {@link #registerRequiredValidator registerRequiredValidator} で登録されたバリデータ関数情報オブジェクト配列を保持するマップ。
+			// 型は Map<string, Object[]>
+			this._mRegisteredValidator = new Map();
 
 			// フォーカスアウト時のバリデーション関数が attach されたコントロールIDを保持するマップ。型は Map<String, Object>
 			this._mControlIdAttachedValidator = new Map();
@@ -239,7 +240,7 @@ sap.ui.define([
 		 *
 		 * @public
 		 * @callback testFunction
-		 * @param {sap.ui.core.Control} oControlValidateBefore 本関数が呼び出される直前に検証された（または検証をスキップされた）コントロール
+		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oTargetControlOrAControls 検証対象のコントロールまたはその配列
 		 * @returns {boolean} true: valid、false: invalid
 		 */
 		/**
@@ -280,15 +281,17 @@ sap.ui.define([
 			};
 			const oParam = { ...oDefaultParam, ...mParameter };
 
-			// TODO: fnTest の引数を oTargetControlOrAControls にできないか？
-			const fnValidateFunction = oCtl => {
-				if (fnTest(oCtl)) {
+			const fnValidateFunction = oValidatorInfo => {
+				const oTargetControlOrAControls = oValidatorInfo.targetControlOrControls;
+				if (fnTest(oTargetControlOrAControls)) {
 					// このバリデータ関数は validate メソッド実行時に呼ばれるものとなるので、エラーメッセージの除去やエラーステートの解除は不要。
 					// （フォーカスアウト時のバリデータでは必要だが、それらは別途、_addValidator2Control 内でバリデータ関数が作成されて attach される）
 					return true;
 				}
+				const sMessageTextOrAMessageTexts = oValidatorInfo.messageTextOrMessageTexts;
+				const sValidateFunctionId = oValidatorInfo.validateFunctionId;
 				if (Array.isArray(oTargetControlOrAControls)) {
-					if (oParam.isGroupedTargetControls) {
+					if (oValidatorInfo.isGroupedTargetControls) {
 						const sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[0] : sMessageTextOrAMessageTexts;
 						this._addMessage(oTargetControlOrAControls, sMessageText, sValidateFunctionId);
 						
@@ -312,8 +315,8 @@ sap.ui.define([
 
 			const sControlId = oControlValidateBefore.getId();
 
-			if (this._mValidateFunctionCalledAfterValidate.has(sControlId)) {
-				const aValidateFunctions = this._mValidateFunctionCalledAfterValidate.get(sControlId);
+			if (this._mRegisteredValidator.has(sControlId)) {
+				const aValidateFunctions = this._mRegisteredValidator.get(sControlId);
 				const oValidateFunction = aValidateFunctions.find(oValidateFunction => oValidateFunction.validateFunctionId === sValidateFunctionId);
 				if (oValidateFunction) {
 					oValidateFunction.testFunction = fnTest;
@@ -332,7 +335,7 @@ sap.ui.define([
 					});
 				}
 			} else {
-				this._mValidateFunctionCalledAfterValidate.set(sControlId, [{
+				this._mRegisteredValidator.set(sControlId, [{
 					validateFunctionId: sValidateFunctionId,
 					testFunction: fnTest,
 					messageTextOrMessageTexts: sMessageTextOrAMessageTexts,
@@ -401,16 +404,16 @@ sap.ui.define([
 		 */
 		unregisterValidator(sValidateFunctionId, oControlValidateBefore) {
 			const sControlId = oControlValidateBefore.getId();
-			if (!this._mValidateFunctionCalledAfterValidate.has(sControlId)) {
+			if (!this._mRegisteredValidator.has(sControlId)) {
 				return this;
 			}
-			const aValidateFunctions = this._mValidateFunctionCalledAfterValidate.get(sControlId);
+			const aValidateFunctions = this._mRegisteredValidator.get(sControlId);
 			const iIndex = aValidateFunctions.findIndex(oValidateFunction => oValidateFunction.validateFunctionId === sValidateFunctionId);
 			if (iIndex >= 0) {
 				aValidateFunctions.splice(iIndex, 1);
 			}
 			if (aValidateFunctions.length === 0) {
-				this._mValidateFunctionCalledAfterValidate.delete(sControlId);
+				this._mRegisteredValidator.delete(sControlId);
 			}
 			return this;
 		}
@@ -437,8 +440,8 @@ sap.ui.define([
 			if (LabelEnablement.isRequired(oTargetRootControl)) {
 				this._attachNotRegisteredValidator(oTargetRootControl);
 			}
-			if (this._mValidateFunctionCalledAfterValidate.has(oTargetRootControl.getId())) {
-				this._mValidateFunctionCalledAfterValidate.get(oTargetRootControl.getId()).forEach(oValidateFunction => {
+			if (this._mRegisteredValidator.has(oTargetRootControl.getId())) {
+				this._mRegisteredValidator.get(oTargetRootControl.getId()).forEach(oValidateFunction => {
 					this._attachRegisteredValidator(
 						oValidateFunction.targetControlOrControls,
 						oValidateFunction.testFunction,
@@ -493,12 +496,8 @@ sap.ui.define([
 				oTargetRootControl instanceof IconTabFilter) &&
 				oTargetRootControl.getVisible())) {
 				
-				if (this._mValidateFunctionCalledAfterValidate.has(oTargetRootControl.getId())) {
-					this._mValidateFunctionCalledAfterValidate.get(oTargetRootControl.getId()).forEach(oValidateFunction => {
-						if (!oValidateFunction.validateFunction(oTargetRootControl)) {
-							isValid = false;
-						}
-					});
+				if (!this._callRegisteredValidator(oTargetRootControl)) {
+					isValid = false;
 				}
 				return isValid;
 			}
@@ -544,9 +543,19 @@ sap.ui.define([
 					}
 				}
 			}
-			if (this._mValidateFunctionCalledAfterValidate.has(oTargetRootControl.getId())) {
-				this._mValidateFunctionCalledAfterValidate.get(oTargetRootControl.getId()).forEach(oValidateFunction => {
-					if (!oValidateFunction.validateFunction(oTargetRootControl)) {
+			if (!this._callRegisteredValidator(oTargetRootControl)) {
+				isValid = false;
+			}
+			return isValid;
+		}
+
+		_callRegisteredValidator(oControl) {
+			let isValid = true;
+			const sControlId = oControl.getId();
+
+			if (this._mRegisteredValidator.has(sControlId)) {
+				this._mRegisteredValidator.get(sControlId).forEach(oRegisteredValidatorInfo => {
+					if (!oRegisteredValidatorInfo.validateFunction(oRegisteredValidatorInfo)) {
 						isValid = false;
 					}
 				});
@@ -831,7 +840,8 @@ sap.ui.define([
 		 */
 		_registeredvalidator(oEvent, oData) {
 			const oControl = oEvent.getSource();
-			if (oData.test(oControl)) {
+			const oControlOrAControls = oData.controls.length > 1 ? oData.controls : oData.controls[0];
+			if (oData.test(oControlOrAControls)) {
 				oData.controls.forEach(oCtl => {
 					// 例えば、日付の大小関係チェックのように、自身以外のコントロールの値が修正されてフォーカスアウトしたことで、自身も正常となるので対象コントロール達のエラーは解除する。
 					this._removeMessageAndValueState(oCtl, oData.validateFunctionId);
@@ -1107,7 +1117,7 @@ sap.ui.define([
 		 *
 		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oControlOrAControls 検証エラーとなったコントロール
 		 * @param {string} sMessageText エラーメッセージ
-		 * @param {string} [sValidateFunctionId] 検証を行った関数のID。this._mValidateFunctionCalledAfterValidate に含まれる関数で検証した場合にのみ必要
+		 * @param {string} [sValidateFunctionId] 検証を行った関数のID。this._mRegisteredValidator に含まれる関数で検証した場合にのみ必要
 		 */
 		_addMessage(oControlOrAControls, sMessageText, sValidateFunctionId) {
 			let oControl;
