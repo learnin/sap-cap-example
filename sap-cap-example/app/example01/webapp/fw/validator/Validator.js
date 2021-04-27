@@ -485,7 +485,7 @@ sap.ui.define([
 		 *
 		 * @private
 		 * @param {sap.ui.core.Control|sap.ui.layout.form.FormContainer|sap.ui.layout.form.FormElement|sap.m.IconTabFilter} oTargetRootControl 検証対象のコントロールもしくはそれを含むコンテナ
-		 * @returns {boolean}　true: valid、false: invalid
+		 * @returns {boolean}　true: valid, false: invalid
 		 */
 		_validate(oTargetRootControl) {
 			let isValid = true;
@@ -549,6 +549,13 @@ sap.ui.define([
 			return isValid;
 		}
 
+		/**
+		 * oControl のバリデーションの直後に実行するように登録済のバリデータ関数を呼び出す。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @returns {boolean} true: valid, false: invalid
+		 */
 		_callRegisteredValidator(oControl) {
 			let isValid = true;
 			const sControlId = oControl.getId();
