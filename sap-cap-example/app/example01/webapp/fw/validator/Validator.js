@@ -489,6 +489,7 @@ sap.ui.define([
 		 */
 		_validate(oTargetRootControl) {
 			let isValid = true;
+			const sTargetRootControlId = oTargetRootControl.getId();
 
 			if (!((oTargetRootControl instanceof Control ||
 				oTargetRootControl instanceof FormContainer ||
@@ -496,7 +497,7 @@ sap.ui.define([
 				oTargetRootControl instanceof IconTabFilter) &&
 				oTargetRootControl.getVisible())) {
 				
-				if (!this._callRegisteredValidator(oTargetRootControl)) {
+				if (!this._callRegisteredValidator(sTargetRootControlId)) {
 					isValid = false;
 				}
 				return isValid;
@@ -543,22 +544,21 @@ sap.ui.define([
 					}
 				}
 			}
-			if (!this._callRegisteredValidator(oTargetRootControl)) {
+			if (!this._callRegisteredValidator(sTargetRootControlId)) {
 				isValid = false;
 			}
 			return isValid;
 		}
 
 		/**
-		 * oControl のバリデーションの直後に実行するように登録済のバリデータ関数を呼び出す。
+		 * sControlId のコントロールのバリデーションの直後に実行するように登録済のバリデータ関数を呼び出す。
 		 * 
 		 * @private
-		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @param {string} sControlId コントロールID
 		 * @returns {boolean} true: valid, false: invalid
 		 */
-		_callRegisteredValidator(oControl) {
+		_callRegisteredValidator(sControlId) {
 			let isValid = true;
-			const sControlId = oControl.getId();
 
 			if (this._mRegisteredValidator.has(sControlId)) {
 				this._mRegisteredValidator.get(sControlId).forEach(oRegisteredValidatorInfo => {
