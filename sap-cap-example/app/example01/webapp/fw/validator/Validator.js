@@ -173,6 +173,7 @@ sap.ui.define([
 			const sValidatorMessageName = _ValidatorMessage.getMetadata().getName();
 			const aMessagesAddedByThisValidator = oMessageModel.getProperty("/")
 				.filter(oMessage => BaseObject.isA(oMessage, sValidatorMessageName));
+			const sTargetRootControlId = oTargetRootControl.getId();
 
 			for (let i = 0, n = aMessagesAddedByThisValidator.length; i < n; i++) {
 				const oMessage = aMessagesAddedByThisValidator[i];
@@ -185,7 +186,7 @@ sap.ui.define([
 				}
 				aControlIds.forEach(sControlId => {
 					const oControl = Element.registry.get(sControlId);
-					if (this._isChildOrEqualControlId(oControl, oTargetRootControl)) {
+					if (this._isChildOrEqualControlId(oControl, sTargetRootControlId)) {
 						oMessageManager.removeMessages(oMessage);
 					}
 				});
@@ -195,7 +196,7 @@ sap.ui.define([
 			// oTargetRootControl から配下の Element を全部見ていった方がベターと思われる。
 			Element.registry.forEach((oElement, sId) => {
 				if (this._isSetValueStateError(oElement)) {
-					if (this._isChildOrEqualControlId(oElement, oTargetRootControl)) {
+					if (this._isChildOrEqualControlId(oElement, sTargetRootControlId)) {
 						this._clearValueStateIfNoErrors(oElement, this._resolveMessageTarget(oElement));
 					}
 				}
@@ -218,13 +219,14 @@ sap.ui.define([
 				!oTargetRootControl instanceof IconTabFilter) {
 				return;
 			}
+			const sTargetRootControlId = oTargetRootControl.getId();
 
 			this._mControlIdAttachedValidator.forEach((oValidatorType, sControlId) => {
 				const oControl = Element.registry.get(sControlId);
 				if (!oControl) {
 					return;
 				}
-				if (this._isChildOrEqualControlId(oControl, oTargetRootControl)) {
+				if (this._isChildOrEqualControlId(oControl, sTargetRootControlId)) {
 					if (oValidatorType.registered) {
 						this._detachRegisteredValidator(oControl);
 					}
@@ -940,8 +942,15 @@ sap.ui.define([
 			});
 		}
 
-		_isChildOrEqualControlId(oControl, oParentControl) {
-			const sParentControlId = oParentControl.getId();
+		/**
+		 * oControl が sParentControlId のコントロール自身もしくはその子供かどうか判定する。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Control} oControl 判定対象のコントロール
+		 * @param {string} sParentControlId 親コントロールID
+		 * @returns true: 親コントロール自身かその子供, false: 親コントロールでもその子供でもない
+		 */
+		_isChildOrEqualControlId(oControl, sParentControlId) {
 			if (oControl.getId() === sParentControlId) {
 				return true;
 			}
