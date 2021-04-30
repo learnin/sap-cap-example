@@ -965,6 +965,13 @@ sap.ui.define([
 			return false;
 		}
 
+		/**
+		 * oControlOrAControls に対応する {@link Message Message} の target 文字列を返す。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oControlOrAControls コントロールまたはその配列
+		 * @returns {string} target 文字列
+		 */
 		_resolveMessageTarget(oControlOrAControls) {
 			let aControls = [];
 			if (Array.isArray(oControlOrAControls)) {
