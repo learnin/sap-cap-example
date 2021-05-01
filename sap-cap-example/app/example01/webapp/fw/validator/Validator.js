@@ -1007,9 +1007,11 @@ sap.ui.define([
 		}
 
 		/**
+		 * oControl の値が空か判定する。
 		 * 
+		 * @private
 		 * @param {sap.ui.core.Control} oControl 検証対象のコントロール
-		 * @returns {boolean}
+		 * @returns {boolean} true: 値が空, false: 値が空でない
 		 */
 		_isNullValue(oControl) {
 			if (!oControl.getValue &&
