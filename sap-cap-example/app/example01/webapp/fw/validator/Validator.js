@@ -1048,19 +1048,29 @@ sap.ui.define([
 			return true;
 		}
 
+		/**
+		 * 必須エラーメッセージを返す。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @returns {string} 必須エラーメッセージ
+		 */
 		_getRequiredErrorMessageTextByControl(oControl) {
+			const sRequiredInputMessage = "Required to input.";
+			const sRequiredSelectMessage = "Required to select.";
+
 			// sap.m.Input には getValue も getSelectedKey もあるので個別に判定する。
 			if (oControl instanceof Input) {
-				return this._getResourceText(this.RESOURCE_BUNDLE_KEY_REQUIRED_INPUT, "Required to input.");
+				return this._getResourceText(this.RESOURCE_BUNDLE_KEY_REQUIRED_INPUT, sRequiredInputMessage);
 			}
 			if (oControl.getSelectedKey ||
 				oControl.getSelectedKeys ||
 				oControl.getSelected ||
 				oControl.getSelectedIndex ||
 				oControl.getSelectedDates) {
-				return this._getResourceText(this.RESOURCE_BUNDLE_KEY_REQUIRED_SELECT, "Required to select.");
+				return this._getResourceText(this.RESOURCE_BUNDLE_KEY_REQUIRED_SELECT, sRequiredSelectMessage);
 			}
-			return this._getResourceText(this.RESOURCE_BUNDLE_KEY_REQUIRED_INPUT, "Required to input.");
+			return this._getResourceText(this.RESOURCE_BUNDLE_KEY_REQUIRED_INPUT, sRequiredInputMessage);
 		}
 
 		_getResourceText(sKey, sDefaultText) {
