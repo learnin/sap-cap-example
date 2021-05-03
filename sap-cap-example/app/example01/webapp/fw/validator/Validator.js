@@ -1073,6 +1073,14 @@ sap.ui.define([
 			return this._getResourceText(this.RESOURCE_BUNDLE_KEY_REQUIRED_INPUT, sRequiredInputMessage);
 		}
 
+		/**
+		 * リソースバンドルからテキストを取得して返す。リソースバンドルが設定されていない場合は sDefaultText を返す。
+		 * 
+		 * @private
+		 * @param {string} sKey キー
+		 * @param {string} sDefaultText デフォルトのテキスト
+		 * @returns テキスト
+		 */
 		_getResourceText(sKey, sDefaultText) {
 			if (this._resourceBundle) {
 				return this._resourceBundle.getText(sKey);
