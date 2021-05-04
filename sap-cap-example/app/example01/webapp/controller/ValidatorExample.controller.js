@@ -103,7 +103,12 @@ sap.ui.define([
 			}), "custom");
 			this.setModel(new JSONModel({
 				fromDate: null,
-				toDate: null
+				toDate: null,
+				requiredRadioGroup1: "text1",
+				requiredRadioGroup2: "text2",
+				requiredRadioGroup3: "other",
+				selectedIndexOfRequiredRadioGroup: -1,
+				requiredRadioGroup3Input: ""
 			}), "correlation");
 
 			this._validator = new Validator();
@@ -138,9 +143,6 @@ sap.ui.define([
 				}
 			);
 
-			// TODO: もう1例追加する。ラジオボタンでどれか1つを選択必須でかつ「その他」を選んだ場合はInputも必須というチェック。
-			// もしかすると、独自バリデーションにしなくても、isRequireをバインド式にしてやればできるかも？できたとしても、それと独自バリデーション版と両方をサンプルに載せる。
-
 			// TODO: Fragment 上のコントロールのバリデーション
 
 			// 必須入力チェック以外のバリデーションは、UI5標準バリデーションと同様にフォーカスアウト時にエラー表示させる。
@@ -154,6 +156,15 @@ sap.ui.define([
 				["From date には To date 以前の日付を入力してください。", "To date には From date 以降の日付を入力してください。"],	// "From date と To dare の大小関係を正しく入力してください" も可能
 				[oView.byId("fromDate"), oView.byId("toDate")],
 				oView.byId("toDate")
+			);
+
+			this._validator.registerRequiredValidator(
+				(oInput) => oView.byId("correlationRequiredRadioGroup").getSelectedIndex() !== 2 || oInput.getValue(),
+				oView.byId("correlationRequiredRadioGroup3Input"),
+				oView.byId("correlationRequiredRadioGroup3Input"),
+				{
+					controlsMoreAttachValidator: [oView.byId("correlationRequiredRadioGroup")]	//TODO: 配列でなくても渡せるようにする
+				}
 			);
 
 			// TODO: https://github.com/jquense/yup 使えないか？

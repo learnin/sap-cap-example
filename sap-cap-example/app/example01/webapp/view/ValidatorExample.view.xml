@@ -175,11 +175,26 @@
 				<uxap:ObjectPageSubSection>
 					<forms:SimpleForm layout="ColumnLayout" columnsM="2" columnsL="3" columnsXL="4" editable="true">
 						<Label text="From date" />
-						<DatePicker id="fromDate" dateValue="{correlation>/fromDate}" required="true"/>
-
+						<DatePicker id="fromDate" dateValue="{correlation>/fromDate}" required="true" />
 						<Label text="To date" />
-						<DatePicker id="toDate" dateValue="{correlation>/toDate}" required="true"/>
+						<DatePicker id="toDate" dateValue="{correlation>/toDate}" required="true" />
 					</forms:SimpleForm>
+
+					<VBox>
+						<Label text="Required RadioButtonGroup" labelFor="correlationRequiredRadioGroup" required="true" />
+						<RadioButtonGroup id="correlationRequiredRadioGroup" columns="1" selectedIndex="{correlation>/selectedIndexOfRequiredRadioGroup}">
+							<RadioButton text="{correlation>/requiredRadioGroup1}" />
+							<RadioButton text="{correlation>/requiredRadioGroup2}" />
+							<RadioButton text="{correlation>/requiredRadioGroup3}" />
+						</RadioButtonGroup>
+						<HBox>
+							<VBox width="3rem" />
+							<VBox>
+								<Label text="Required input when select other" labelFor="correlationRequiredRadioGroup3Input" />
+								<Input id="correlationRequiredRadioGroup3Input" value="{correlation>/requiredRadioGroup3Input}" />
+							</VBox>
+						</HBox>
+					</VBox>
 				</uxap:ObjectPageSubSection>
 			</uxap:ObjectPageSection>
 		</uxap:ObjectPageLayout>

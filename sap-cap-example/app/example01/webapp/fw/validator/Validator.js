@@ -277,9 +277,14 @@ sap.ui.define([
 				(Array.isArray(oTargetControlOrAControls) && Array.isArray(sMessageTextOrAMessageTexts) && sMessageTextOrAMessageTexts.length == oTargetControlOrAControls.length))) {
 				throw new SyntaxError();
 			}
+			if (Array.isArray(oTargetControlOrAControls) && mParameter && mParameter.controlsMoreAttachValidator) {
+				throw new SyntaxError();
+			}
+
 			const oDefaultParam = {
 				isAttachFocusoutValidationImmediately: true,
-				isGroupedTargetControls: false
+				isGroupedTargetControls: false,
+				controlsMoreAttachValidator: null
 			};
 			const oParam = { ...oDefaultParam, ...mParameter };
 
@@ -326,6 +331,7 @@ sap.ui.define([
 					oValidateFunction.targetControlOrControls = oTargetControlOrAControls;
 					oValidateFunction.validateFunction = fnValidateFunction;
 					oValidateFunction.isGroupedTargetControls = oParam.isGroupedTargetControls;
+					oValidateFunction.controlsMoreAttachValidator = oParam.controlsMoreAttachValidator;
 				} else {
 					aValidateFunctions.push({
 						validateFunctionId: sValidateFunctionId,
@@ -333,7 +339,8 @@ sap.ui.define([
 						messageTextOrMessageTexts: sMessageTextOrAMessageTexts,
 						targetControlOrControls: oTargetControlOrAControls,
 						validateFunction: fnValidateFunction,
-						isGroupedTargetControls: oParam.isGroupedTargetControls
+						isGroupedTargetControls: oParam.isGroupedTargetControls,
+						controlsMoreAttachValidator: oParam.controlsMoreAttachValidator
 					});
 				}
 			} else {
@@ -343,12 +350,19 @@ sap.ui.define([
 					messageTextOrMessageTexts: sMessageTextOrAMessageTexts,
 					targetControlOrControls: oTargetControlOrAControls,
 					validateFunction: fnValidateFunction,
-					isGroupedTargetControls: oParam.isGroupedTargetControls
+					isGroupedTargetControls: oParam.isGroupedTargetControls,
+					controlsMoreAttachValidator: oParam.controlsMoreAttachValidator
 				}]);
 			}
 			
 			if (oParam.isAttachFocusoutValidationImmediately) {
-				this._attachRegisteredValidator(oTargetControlOrAControls, fnTest, sMessageTextOrAMessageTexts, sValidateFunctionId, oParam.isGroupedTargetControls);
+				this._attachRegisteredValidator(
+					oTargetControlOrAControls,
+					fnTest,
+					sMessageTextOrAMessageTexts,
+					sValidateFunctionId,
+					oParam.isGroupedTargetControls,
+					oParam.controlsMoreAttachValidator);
 			}
 			return this;
 		}
@@ -378,12 +392,16 @@ sap.ui.define([
 				isAttachFocusoutValidationImmediately: false,
 				// isGroupedTargetControls: true の場合、oTargetControlOrAControls を1つのグループとみなして検証は1回だけ（コントロール数分ではない）で、エラーメッセージも1つだけで、
 				// エラーステートは全部のコントロールにつくかつかないか（一部だけつくことはない）
-				isGroupedTargetControls: false
+				isGroupedTargetControls: false,
+				controlsMoreAttachValidator: null
 			};
 			const oParam = { ...oDefaultParam, ...mParameter };
 
 			let sMessageTextOrAMessageTexts;
 			if (Array.isArray(oTargetControlOrAControls)) {
+				if (oParam.controlsMoreAttachValidator) {
+					throw new SyntaxError();
+				}
 				if (oParam.isGroupedTargetControls) {
 					sMessageTextOrAMessageTexts = this._getRequiredErrorMessageTextByControl(oTargetControlOrAControls[0]);
 				} else {
@@ -449,7 +467,8 @@ sap.ui.define([
 						oValidateFunction.testFunction,
 						oValidateFunction.messageTextOrMessageTexts,
 						oValidateFunction.validateFunctionId,
-						oValidateFunction.isGroupedTargetControls);
+						oValidateFunction.isGroupedTargetControls,
+						oValidateFunction.controlsMoreAttachValidator);
 				});
 			}
 			// sap.ui.table.Table の場合は普通にaggregationを再帰的に処理すると存在しない行も処理対象になってしまうため、
@@ -610,8 +629,9 @@ sap.ui.define([
 		 * @param {string} sValidateFunctionId fnTest を識別するための任意のID
 		 * @param {boolean} bIsGroupedTargetControls true: oControlOrAControls を1つのグループとみなして検証は1回だけ（コントロール数分ではない）で、エラーメッセージも1つだけで、エラーステートは全部のコントロールにつくかつかないか（一部だけつくことはない）,
 		 *                                           false: oControlOrAControls を1つのグループとみなさない
+		 * @param {sap.ui.core.Control[]} [aControlsMoreAttachValidator] oControlOrAControls 以外に fnTest を追加で attach するコントロールの配列
 		 */
-		_attachRegisteredValidator(oControlOrAControls, fnTest, sMessageTextOrAMessageTexts, sValidateFunctionId, bIsGroupedTargetControls) {
+		_attachRegisteredValidator(oControlOrAControls, fnTest, sMessageTextOrAMessageTexts, sValidateFunctionId, bIsGroupedTargetControls, aControlsMoreAttachValidator) {
 			let aControls;
 			if (!Array.isArray(oControlOrAControls)) {
 				aControls = [oControlOrAControls];
@@ -634,6 +654,7 @@ sap.ui.define([
 					sMessageText = Array.isArray(sMessageTextOrAMessageTexts) ? sMessageTextOrAMessageTexts[i] : sMessageTextOrAMessageTexts;
 				}
 				const oData = {
+					targetControl: oControl,
 					messageText: sMessageText,
 					test: fnTest,
 					controls: aControls,
@@ -650,6 +671,25 @@ sap.ui.define([
 				} else if (oControl.attachSelect) {
 					oControl.attachSelect(oData, this._registeredvalidator, this);
 					this._markAttachedRegisteredValidator(oControl);
+				}
+
+				if (aControlsMoreAttachValidator && i === 0) {
+					for (let j = 0; j < aControlsMoreAttachValidator.length; j++) {
+						const oControlMore = aControlsMoreAttachValidator[j];
+						if (this._isAttachedRegisteredValidator(oControlMore)) {
+							continue;
+						}
+						if (oControlMore.attachSelectionFinish) {
+							oControlMore.attachSelectionFinish(oData, this._registeredvalidator, this);
+							this._markAttachedRegisteredValidator(oControlMore);
+						} else if (oControlMore.attachChange) {
+							oControlMore.attachChange(oData, this._registeredvalidator, this);
+							this._markAttachedRegisteredValidator(oControlMore);
+						} else if (oControlMore.attachSelect) {
+							oControlMore.attachSelect(oData, this._registeredvalidator, this);
+							this._markAttachedRegisteredValidator(oControlMore);
+						}
+					}
 				}
 			}
 		}
@@ -723,6 +763,7 @@ sap.ui.define([
 		 * @param {sap.ui.core.Control} oControl コントロール
 		 * @param {boolean} bIsRegisteredValidator true: {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータ, false: 必須チェック用フォーカスアウトバリデータ
 		 */
+		// TODO: 引数を sControlId に変更する
 		_markAttachedValidator(oControl, bIsRegisteredValidator) {
 			const sControlId = oControl.getId();
 			const oValidatorType = this._mControlIdAttachedValidator.get(sControlId);
@@ -848,7 +889,7 @@ sap.ui.define([
 		 * @param {string} oData.validateFunctionId バリデータ関数を識別するID
 		 */
 		_registeredvalidator(oEvent, oData) {
-			const oControl = oEvent.getSource();
+			const oControl = oData.targetControl;
 			const oControlOrAControls = oData.controls.length > 1 ? oData.controls : oData.controls[0];
 			if (oData.test(oControlOrAControls)) {
 				oData.controls.forEach(oCtl => {
