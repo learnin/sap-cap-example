@@ -163,7 +163,7 @@ sap.ui.define([
 				oView.byId("correlationRequiredRadioGroup3Input"),
 				oView.byId("correlationRequiredRadioGroup3Input"),
 				{
-					controlsMoreAttachValidator: [oView.byId("correlationRequiredRadioGroup")]	//TODO: 配列でなくても渡せるようにする
+					controlsMoreAttachValidator: oView.byId("correlationRequiredRadioGroup")
 				}
 			);
 

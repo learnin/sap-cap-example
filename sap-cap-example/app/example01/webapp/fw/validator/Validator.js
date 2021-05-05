@@ -629,9 +629,9 @@ sap.ui.define([
 		 * @param {string} sValidateFunctionId fnTest を識別するための任意のID
 		 * @param {boolean} bIsGroupedTargetControls true: oControlOrAControls を1つのグループとみなして検証は1回だけ（コントロール数分ではない）で、エラーメッセージも1つだけで、エラーステートは全部のコントロールにつくかつかないか（一部だけつくことはない）,
 		 *                                           false: oControlOrAControls を1つのグループとみなさない
-		 * @param {sap.ui.core.Control[]} [aControlsMoreAttachValidator] oControlOrAControls 以外に fnTest を追加で attach するコントロールの配列
+		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} [oControlOrAControlsMoreAttachValidator] oControlOrAControls 以外に fnTest を追加で attach するコントロールの配列
 		 */
-		_attachRegisteredValidator(oControlOrAControls, fnTest, sMessageTextOrAMessageTexts, sValidateFunctionId, bIsGroupedTargetControls, aControlsMoreAttachValidator) {
+		_attachRegisteredValidator(oControlOrAControls, fnTest, sMessageTextOrAMessageTexts, sValidateFunctionId, bIsGroupedTargetControls, oControlOrAControlsMoreAttachValidator) {
 			let aControls;
 			if (!Array.isArray(oControlOrAControls)) {
 				aControls = [oControlOrAControls];
@@ -673,7 +673,13 @@ sap.ui.define([
 					this._markAttachedRegisteredValidator(oControl);
 				}
 
-				if (aControlsMoreAttachValidator && i === 0) {
+				if (oControlOrAControlsMoreAttachValidator && i === 0) {
+					let aControlsMoreAttachValidator;
+					if (!Array.isArray(oControlOrAControlsMoreAttachValidator)) {
+						aControlsMoreAttachValidator = [oControlOrAControlsMoreAttachValidator];
+					} else {
+						aControlsMoreAttachValidator = oControlOrAControlsMoreAttachValidator;
+					}
 					for (let j = 0; j < aControlsMoreAttachValidator.length; j++) {
 						const oControlMore = aControlsMoreAttachValidator[j];
 						if (this._isAttachedRegisteredValidator(oControlMore)) {
