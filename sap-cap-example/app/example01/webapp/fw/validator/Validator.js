@@ -1211,6 +1211,7 @@ sap.ui.define([
 		/**
 		 * {@link sap.ui.core.message.MessageManager MessageManager} にメッセージを追加する。
 		 *
+		 * @private
 		 * @param {sap.ui.core.Control|sap.ui.core.Control[]} oControlOrAControls 検証エラーとなったコントロール
 		 * @param {string} sMessageText エラーメッセージ
 		 * @param {string} [sValidateFunctionId] 検証を行った関数のID。this._mRegisteredValidator に含まれる関数で検証した場合にのみ必要
