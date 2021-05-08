@@ -606,16 +606,17 @@ sap.ui.define([
 				return;
 			}
 			const sMessageText = this._getRequiredErrorMessageTextByControl(oControl);
+			const sControlId = oControl.getId();
 
 			if (oControl.attachSelectionFinish) {
 				oControl.attachSelectionFinish(sMessageText, this._notRegisteredValidator, this);
-				this._markAttachedNotRegisteredValidator(oControl);
+				this._markAttachedNotRegisteredValidator(sControlId);
 			} else if (oControl.attachChange) {
 				oControl.attachChange(sMessageText, this._notRegisteredValidator, this);
-				this._markAttachedNotRegisteredValidator(oControl);
+				this._markAttachedNotRegisteredValidator(sControlId);
 			} else if (oControl.attachSelect) {
 				oControl.attachSelect(sMessageText, this._notRegisteredValidator, this);
-				this._markAttachedNotRegisteredValidator(oControl);
+				this._markAttachedNotRegisteredValidator(sControlId);
 			}
 		}
 
@@ -662,15 +663,16 @@ sap.ui.define([
 					isGroupedTargetControls: bIsGroupedTargetControls,
 					messageTextOrMessageTexts: sMessageTextOrAMessageTexts
 				};
+				const sControlId = oControl.getId();
 				if (oControl.attachSelectionFinish) {
 					oControl.attachSelectionFinish(oData, this._registeredvalidator, this);
-					this._markAttachedRegisteredValidator(oControl);
+					this._markAttachedRegisteredValidator(sControlId);
 				} else if (oControl.attachChange) {
 					oControl.attachChange(oData, this._registeredvalidator, this);
-					this._markAttachedRegisteredValidator(oControl);
+					this._markAttachedRegisteredValidator(sControlId);
 				} else if (oControl.attachSelect) {
 					oControl.attachSelect(oData, this._registeredvalidator, this);
-					this._markAttachedRegisteredValidator(oControl);
+					this._markAttachedRegisteredValidator(sControlId);
 				}
 
 				if (oControlOrAControlsMoreAttachValidator && i === 0) {
@@ -685,15 +687,16 @@ sap.ui.define([
 						if (this._isAttachedRegisteredValidator(oControlMore)) {
 							continue;
 						}
+						const sControlMoreId = oControlMore.getId();
 						if (oControlMore.attachSelectionFinish) {
 							oControlMore.attachSelectionFinish(oData, this._registeredvalidator, this);
-							this._markAttachedRegisteredValidator(oControlMore);
+							this._markAttachedRegisteredValidator(sControlMoreId);
 						} else if (oControlMore.attachChange) {
 							oControlMore.attachChange(oData, this._registeredvalidator, this);
-							this._markAttachedRegisteredValidator(oControlMore);
+							this._markAttachedRegisteredValidator(sControlMoreId);
 						} else if (oControlMore.attachSelect) {
 							oControlMore.attachSelect(oData, this._registeredvalidator, this);
-							this._markAttachedRegisteredValidator(oControlMore);
+							this._markAttachedRegisteredValidator(sControlMoreId);
 						}
 					}
 				}
@@ -730,6 +733,7 @@ sap.ui.define([
 		 * @param {boolean} bIsRegisteredValidator true: {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータ, false: 必須チェック用フォーカスアウトバリデータ
 		 * @returns {boolean} true: フォーカスアウトバリデータを attach 済み, false: フォーカスアウトバリデータを attach 済みでない
 		 */
+		// TODO: oControl -> sControlId
 		_isAttachedValidator(oControl, bIsRegisteredValidator) {
 			const sControlId = oControl.getId();
 			const oValidatorType = this._mControlIdAttachedValidator.get(sControlId);
@@ -743,35 +747,33 @@ sap.ui.define([
 		}
 
 		/**
-		 * oControl に必須チェック用フォーカスアウトバリデータを attach 済みとマークする。
+		 * 必須チェック用フォーカスアウトバリデータを attach 済みとマークする。
 		 * 
 		 * @private
-		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @param {string} sControlId コントロールの ID
 		 */
-		_markAttachedNotRegisteredValidator(oControl) {
-			this._markAttachedValidator(oControl, false);
+		_markAttachedNotRegisteredValidator(sControlId) {
+			this._markAttachedValidator(sControlId, false);
 		}
 
 		/**
-		 * oControl に {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータを attach 済みとマークする。
+		 * {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータを attach 済みとマークする。
 		 * 
 		 * @private
-		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @param {string} sControlId コントロールの ID
 		 */
-		_markAttachedRegisteredValidator(oControl) {
-			this._markAttachedValidator(oControl, true);
+		_markAttachedRegisteredValidator(sControlId) {
+			this._markAttachedValidator(sControlId, true);
 		}
 
 		/**
-		 * oControl にフォーカスアウトバリデータを attach 済みとマークする。
+		 * フォーカスアウトバリデータを attach 済みとマークする。
 		 * 
 		 * @private
-		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @param {string} sControlId コントロールの ID
 		 * @param {boolean} bIsRegisteredValidator true: {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータ, false: 必須チェック用フォーカスアウトバリデータ
 		 */
-		// TODO: 引数を sControlId に変更する
-		_markAttachedValidator(oControl, bIsRegisteredValidator) {
-			const sControlId = oControl.getId();
+		_markAttachedValidator(sControlId, bIsRegisteredValidator) {
 			const oValidatorType = this._mControlIdAttachedValidator.get(sControlId);
 			if (oValidatorType) {
 				if (bIsRegisteredValidator) {
