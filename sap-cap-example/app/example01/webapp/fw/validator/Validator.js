@@ -262,6 +262,7 @@ sap.ui.define([
 		// oTargetControlOrAControls が配列で sMessageTextOrAMessageTexts がObjectもOK
 		// oTargetControlOrAControls がObjectで sMessageTextOrAMessageTexts もObjectもOK
 		registerValidator(sValidateFunctionId, fnTest, sMessageTextOrAMessageTexts, oTargetControlOrAControls, oControlValidateBefore, mParameter) {
+			let isOriginalFunctionIdUndefined = false;
 			if (typeof sValidateFunctionId !== 'string') {
 				// sValidateFunctionId 省略時は ID を自動生成する。
 				mParameter = oControlValidateBefore;
@@ -270,6 +271,7 @@ sap.ui.define([
 				sMessageTextOrAMessageTexts = fnTest;
 				fnTest = sValidateFunctionId;
 				sValidateFunctionId = uid();
+				isOriginalFunctionIdUndefined = true;
 			}
 			if (!(
 				(!Array.isArray(oTargetControlOrAControls) && !Array.isArray(sMessageTextOrAMessageTexts)) ||
@@ -324,7 +326,9 @@ sap.ui.define([
 
 			if (this._mRegisteredValidator.has(sControlId)) {
 				const aValidateFunctions = this._mRegisteredValidator.get(sControlId);
-				const oValidateFunction = aValidateFunctions.find(oValidateFunction => oValidateFunction.validateFunctionId === sValidateFunctionId);
+				const oValidateFunction = aValidateFunctions.find(oValidateFunction => 
+					(isOriginalFunctionIdUndefined && oValidateFunction.isOriginalFunctionIdUndefined && sMessageTextOrAMessageTexts === oValidateFunction.messageTextOrMessageTexts) ||
+					(!isOriginalFunctionIdUndefined && !oValidateFunction.isOriginalFunctionIdUndefined && oValidateFunction.validateFunctionId === sValidateFunctionId));
 				if (oValidateFunction) {
 					oValidateFunction.testFunction = fnTest;
 					oValidateFunction.messageTextOrMessageTexts = sMessageTextOrAMessageTexts;
@@ -332,6 +336,7 @@ sap.ui.define([
 					oValidateFunction.validateFunction = fnValidateFunction;
 					oValidateFunction.isGroupedTargetControls = oParam.isGroupedTargetControls;
 					oValidateFunction.controlsMoreAttachValidator = oParam.controlsMoreAttachValidator;
+					oValidateFunction.isOriginalFunctionIdUndefined = isOriginalFunctionIdUndefined;
 				} else {
 					aValidateFunctions.push({
 						validateFunctionId: sValidateFunctionId,
@@ -340,7 +345,8 @@ sap.ui.define([
 						targetControlOrControls: oTargetControlOrAControls,
 						validateFunction: fnValidateFunction,
 						isGroupedTargetControls: oParam.isGroupedTargetControls,
-						controlsMoreAttachValidator: oParam.controlsMoreAttachValidator
+						controlsMoreAttachValidator: oParam.controlsMoreAttachValidator,
+						isOriginalFunctionIdUndefined: isOriginalFunctionIdUndefined
 					});
 				}
 			} else {
@@ -351,7 +357,8 @@ sap.ui.define([
 					targetControlOrControls: oTargetControlOrAControls,
 					validateFunction: fnValidateFunction,
 					isGroupedTargetControls: oParam.isGroupedTargetControls,
-					controlsMoreAttachValidator: oParam.controlsMoreAttachValidator
+					controlsMoreAttachValidator: oParam.controlsMoreAttachValidator,
+					isOriginalFunctionIdUndefined: isOriginalFunctionIdUndefined
 				}]);
 			}
 			
@@ -380,13 +387,14 @@ sap.ui.define([
 		 * @returns {Validator} Reference to this in order to allow method chaining
 		 */
 		registerRequiredValidator(sValidateFunctionId, fnTest, oTargetControlOrAControls, oControlValidateBefore, mParameter) {
+			let isOriginalFunctionIdUndefined = false;
 			if (typeof sValidateFunctionId !== 'string') {
 				// sValidateFunctionId 省略時は ID を自動生成する。
 				mParameter = oControlValidateBefore;
 				oControlValidateBefore = oTargetControlOrAControls;
 				oTargetControlOrAControls = fnTest;
 				fnTest = sValidateFunctionId;
-				sValidateFunctionId = uid();
+				isOriginalFunctionIdUndefined = true;
 			}
 			const oDefaultParam = {
 				isAttachFocusoutValidationImmediately: false,
@@ -410,7 +418,11 @@ sap.ui.define([
 			} else {
 				sMessageTextOrAMessageTexts = this._getRequiredErrorMessageTextByControl(oTargetControlOrAControls);
 			}
-			this.registerValidator(sValidateFunctionId, fnTest, sMessageTextOrAMessageTexts, oTargetControlOrAControls, oControlValidateBefore, oParam);
+			if (isOriginalFunctionIdUndefined) {
+				this.registerValidator(fnTest, sMessageTextOrAMessageTexts, oTargetControlOrAControls, oControlValidateBefore, oParam);
+			} else {
+				this.registerValidator(sValidateFunctionId, fnTest, sMessageTextOrAMessageTexts, oTargetControlOrAControls, oControlValidateBefore, oParam);
+			}
 			return this;
 		}
 
@@ -603,7 +615,7 @@ sap.ui.define([
 				return;
 			}
 			const sControlId = oControl.getId();
-			if (this._isAttachedNotRegisteredValidator(sControlId)) {
+			if (this._isAttachedNotRegisteredValidator(sControlId) || this._isAttachedRegisteredValidator(sControlId)) {
 				return;
 			}
 			const sMessageText = this._getRequiredErrorMessageTextByControl(oControl);
@@ -646,7 +658,7 @@ sap.ui.define([
 				const oControl = aControls[i];
 				const sControlId = oControl.getId();
 
-				if (this._isAttachedRegisteredValidator(sControlId)) {
+				if (this._isAttachedNotRegisteredValidator(sControlId) || this._isAttachedRegisteredValidator(sControlId)) {
 					continue;
 				}
 				let sMessageText;
@@ -685,7 +697,7 @@ sap.ui.define([
 					for (let j = 0; j < aControlsMoreAttachValidator.length; j++) {
 						const oControlMore = aControlsMoreAttachValidator[j];
 						const sControlMoreId = oControlMore.getId();
-						if (this._isAttachedRegisteredValidator(sControlMoreId)) {
+						if (this._isAttachedNotRegisteredValidator(sControlMoreId) || this._isAttachedRegisteredValidator(sControlMoreId)) {
 							continue;
 						}
 						if (oControlMore.attachSelectionFinish) {
