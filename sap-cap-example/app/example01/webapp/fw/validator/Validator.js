@@ -602,12 +602,12 @@ sap.ui.define([
 				// 対象外
 				return;
 			}
-			if (this._isAttachedNotRegisteredValidator(oControl)) {
+			const sControlId = oControl.getId();
+			if (this._isAttachedNotRegisteredValidator(sControlId)) {
 				return;
 			}
 			const sMessageText = this._getRequiredErrorMessageTextByControl(oControl);
-			const sControlId = oControl.getId();
-
+			
 			if (oControl.attachSelectionFinish) {
 				oControl.attachSelectionFinish(sMessageText, this._notRegisteredValidator, this);
 				this._markAttachedNotRegisteredValidator(sControlId);
@@ -644,8 +644,9 @@ sap.ui.define([
 
 			for (let i = 0; i < aControls.length; i++) {
 				const oControl = aControls[i];
+				const sControlId = oControl.getId();
 
-				if (this._isAttachedRegisteredValidator(oControl)) {
+				if (this._isAttachedRegisteredValidator(sControlId)) {
 					continue;
 				}
 				let sMessageText;
@@ -663,7 +664,6 @@ sap.ui.define([
 					isGroupedTargetControls: bIsGroupedTargetControls,
 					messageTextOrMessageTexts: sMessageTextOrAMessageTexts
 				};
-				const sControlId = oControl.getId();
 				if (oControl.attachSelectionFinish) {
 					oControl.attachSelectionFinish(oData, this._registeredvalidator, this);
 					this._markAttachedRegisteredValidator(sControlId);
@@ -684,10 +684,10 @@ sap.ui.define([
 					}
 					for (let j = 0; j < aControlsMoreAttachValidator.length; j++) {
 						const oControlMore = aControlsMoreAttachValidator[j];
-						if (this._isAttachedRegisteredValidator(oControlMore)) {
+						const sControlMoreId = oControlMore.getId();
+						if (this._isAttachedRegisteredValidator(sControlMoreId)) {
 							continue;
 						}
-						const sControlMoreId = oControlMore.getId();
 						if (oControlMore.attachSelectionFinish) {
 							oControlMore.attachSelectionFinish(oData, this._registeredvalidator, this);
 							this._markAttachedRegisteredValidator(sControlMoreId);
@@ -704,38 +704,36 @@ sap.ui.define([
 		}
 
 		/**
-		 * oControl に必須チェック用フォーカスアウトバリデータを attach 済みかどうかを返す。
+		 * 必須チェック用フォーカスアウトバリデータを attach 済みかどうかを返す。
 		 * 
 		 * @private
-		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @param {string} sControlId コントロールID
 		 * @returns {boolean} true: 必須チェック用フォーカスアウトバリデータを attach 済み, false: 必須チェック用フォーカスアウトバリデータを attach 済みでない
 		 */
-		_isAttachedNotRegisteredValidator(oControl) {
-			return this._isAttachedValidator(oControl, false);
+		_isAttachedNotRegisteredValidator(sControlId) {
+			return this._isAttachedValidator(sControlId, false);
 		}
 
 		/**
-		 * oControl に {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータを attach 済みかどうかを返す。
+		 * {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータを attach 済みかどうかを返す。
 		 * 
 		 * @private
-		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @param {string} sControlId コントロールID
 		 * @returns {boolean} true: フォーカスアウトバリデータを attach 済み, false: フォーカスアウトバリデータを attach 済みでない
 		 */
-		_isAttachedRegisteredValidator(oControl) {
-			return this._isAttachedValidator(oControl, true);
+		_isAttachedRegisteredValidator(sControlId) {
+			return this._isAttachedValidator(sControlId, true);
 		}
 
 		/**
-		 * oControl にフォーカスアウトバリデータを attach 済みかどうかを返す。
+		 * フォーカスアウトバリデータを attach 済みかどうかを返す。
 		 * 
 		 * @private
-		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @param {string} sControlId コントロールID
 		 * @param {boolean} bIsRegisteredValidator true: {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータ, false: 必須チェック用フォーカスアウトバリデータ
 		 * @returns {boolean} true: フォーカスアウトバリデータを attach 済み, false: フォーカスアウトバリデータを attach 済みでない
 		 */
-		// TODO: oControl -> sControlId
-		_isAttachedValidator(oControl, bIsRegisteredValidator) {
-			const sControlId = oControl.getId();
+		_isAttachedValidator(sControlId, bIsRegisteredValidator) {
 			const oValidatorType = this._mControlIdAttachedValidator.get(sControlId);
 			if (!oValidatorType) {
 				return false;
