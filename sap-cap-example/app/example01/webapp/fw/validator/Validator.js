@@ -826,6 +826,7 @@ sap.ui.define([
 		 * @param {sap.ui.core.Control} oControl コントロール
 		 * @param {boolean} bIsRegisteredValidator true: {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータ, false: 必須チェック用フォーカスアウトバリデータ
 		 */
+		// TODO: oControl -> sControlId
 		_unmarkAttachedValidator(oControl, bIsRegisteredValidator) {
 			const sControlId = oControl.getId();
 			const oValidatorType = this._mControlIdAttachedValidator.get(sControlId);
@@ -1252,6 +1253,7 @@ sap.ui.define([
 		/**
 		 * 引数のコントロールに {@link sap.ui.core.ValueState ValueState} と ValueStateText をセットする。
 		 *
+		 * @private
 		 * @param {sap.ui.core.Control} oControl セット先のコントロール
 		 * @param {sap.ui.core.ValueState} oValueState セットするステート
 		 * @param {string} sText セットするステートテキスト
