@@ -800,35 +800,33 @@ sap.ui.define([
 		}
 
 		/**
-		 * oControl に必須チェック用フォーカスアウトバリデータを attach 済みとマークしていたのを外す。
+		 * 必須チェック用フォーカスアウトバリデータを attach 済みとマークしていたのを外す。
 		 * 
 		 * @private
-		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @param {string} sControlId コントロールID
 		 */
-		_unmarkAttachedNotRegisteredValidator(oControl) {
-			this._unmarkAttachedValidator(oControl, false);
+		_unmarkAttachedNotRegisteredValidator(sControlId) {
+			this._unmarkAttachedValidator(sControlId, false);
 		}
 
 		/**
-		 * oControl に {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータを attach 済みとマークしていたのを外す。
+		 * {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータを attach 済みとマークしていたのを外す。
 		 * 
 		 * @private
-		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @param {string} sControlId コントロールID
 		 */
-		_unmarkAttachedRegisteredValidator(oControl) {
-			this._unmarkAttachedValidator(oControl, true);
+		_unmarkAttachedRegisteredValidator(sControlId) {
+			this._unmarkAttachedValidator(sControlId, true);
 		}
 
 		/**
-		 * oControl にフォーカスアウトバリデータを attach 済みとマークしていたのを外す。
+		 * フォーカスアウトバリデータを attach 済みとマークしていたのを外す。
 		 * 
 		 * @private
-		 * @param {sap.ui.core.Control} oControl コントロール
+		 * @param {string} sControlId コントロールID
 		 * @param {boolean} bIsRegisteredValidator true: {@link #registerValidator registerValidator} や {@link #registerRequiredValidator registerRequiredValidator} で登録されたフォーカスアウトバリデータ, false: 必須チェック用フォーカスアウトバリデータ
 		 */
-		// TODO: oControl -> sControlId
-		_unmarkAttachedValidator(oControl, bIsRegisteredValidator) {
-			const sControlId = oControl.getId();
+		_unmarkAttachedValidator(sControlId, bIsRegisteredValidator) {
 			const oValidatorType = this._mControlIdAttachedValidator.get(sControlId);
 			if (!oValidatorType) {
 				return;
@@ -847,15 +845,16 @@ sap.ui.define([
 		 * @param {sap.ui.core.Control} oControl コントロール
 		 */
 		_detachNotRegisteredValidator(oControl) {
+			const sControlId = oControl.getId();
 			if (oControl.detachSelectionFinish) {
 				oControl.detachSelectionFinish(this._notRegisteredValidator, this);
-				this._unmarkAttachedNotRegisteredValidator(oControl);
+				this._unmarkAttachedNotRegisteredValidator(sControlId);
 			} else if (oControl.detachChange) {
 				oControl.detachChange(this._notRegisteredValidator, this);
-				this._unmarkAttachedNotRegisteredValidator(oControl);
+				this._unmarkAttachedNotRegisteredValidator(sControlId);
 			} else if (oControl.detachSelect) {
 				oControl.detachSelect(this._notRegisteredValidator, this);
-				this._unmarkAttachedNotRegisteredValidator(oControl);
+				this._unmarkAttachedNotRegisteredValidator(sControlId);
 			}
 		}
 
@@ -866,15 +865,16 @@ sap.ui.define([
 		 * @param {sap.ui.core.Control} oControl コントロール
 		 */
 		_detachRegisteredValidator(oControl) {
+			const sControlId = oControl.getId();
 			if (oControl.detachSelectionFinish) {
 				oControl.detachSelectionFinish(this._registeredvalidator, this);
-				this._unmarkAttachedRegisteredValidator(oControl);
+				this._unmarkAttachedRegisteredValidator(sControlId);
 			} else if (oControl.detachChange) {
 				oControl.detachChange(this._registeredvalidator, this);
-				this._unmarkAttachedRegisteredValidator(oControl);
+				this._unmarkAttachedRegisteredValidator(sControlId);
 			} else if (oControl.detachSelect) {
 				oControl.detachSelect(this._registeredvalidator, this);
-				this._unmarkAttachedRegisteredValidator(oControl);
+				this._unmarkAttachedRegisteredValidator(sControlId);
 			}
 		}
 
