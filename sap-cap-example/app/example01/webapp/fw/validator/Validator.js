@@ -1272,6 +1272,13 @@ sap.ui.define([
 			}
 		}
 
+		/**
+		 * 本 Validator によりエラーステートをセットされているかを判定する。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Element} oElement エレメント
+		 * @returns true: 本 Validator によりエラーステートをセットされている, false: セットされていない
+		 */
 		_isSetValueStateError(oElement) {
 			return oElement.data(this._CUSTOM_DATA_KEY_FOR_IS_SET_VALUE_STATE_ERROR) === "true";
 		}
