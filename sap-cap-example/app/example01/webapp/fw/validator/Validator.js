@@ -1283,6 +1283,12 @@ sap.ui.define([
 			return oElement.data(this._CUSTOM_DATA_KEY_FOR_IS_SET_VALUE_STATE_ERROR) === "true";
 		}
 
+		/**
+		 * 本 Validator によりエラーステートをセットしたとマークする。
+		 * 
+		 * @private
+		 * @param {sap.ui.core.Element} oElement エレメント
+		 */
 		_markSetValueStateError(oElement) {
 			oElement.data(this._CUSTOM_DATA_KEY_FOR_IS_SET_VALUE_STATE_ERROR, "true");
 		}
