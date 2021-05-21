@@ -99,6 +99,8 @@ sap.ui.define([
 				"fields",
 				"sections",
 				"subSections",
+				"app",
+				"pages",
 				"_grid",
 				"_page",
 				"cells"		// sap.m.Table -> items -> cells
